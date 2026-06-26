@@ -1,0 +1,97 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>RateMyWork — Honest, verified workplace feedback</title>
+  <meta name="description" content="Search workplaces and read verified employee feedback about work conditions, culture and more.">
+  <link rel="stylesheet" href="/css/styles.css">
+</head>
+<body>
+  <header class="site-header" id="site-header"></header>
+
+  <section class="hero">
+    <div class="container">
+      <h1>Know before you work there.</h1>
+      <p class="lead">Search companies, locations and keywords to read honest feedback about
+        workplaces and working conditions — written by people who actually worked there.</p>
+
+      <form class="search-bar" id="searchForm">
+        <input type="text" id="searchInput" placeholder="Search by company, city, ZIP code or keyword…" aria-label="Search">
+        <button class="btn" type="submit">Search</button>
+      </form>
+      <div class="search-hints">
+        Popular: <a href="/workplaces.html?q=Technology">Technology</a>
+        <a href="/workplaces.html?q=Retail">Retail</a>
+        <a href="/workplaces.html?q=Finance">Finance</a>
+        <a href="/workplaces.html">Browse all →</a>
+      </div>
+
+      <div class="stat-row" id="publicStats"></div>
+    </div>
+  </section>
+
+  <section class="section">
+    <div class="container">
+      <h2>Top rated workplaces</h2>
+      <p class="subtitle">Highest-rated companies based on verified employee feedback.</p>
+      <div class="grid" id="topRated"><div class="spinner">Loading…</div></div>
+    </div>
+  </section>
+
+  <section class="section" style="background:var(--surface);border-top:1px solid var(--border);border-bottom:1px solid var(--border);">
+    <div class="container">
+      <h2>How it works</h2>
+      <div class="grid" style="margin-top:18px">
+        <div class="card"><h3>1 · Find a workplace</h3><p class="muted">Search any company or location. Anyone can read feedback — no account needed.</p></div>
+        <div class="card"><h3>2 · Verify your employment</h3><p class="muted">Upload an offer letter or employment confirmation to unlock feedback for that company.</p></div>
+        <div class="card"><h3>3 · Share your experience</h3><p class="muted">Rate 1–5 stars and explain what it was really like to work there.</p></div>
+      </div>
+    </div>
+  </section>
+
+  <footer class="site-footer" id="site-footer"></footer>
+
+  <script src="/js/app.js"></script>
+  <script>
+    document.getElementById('searchForm').addEventListener('submit', (e) => {
+      e.preventDefault();
+      const q = document.getElementById('searchInput').value.trim();
+      window.location.href = '/workplaces.html' + (q ? ('?q=' + encodeURIComponent(q)) : '');
+    });
+
+    (async function () {
+      // public stats
+      try {
+        const s = await RMW.api('/api/stats/public');
+        document.getElementById('publicStats').innerHTML = `
+          <div class="stat-pill"><div class="num">${s.totalCompanies}</div><div class="label">Workplaces listed</div></div>
+          <div class="stat-pill"><div class="num">${s.totalFeedback}</div><div class="label">Reviews shared</div></div>
+          <div class="stat-pill"><div class="num">${s.verifiedUsers}</div><div class="label">Verified members</div></div>`;
+      } catch (e) { /* ignore */ }
+
+      // top rated
+      const box = document.getElementById('topRated');
+      try {
+        const top = await RMW.api('/api/companies/top?limit=6');
+        if (!top.length) { box.innerHTML = '<p class="muted">No rated workplaces yet — be the first to add one!</p>'; return; }
+        box.innerHTML = top.map(c => companyCard(c)).join('');
+      } catch (e) {
+        box.innerHTML = '<p class="muted">Could not load workplaces.</p>';
+      }
+    })();
+
+    function companyCard(c) {
+      const cats = (c.categories || []).slice(0, 3).map(x => `<span class="tag">${RMW.escapeHtml(x)}</span>`).join('');
+      return `<a class="card company-card" href="/company.html?id=${c.id}">
+        <div class="title">${RMW.escapeHtml(c.name)}</div>
+        <div class="rating-line">${RMW.stars(c.averageRating)}
+          <span class="score">${c.averageRating.toFixed(1)}</span>
+          <span class="count">(${c.ratingCount})</span></div>
+        <div class="meta">${c.locationCount} location${c.locationCount === 1 ? '' : 's'}</div>
+        <div class="tags">${cats || '<span class="tag muted">Unrated</span>'}</div>
+      </a>`;
+    }
+  </script>
+</body>
+</html>

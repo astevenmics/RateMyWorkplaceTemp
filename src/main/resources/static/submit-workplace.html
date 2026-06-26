@@ -1,0 +1,148 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Add a workplace — RateMyWork</title>
+  <link rel="stylesheet" href="/css/styles.css">
+</head>
+<body>
+  <header class="site-header" id="site-header"></header>
+
+  <section class="section">
+    <div class="container">
+      <div class="card form-card" style="max-width:720px">
+        <h2 style="margin-top:0">Suggest a workplace</h2>
+        <p class="subtitle">Submit a company for public viewing and feedback. An admin will review it before it goes live.</p>
+        <div id="alert" class="alert"></div>
+
+        <form id="companyForm">
+          <div class="field"><label>Company / workplace name</label><input type="text" name="name" required maxlength="140"></div>
+          <div class="field"><label>Website (optional)</label><input type="url" name="website" placeholder="https://…" maxlength="200"></div>
+          <div class="field"><label>Description</label><textarea name="description" rows="3" maxlength="4000" placeholder="What does this company do?"></textarea></div>
+
+          <div class="field">
+            <label>Categories</label>
+            <div id="categoryChips" class="tags" style="margin-bottom:8px"></div>
+            <input type="text" id="categoryInput" placeholder="Type a category and press Enter (e.g. Technology)">
+            <div class="hint">Pick from suggestions below or add your own.</div>
+            <div id="categorySuggestions" class="tags" style="margin-top:8px"></div>
+          </div>
+
+          <hr style="border:none;border-top:1px solid var(--border);margin:18px 0">
+          <div style="display:flex;justify-content:space-between;align-items:center">
+            <label style="font-weight:700">Locations</label>
+            <button type="button" class="btn secondary small" id="addLocationBtn">+ Add location</button>
+          </div>
+          <p class="hint">A company can have multiple locations (different addresses / ZIP codes).</p>
+          <div id="locations"></div>
+
+          <button class="btn" type="submit" style="margin-top:10px">Submit for review</button>
+        </form>
+      </div>
+    </div>
+  </section>
+
+  <footer class="site-footer" id="site-footer"></footer>
+
+  <script src="/js/app.js"></script>
+  <script>
+    const selectedCategories = new Set();
+    const alertEl = document.getElementById('alert');
+
+    async function guard() {
+      const user = await RMW.currentUser();
+      if (!user) { window.location.href = '/login.html?next=/submit-workplace.html'; return false; }
+      if (!user.fullyVerified) {
+        RMW.toast(alertEl, 'warn', 'Verify your email and phone before adding a workplace.');
+      }
+      return true;
+    }
+
+    function renderChips() {
+      document.getElementById('categoryChips').innerHTML =
+        [...selectedCategories].map(c => `<span class="tag" data-c="${RMW.escapeHtml(c)}">${RMW.escapeHtml(c)} ✕</span>`).join('') ||
+        '<span class="muted" style="font-size:.85rem">No categories yet</span>';
+      document.querySelectorAll('#categoryChips .tag').forEach(t =>
+        t.addEventListener('click', () => { selectedCategories.delete(t.dataset.c); renderChips(); }));
+    }
+
+    function addCategory(name) {
+      const v = name.trim();
+      if (v) { selectedCategories.add(v); renderChips(); }
+    }
+
+    async function loadCategorySuggestions() {
+      try {
+        const cats = await RMW.api('/api/categories');
+        document.getElementById('categorySuggestions').innerHTML =
+          cats.map(c => `<span class="tag muted" style="cursor:pointer" data-c="${RMW.escapeHtml(c.name)}">+ ${RMW.escapeHtml(c.name)}</span>`).join('');
+        document.querySelectorAll('#categorySuggestions .tag').forEach(t =>
+          t.addEventListener('click', () => addCategory(t.dataset.c)));
+      } catch (e) { /* ignore */ }
+    }
+
+    let locIndex = 0;
+    function addLocation() {
+      const id = locIndex++;
+      const div = document.createElement('div');
+      div.className = 'card';
+      div.style.marginBottom = '12px';
+      div.innerHTML = `
+        <div class="field-row">
+          <div class="field"><label>Label (optional)</label><input type="text" data-f="label" placeholder="Downtown branch"></div>
+          <div class="field"><label>Address</label><input type="text" data-f="addressLine" required></div>
+        </div>
+        <div class="field-row">
+          <div class="field"><label>City</label><input type="text" data-f="city" required></div>
+          <div class="field"><label>State</label><input type="text" data-f="state"></div>
+          <div class="field"><label>ZIP</label><input type="text" data-f="zipCode" required></div>
+        </div>
+        <button type="button" class="btn ghost small removeLoc">Remove location</button>`;
+      div.querySelector('.removeLoc').addEventListener('click', () => div.remove());
+      document.getElementById('locations').appendChild(div);
+    }
+
+    document.getElementById('categoryInput').addEventListener('keydown', (e) => {
+      if (e.key === 'Enter') { e.preventDefault(); addCategory(e.target.value); e.target.value = ''; }
+    });
+    document.getElementById('addLocationBtn').addEventListener('click', addLocation);
+
+    document.getElementById('companyForm').addEventListener('submit', async (e) => {
+      e.preventDefault();
+      RMW.clearToast(alertEl);
+      const form = e.target;
+      const locations = [...document.querySelectorAll('#locations .card')].map(card => {
+        const get = f => card.querySelector(`[data-f="${f}"]`).value.trim();
+        return { label: get('label'), addressLine: get('addressLine'), city: get('city'),
+                 state: get('state'), zipCode: get('zipCode'), country: 'USA' };
+      });
+      if (!locations.length) { RMW.toast(alertEl, 'error', 'Add at least one location.'); return; }
+
+      try {
+        await RMW.api('/api/companies', { method: 'POST', body: {
+          name: form.name.value.trim(),
+          website: form.website.value.trim() || null,
+          description: form.description.value.trim() || null,
+          categories: [...selectedCategories],
+          locations
+        }});
+        RMW.toast(alertEl, 'success', 'Submitted! An admin will review your workplace shortly.');
+        form.reset(); selectedCategories.clear(); renderChips();
+        document.getElementById('locations').innerHTML = ''; addLocation();
+      } catch (err) {
+        let msg = err.message;
+        if (err.data && err.data.fieldErrors) msg = Object.values(err.data.fieldErrors).join(' ');
+        RMW.toast(alertEl, 'error', msg);
+      }
+    });
+
+    (async function () {
+      if (!(await guard())) return;
+      renderChips();
+      loadCategorySuggestions();
+      addLocation();
+    })();
+  </script>
+</body>
+</html>

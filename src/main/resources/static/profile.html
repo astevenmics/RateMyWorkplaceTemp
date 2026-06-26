@@ -1,0 +1,122 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>My profile — RateMyWork</title>
+  <link rel="stylesheet" href="/css/styles.css">
+</head>
+<body>
+  <header class="site-header" id="site-header"></header>
+
+  <section class="section">
+    <div class="container">
+      <div class="layout-2col">
+        <div>
+          <div class="card">
+            <h2 style="margin-top:0">Edit profile</h2>
+            <div id="alert" class="alert"></div>
+            <form id="profileForm">
+              <div class="field"><label>Display name</label><input type="text" name="displayName" required maxlength="80"></div>
+              <div class="field"><label>Username</label><input type="text" id="usernameField" disabled><div class="hint">Usernames can't be changed.</div></div>
+              <div class="field-row">
+                <div class="field"><label>Email</label><input type="email" name="email" required></div>
+                <div class="field"><label>Phone</label><input type="tel" name="phoneNumber" required></div>
+              </div>
+              <div class="hint" style="margin-bottom:14px">Changing your email or phone will require re-verifying it.</div>
+              <hr style="border:none;border-top:1px solid var(--border);margin:18px 0">
+              <p class="muted" style="font-size:.9rem">Change password (optional)</p>
+              <div class="field"><label>Current password</label><input type="password" name="currentPassword" autocomplete="current-password"></div>
+              <div class="field"><label>New password</label><input type="password" name="newPassword" minlength="8" autocomplete="new-password"></div>
+              <button class="btn" type="submit">Save changes</button>
+            </form>
+          </div>
+
+          <div class="card" style="margin-top:20px">
+            <h3 style="margin-top:0">My employment proofs</h3>
+            <div id="proofs"><p class="muted">Loading…</p></div>
+            <a class="btn secondary small" href="/submit-proof.html" style="margin-top:10px">Submit new proof</a>
+          </div>
+        </div>
+
+        <aside>
+          <div class="card">
+            <h3 style="margin-top:0">Verification</h3>
+            <p>Email: <span id="emailBadge" class="badge">—</span></p>
+            <p>Phone: <span id="phoneBadge" class="badge">—</span></p>
+            <p>Account: <span id="roleBadge" class="badge approved">—</span></p>
+            <a class="btn secondary small" href="/verify.html">Manage verification</a>
+          </div>
+        </aside>
+      </div>
+    </div>
+  </section>
+
+  <footer class="site-footer" id="site-footer"></footer>
+
+  <script src="/js/app.js"></script>
+  <script>
+    const alertEl = document.getElementById('alert');
+
+    async function load() {
+      const user = await RMW.currentUser(true);
+      if (!user) { window.location.href = '/login.html?next=/profile.html'; return; }
+      const form = document.getElementById('profileForm');
+      form.displayName.value = user.displayName;
+      form.email.value = user.email;
+      form.phoneNumber.value = user.phoneNumber;
+      document.getElementById('usernameField').value = user.username;
+      badge('emailBadge', user.emailVerified);
+      badge('phoneBadge', user.phoneVerified);
+      document.getElementById('roleBadge').textContent = user.role;
+      loadProofs();
+    }
+
+    function badge(id, ok) {
+      const el = document.getElementById(id);
+      el.textContent = ok ? 'Verified' : 'Pending';
+      el.className = 'badge ' + (ok ? 'approved' : 'pending');
+    }
+
+    async function loadProofs() {
+      const box = document.getElementById('proofs');
+      try {
+        const list = await RMW.api('/api/proofs/mine');
+        if (!list.length) { box.innerHTML = '<p class="muted">No proofs submitted yet.</p>'; return; }
+        box.innerHTML = list.map(p => `
+          <div style="padding:8px 0;border-bottom:1px solid var(--border)">
+            <strong>${RMW.escapeHtml(p.companyName)}</strong> ${p.locationLabel ? '· ' + RMW.escapeHtml(p.locationLabel) : '(company-wide)'}
+            <span class="badge ${p.status.toLowerCase()}">${p.status}</span>
+            <div class="muted" style="font-size:.82rem">${RMW.escapeHtml(p.originalFileName)} · ${RMW.fmtDate(p.createdAt)}${p.reviewNote ? ' · Note: ' + RMW.escapeHtml(p.reviewNote) : ''}</div>
+          </div>`).join('');
+      } catch (e) { box.innerHTML = '<p class="muted">Could not load proofs.</p>'; }
+    }
+
+    document.getElementById('profileForm').addEventListener('submit', async (e) => {
+      e.preventDefault();
+      RMW.clearToast(alertEl);
+      const form = e.target;
+      const payload = {
+        displayName: form.displayName.value.trim(),
+        email: form.email.value.trim(),
+        phoneNumber: form.phoneNumber.value.trim(),
+        currentPassword: form.currentPassword.value || null,
+        newPassword: form.newPassword.value || null
+      };
+      try {
+        await RMW.api('/api/profile', { method: 'PUT', body: payload });
+        RMW.toast(alertEl, 'success', 'Profile updated.');
+        form.currentPassword.value = ''; form.newPassword.value = '';
+        load();
+        RMW.mountHeader();
+      } catch (err) {
+        let msg = err.message;
+        if (err.data && err.data.fieldErrors) msg = Object.values(err.data.fieldErrors).join(' ');
+        RMW.toast(alertEl, 'error', msg);
+      }
+    });
+
+    load();
+  </script>
+</body>
+</html>

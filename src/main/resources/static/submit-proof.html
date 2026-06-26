@@ -1,0 +1,113 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Verify employment — RateMyWork</title>
+  <link rel="stylesheet" href="/css/styles.css">
+</head>
+<body>
+  <header class="site-header" id="site-header"></header>
+
+  <section class="section">
+    <div class="container">
+      <div class="card form-card" style="max-width:640px">
+        <h2 style="margin-top:0">Verify your employment</h2>
+        <p class="subtitle">Upload proof (job offer email, employment confirmation, etc.) for the company you want to
+          review. Once an admin approves it, you can post feedback for that company / location.</p>
+        <div id="alert" class="alert"></div>
+
+        <form id="proofForm">
+          <div class="field">
+            <label>Company / workplace</label>
+            <select id="companySelect" name="companyId" required></select>
+            <div class="hint">Don't see it? <a href="/submit-workplace.html">Add the workplace</a> first.</div>
+          </div>
+          <div class="field">
+            <label>Location (optional)</label>
+            <select id="locationSelect" name="locationId">
+              <option value="">Company-wide (any location)</option>
+            </select>
+          </div>
+          <div class="field">
+            <label>Proof document</label>
+            <input type="file" id="file" name="file" accept="application/pdf,image/png,image/jpeg" required>
+            <div class="hint">PDF, PNG or JPG, up to 10 MB.</div>
+          </div>
+          <div class="field">
+            <label>Note to reviewer (optional)</label>
+            <textarea name="note" rows="2" maxlength="500" placeholder="Anything that helps verify your employment"></textarea>
+          </div>
+          <button class="btn" type="submit">Submit proof</button>
+        </form>
+      </div>
+    </div>
+  </section>
+
+  <footer class="site-footer" id="site-footer"></footer>
+
+  <script src="/js/app.js"></script>
+  <script>
+    const alertEl = document.getElementById('alert');
+    const preselectCompany = RMW.qs('companyId');
+    const preselectLocation = RMW.qs('locationId');
+
+    async function guard() {
+      const user = await RMW.currentUser();
+      if (!user) { window.location.href = '/login.html?next=/submit-proof.html'; return false; }
+      if (!user.fullyVerified) {
+        RMW.toast(alertEl, 'warn', 'Verify your email and phone on your profile before submitting proof.');
+      }
+      return true;
+    }
+
+    async function loadCompanies() {
+      // Pull a large page of approved companies to populate the picker.
+      const data = await RMW.api('/api/companies?size=100&sort=az');
+      const sel = document.getElementById('companySelect');
+      sel.innerHTML = '<option value="">Select a company…</option>' +
+        (data.content || []).map(c => `<option value="${c.id}">${RMW.escapeHtml(c.name)}</option>`).join('');
+      sel.addEventListener('change', loadLocations);
+      if (preselectCompany) { sel.value = preselectCompany; await loadLocations(); }
+    }
+
+    async function loadLocations() {
+      const companyId = document.getElementById('companySelect').value;
+      const sel = document.getElementById('locationSelect');
+      sel.innerHTML = '<option value="">Company-wide (any location)</option>';
+      if (!companyId) return;
+      try {
+        const company = await RMW.api('/api/companies/' + companyId);
+        company.locations.forEach(l => {
+          const label = (l.label ? l.label + ' — ' : '') + [l.addressLine, l.city, l.state, l.zipCode].filter(Boolean).join(', ');
+          const o = document.createElement('option');
+          o.value = l.id; o.textContent = label;
+          sel.appendChild(o);
+        });
+        if (preselectLocation) sel.value = preselectLocation;
+      } catch (e) { /* ignore */ }
+    }
+
+    document.getElementById('proofForm').addEventListener('submit', async (e) => {
+      e.preventDefault();
+      RMW.clearToast(alertEl);
+      const form = e.target;
+      if (!form.companyId.value) { RMW.toast(alertEl, 'error', 'Choose a company.'); return; }
+      const fd = new FormData();
+      fd.append('companyId', form.companyId.value);
+      if (form.locationId.value) fd.append('locationId', form.locationId.value);
+      if (form.note.value) fd.append('note', form.note.value);
+      fd.append('file', document.getElementById('file').files[0]);
+      try {
+        await RMW.api('/api/proofs', { method: 'POST', form: fd });
+        RMW.toast(alertEl, 'success', 'Proof submitted! You can track its status on your profile.');
+        form.reset();
+      } catch (err) {
+        RMW.toast(alertEl, 'error', err.message);
+      }
+    });
+
+    (async function () { if (!(await guard())) return; await loadCompanies(); })();
+  </script>
+</body>
+</html>

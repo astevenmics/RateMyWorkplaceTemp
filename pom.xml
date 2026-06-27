@@ -20,6 +20,13 @@
     <properties>
         <java.version>21</java.version>
         <bucket4j.version>8.10.1</bucket4j.version>
+        <!-- Pin the whole Jackson set together. Spring Boot manages Jackson through TWO
+             BOMs: jackson-bom (tools.jackson core/databind) and jackson-2-bom
+             (com.fasterxml...jackson-annotations). databind 3.2.0 references JsonApplyView,
+             which only exists in jackson-annotations 2.22+, so both must move together or
+             it breaks at runtime with NoClassDefFoundError: JsonApplyView. -->
+        <jackson-bom.version>3.2.0</jackson-bom.version>
+        <jackson-2-bom.version>2.22.0</jackson-2-bom.version>
     </properties>
 
     <dependencies>

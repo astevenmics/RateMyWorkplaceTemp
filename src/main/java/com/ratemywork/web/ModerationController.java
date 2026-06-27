@@ -9,7 +9,7 @@ import com.ratemywork.dto.Requests;
 import com.ratemywork.dto.Responses;
 import com.ratemywork.service.*;
 import jakarta.validation.Valid;
-import org.springframework.core.io.PathResource;
+import org.springframework.core.io.FileSystemResource;
 import org.springframework.core.io.Resource;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
@@ -56,7 +56,7 @@ public class ModerationController {
     @GetMapping("/proofs/{id}/file")
     public ResponseEntity<Resource> proofFile(@PathVariable Long id) {
         EmploymentProof proof = proofService.get(id);
-        Resource resource = new PathResource(fileStorageService.resolve(proof.getStoredFileName()));
+        Resource resource = new FileSystemResource(fileStorageService.resolve(proof.getStoredFileName()));
         return ResponseEntity.ok()
                 .contentType(MediaType.parseMediaType(proof.getContentType()))
                 .header(HttpHeaders.CONTENT_DISPOSITION,

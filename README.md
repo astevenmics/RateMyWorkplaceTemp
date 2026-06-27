@@ -1,8 +1,8 @@
-# RateMyWork
+# RateMyWorkplace
 
 **Provide feedback to the workplace, work condition, everything!**
 
-RateMyWork is a complete Spring Boot web application for discovering workplaces and reading
+RateMyWorkplace is a complete Spring Boot web application for discovering workplaces and reading
 **verified** employee feedback. Anyone can search and read; only members who verify their identity
 **and** prove their employment can post ratings — keeping feedback honest and accountable.
 
@@ -61,9 +61,9 @@ Then open <http://localhost:8080>. Uses H2 and seeds demo data.
 ### Option B — with MySQL (default profile)
 1. Create a database/user (or let the app create the DB):
    ```sql
-   CREATE DATABASE ratemywork;
-   CREATE USER 'ratemywork'@'%' IDENTIFIED BY 'ratemywork';
-   GRANT ALL PRIVILEGES ON ratemywork.* TO 'ratemywork'@'%';
+   CREATE DATABASE ratemyworkplace;
+   CREATE USER 'ratemyworkplace'@'%' IDENTIFIED BY 'ratemyworkplace';
+   GRANT ALL PRIVILEGES ON ratemyworkplace.* TO 'ratemyworkplace'@'%';
    ```
 2. Run:
    ```bash
@@ -74,7 +74,7 @@ Then open <http://localhost:8080>. Uses H2 and seeds demo data.
 ### Build a runnable jar
 ```bash
 mvn clean package
-java -jar target/ratemywork.jar
+java -jar target/ratemyworkplace.jar
 ```
 
 ### Default admin account
@@ -103,8 +103,8 @@ To enable **Google AdSense**, drop your publisher/slot IDs into the commented `<
 
 ## Project layout
 ```
-src/main/java/com/ratemywork
-├── RateMyWorkApplication.java      # @EnableSpringDataWebSupport, @EnableScheduling
+src/main/java/com/ratemyworkplace
+├── RateMyWorkplaceApplication.java      # @EnableSpringDataWebSupport, @EnableScheduling
 ├── config/                         # rate limiting, properties, web config, data seeding
 ├── domain/                         # JPA entities (User, Company, Location, Feedback, EmploymentProof, …)
 ├── repository/                     # Spring Data repositories

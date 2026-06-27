@@ -1,5 +1,5 @@
 /* ============================================================
-   RateMyWork — admin panel logic
+   RateMyWorkplace — admin panel logic
    ============================================================ */
 (function () {
   const E = RMW.escapeHtml;

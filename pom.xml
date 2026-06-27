@@ -11,10 +11,10 @@
         <relativePath/>
     </parent>
 
-    <groupId>com.ratemywork</groupId>
-    <artifactId>ratemywork</artifactId>
+    <groupId>com.ratemyworkplace</groupId>
+    <artifactId>ratemyworkplace</artifactId>
     <version>1.0.0</version>
-    <name>RateMyWork</name>
+    <name>RateMyWorkplace</name>
     <description>Provide feedback to the workplace, work condition, everything!</description>
 
     <properties>
@@ -115,7 +115,7 @@
     </dependencies>
 
     <build>
-        <finalName>ratemywork</finalName>
+        <finalName>ratemyworkplace</finalName>
         <plugins>
             <plugin>
                 <groupId>org.springframework.boot</groupId>

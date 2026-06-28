@@ -118,6 +118,21 @@ img { max-width: 100%; }
 .btn.success { background: var(--success); }
 .btn.small { padding: 6px 12px; font-size: 0.85rem; }
 .btn[disabled] { opacity: .55; cursor: not-allowed; }
+.btn.loading { cursor: progress; opacity: .85; }
+.spinner-circle {
+    display: inline-block;
+    width: 1em; height: 1em;
+    border: 2px solid rgba(255, 255, 255, 0.45);
+    border-top-color: #fff;
+    border-radius: 50%;
+    animation: rmw-spin 0.6s linear infinite;
+    vertical-align: -2px;
+}
+.btn.secondary .spinner-circle, .btn.ghost .spinner-circle {
+    border-color: rgba(47, 107, 255, 0.3);
+    border-top-color: var(--primary);
+}
+@keyframes rmw-spin { to { transform: rotate(360deg); } }
 
 /* ---------------- Hero ---------------- */
 .hero {

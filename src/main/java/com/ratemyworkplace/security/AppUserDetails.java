@@ -14,9 +14,20 @@ import java.util.List;
 public class AppUserDetails implements UserDetails {
 
     private final User user;
+    /**
+     * Authorities are snapshotted at construction (while the loading transaction's
+     * session is still open) so authorization checks on later requests never touch
+     * the now-LAZY, detached {@code moderatorPermissions} collection.
+     */
+    private final List<GrantedAuthority> authorities;
 
     public AppUserDetails(User user) {
         this.user = user;
+        this.authorities = new ArrayList<>();
+        this.authorities.add(new SimpleGrantedAuthority("ROLE_" + user.getRole().name()));
+        for (ModeratorPermission permission : user.getModeratorPermissions()) {
+            this.authorities.add(new SimpleGrantedAuthority(permission.authority()));
+        }
     }
 
     public User getUser() {
@@ -29,11 +40,6 @@ public class AppUserDetails implements UserDetails {
 
     @Override
     public Collection<? extends GrantedAuthority> getAuthorities() {
-        List<GrantedAuthority> authorities = new ArrayList<>();
-        authorities.add(new SimpleGrantedAuthority("ROLE_" + user.getRole().name()));
-        for (ModeratorPermission permission : user.getModeratorPermissions()) {
-            authorities.add(new SimpleGrantedAuthority(permission.authority()));
-        }
         return authorities;
     }
 

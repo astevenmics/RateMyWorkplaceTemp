@@ -6,6 +6,7 @@ import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.security.core.userdetails.UserDetailsService;
 import org.springframework.security.core.userdetails.UsernameNotFoundException;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 @Service
 public class AppUserDetailsService implements UserDetailsService {
@@ -16,7 +17,10 @@ public class AppUserDetailsService implements UserDetailsService {
         this.userRepository = userRepository;
     }
 
+    // Transactional so AppUserDetails can snapshot the now-LAZY moderatorPermissions
+    // collection while the Hibernate session is still open.
     @Override
+    @Transactional(readOnly = true)
     public UserDetails loadUserByUsername(String usernameOrEmail) throws UsernameNotFoundException {
         User user = userRepository.findByUsernameIgnoreCase(usernameOrEmail)
                 .or(() -> userRepository.findByEmailIgnoreCase(usernameOrEmail))

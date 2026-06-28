@@ -5,6 +5,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.mail.SimpleMailMessage;
 import org.springframework.mail.javamail.JavaMailSender;
+import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Service;
 
 /**
@@ -12,6 +13,9 @@ import org.springframework.stereotype.Service;
  * (the default for local development) messages are logged instead of e-mailed,
  * so the platform is fully testable without an SMTP server. SMS for phone
  * verification is logged the same way (wire a real gateway in production).
+ *
+ * <p>Sends run on a background executor ({@code @Async}) so a slow SMTP server
+ * never blocks the request thread for register / profile-update / resend.
  */
 @Service
 public class NotificationService {
@@ -26,6 +30,7 @@ public class NotificationService {
         this.mailSender = mailSender;
     }
 
+    @Async
     public void sendEmailCode(String email, String code) {
         String subject = "Your RateMyWorkplace verification code";
         String text = "Welcome to RateMyWorkplace!\n\nYour email verification code is: " + code
@@ -33,11 +38,13 @@ public class NotificationService {
         send(email, subject, text);
     }
 
+    @Async
     public void sendPhoneCode(String phoneNumber, String code) {
         // No SMS gateway configured by default; log so codes are usable in dev.
         log.info("[SMS->{}] RateMyWorkplace verification code: {}", phoneNumber, code);
     }
 
+    @Async
     public void send(String to, String subject, String text) {
         if (!mailProperties.isEnabled()) {
             log.info("[EMAIL DISABLED] to={} subject='{}'\n{}", to, subject, text);

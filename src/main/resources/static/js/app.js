@@ -123,6 +123,31 @@ const RMW = (() => {
     }
     function clearToast(el) { if (el) el.className = 'alert'; }
 
+    /**
+     * Toggle a button into a disabled, spinner "loading" state to prevent
+     * double-submits / spam, and restore it afterwards.
+     */
+    function setLoading(btn, loading, label = 'Please wait…') {
+        if (!btn) return;
+        if (loading) {
+            if (btn.dataset.originalHtml === undefined) {
+                btn.dataset.originalHtml = btn.innerHTML;
+            }
+            btn.disabled = true;
+            btn.classList.add('loading');
+            btn.setAttribute('aria-busy', 'true');
+            btn.innerHTML = `<span class="spinner-circle"></span> ${escapeHtml(label)}`;
+        } else {
+            btn.disabled = false;
+            btn.classList.remove('loading');
+            btn.removeAttribute('aria-busy');
+            if (btn.dataset.originalHtml !== undefined) {
+                btn.innerHTML = btn.dataset.originalHtml;
+                delete btn.dataset.originalHtml;
+            }
+        }
+    }
+
     // ---- shared header / footer ----
     async function mountHeader() {
         const header = document.getElementById('site-header');
@@ -235,7 +260,7 @@ const RMW = (() => {
     }
 
     return { api, currentUser, login, logout, stars, escapeHtml, fmtDate, qs, toast, clearToast,
-             mountChrome, mountHeader, mountFooter, ensureCsrf };
+             setLoading, mountChrome, mountHeader, mountFooter, ensureCsrf };
 })();
 
 document.addEventListener('DOMContentLoaded', () => { RMW.mountChrome(); });

@@ -52,7 +52,9 @@
     document.getElementById('registerForm').addEventListener('submit', async (e) => {
       e.preventDefault();
       const alertEl = document.getElementById('alert');
+      const submitBtn = e.target.querySelector('button[type="submit"]');
       RMW.clearToast(alertEl);
+      RMW.setLoading(submitBtn, true, 'Creating account…');
       const payload = {
         displayName: document.getElementById('displayName').value.trim(),
         username: document.getElementById('username').value.trim(),
@@ -65,12 +67,14 @@
         // auto login then go to verification
         await RMW.login(payload.username, payload.password);
         window.location.href = '/verify.html';
+        // Keep the button disabled while we navigate away.
       } catch (err) {
         let msg = err.message;
         if (err.data && err.data.fieldErrors) {
           msg = Object.values(err.data.fieldErrors).join(' ');
         }
         RMW.toast(alertEl, 'error', msg);
+        RMW.setLoading(submitBtn, false);
       }
     });
   </script>

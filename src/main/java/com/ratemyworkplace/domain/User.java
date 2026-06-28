@@ -39,7 +39,9 @@ public class User {
     @Column(nullable = false, length = 20)
     private Role role = Role.USER;
 
-    @ElementCollection(fetch = FetchType.EAGER)
+    // Loaded lazily; security authorities are snapshotted at load time in AppUserDetails,
+    // and DTO mapping happens within the open-in-view session, so no detached access occurs.
+    @ElementCollection(fetch = FetchType.LAZY)
     @CollectionTable(name = "user_mod_permissions", joinColumns = @JoinColumn(name = "user_id"))
     @Column(name = "permission", length = 40)
     @Enumerated(EnumType.STRING)

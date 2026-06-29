@@ -51,7 +51,7 @@ public final class Requests {
             @Size(max = 4000) String description,
             @Size(max = 200) String website,
             Set<String> categories,
-            @NotEmpty(message = "Add at least one location") @Valid List<LocationRequest> locations) {
+            @NotEmpty(message = "Add at least one location") List<@Valid LocationRequest> locations) {
     }
 
     public record FeedbackRequest(

@@ -123,6 +123,24 @@
             </div>
             <div id="updatesList"></div>
           </div>
+
+          <!-- Records (audit log) -->
+          <div class="admin-panel" data-panel="audit">
+            <h3>Records</h3>
+            <p class="muted">A history of approved &amp; rejected workplaces and reviews, employment-proof decisions, and deleted users.</p>
+            <div class="toolbar">
+              <select id="auditCategory">
+                <option value="ALL">All records</option>
+                <option value="WORKPLACE">Workplaces</option>
+                <option value="FEEDBACK">Reviews</option>
+                <option value="PROOF">Employment proofs</option>
+                <option value="USER">Deleted users</option>
+              </select>
+              <button class="btn small" id="reloadAudit">Reload</button>
+            </div>
+            <div id="auditList"><p class="muted">Loading…</p></div>
+            <div class="pagination" id="auditPagination"></div>
+          </div>
         </div>
       </div>
     </div>

@@ -18,7 +18,11 @@
             <h2 style="margin-top:0">Edit profile</h2>
             <div id="alert" class="alert"></div>
             <form id="profileForm">
-              <div class="field"><label>Display name</label><input type="text" name="displayName" required maxlength="80"></div>
+              <div class="field-row">
+                <div class="field"><label>First name</label><input type="text" name="firstName" required maxlength="60" autocomplete="given-name"></div>
+                <div class="field"><label>Last name</label><input type="text" name="lastName" required maxlength="60" autocomplete="family-name"></div>
+              </div>
+              <div class="field"><label>Display name</label><input type="text" name="displayName" required maxlength="80"><div class="hint">Public handle on your reviews. Your real name stays private.</div></div>
               <div class="field"><label>Username</label><input type="text" id="usernameField" disabled><div class="hint">Usernames can't be changed.</div></div>
               <div class="field-row">
                 <div class="field"><label>Email</label><input type="email" name="email" required></div>
@@ -63,6 +67,8 @@
       const user = await RMW.currentUser(true);
       if (!user) { window.location.href = '/login.html?next=/profile.html'; return; }
       const form = document.getElementById('profileForm');
+      form.firstName.value = user.firstName || '';
+      form.lastName.value = user.lastName || '';
       form.displayName.value = user.displayName;
       form.email.value = user.email;
       form.phoneNumber.value = user.phoneNumber;
@@ -111,6 +117,8 @@
       RMW.clearToast(alertEl);
       const form = e.target;
       const payload = {
+        firstName: form.firstName.value.trim(),
+        lastName: form.lastName.value.trim(),
         displayName: form.displayName.value.trim(),
         email: form.email.value.trim(),
         phoneNumber: form.phoneNumber.value.trim(),

@@ -15,7 +15,8 @@
     { key: 'moderators',   label: 'Moderators',    admin: true },
     { key: 'categories',   label: 'Categories',    admin: true },
     { key: 'siteFeedback', label: 'Site feedback', admin: true },
-    { key: 'updates',      label: "What's new",    admin: true }
+    { key: 'updates',      label: "What's new",    admin: true },
+    { key: 'audit',        label: 'Records',       admin: true }
   ];
 
   function can(tab) {
@@ -93,14 +94,37 @@
       const data = await RMW.api('/api/mod/companies/pending?size=50');
       const items = data.content || [];
       if (!items.length) { box.innerHTML = '<p class="muted">No pending workplaces. 🎉</p>'; return; }
-      box.innerHTML = items.map(c => `
+      box.innerHTML = items.map(c => {
+        const website = c.website
+          ? `<a href="${E(c.website)}" target="_blank" rel="noopener nofollow">${E(c.website)}</a>` : '<span class="muted">—</span>';
+        const locations = (c.locations || []).map(l => `
+          <li>${E([l.label, l.addressLine, l.city, l.state, l.zipCode, l.country].filter(Boolean).join(', '))}</li>`).join('');
+        const submitter = c.submittedByDisplayName
+          ? `${E(c.submittedByDisplayName)} (@${E(c.submittedByUsername)})` : 'unknown';
+        return `
         <div class="card" style="margin-bottom:12px">
-          <strong>${E(c.name)}</strong> ${(c.categories || []).map(x => `<span class="tag">${E(x.name)}</span>`).join('')}
-          <p class="muted" style="font-size:.88rem">${E(c.description || '')}</p>
-          <p class="muted" style="font-size:.82rem">${(c.locations || []).map(l => E([l.label, l.addressLine, l.city, l.state, l.zipCode].filter(Boolean).join(', '))).join(' · ')}</p>
-          <button class="btn success small" data-approve="${c.id}">Approve</button>
-          <button class="btn danger small" data-reject="${c.id}">Reject</button>
-        </div>`).join('');
+          <div style="cursor:pointer" data-toggle="${c.id}">
+            <strong>${E(c.name)}</strong> ${(c.categories || []).map(x => `<span class="tag">${E(x.name)}</span>`).join('')}
+            <span class="muted" style="font-size:.8rem;float:right">▼ details</span>
+          </div>
+          <div class="company-details" id="cdet-${c.id}" style="display:none;margin-top:10px;border-top:1px solid var(--border);padding-top:10px">
+            <p style="margin:.3em 0"><strong>Website:</strong> ${website}</p>
+            <p style="margin:.3em 0"><strong>Submitted by:</strong> ${submitter}</p>
+            <p style="margin:.3em 0"><strong>Description:</strong><br>${E(c.description || '—')}</p>
+            <p style="margin:.3em 0"><strong>Categories:</strong> ${(c.categories || []).map(x => E(x.name)).join(', ') || '—'}</p>
+            <p style="margin:.3em 0 .2em"><strong>Locations (${(c.locations || []).length}):</strong></p>
+            <ul style="margin:.2em 0 .4em 1.1em">${locations || '<li class="muted">none</li>'}</ul>
+          </div>
+          <div style="margin-top:10px">
+            <button class="btn success small" data-approve="${c.id}">Approve</button>
+            <button class="btn danger small" data-reject="${c.id}">Reject</button>
+          </div>
+        </div>`;
+      }).join('');
+      box.querySelectorAll('[data-toggle]').forEach(el => el.addEventListener('click', () => {
+        const d = document.getElementById('cdet-' + el.dataset.toggle);
+        d.style.display = d.style.display === 'none' ? 'block' : 'none';
+      }));
       box.querySelectorAll('[data-approve]').forEach(b => b.addEventListener('click', () => reviewCompany(b.dataset.approve, 'APPROVE')));
       box.querySelectorAll('[data-reject]').forEach(b => b.addEventListener('click', () => reviewCompany(b.dataset.reject, 'REJECT')));
     } catch (e) { box.innerHTML = `<p class="muted">${E(e.message)}</p>`; }
@@ -126,6 +150,10 @@
             Submitted by <strong>${E(p.submitterDisplayName || 'Unknown')}</strong>
             ${p.submitterUsername ? '(@' + E(p.submitterUsername) + ')' : ''}
             · ${RMW.fmtDate(p.createdAt)}
+          </p>
+          <p class="muted" style="font-size:.85rem;margin:2px 0">
+            Name on account: <strong>${E(p.submitterFullName || '—')}</strong>
+            <span style="font-size:.78rem">— should match the name on the document</span>
           </p>
           <p class="muted" style="font-size:.85rem;margin:2px 0">Note: ${E(p.note || 'No note.')}</p>
           <p><a class="pill-link" href="/api/mod/proofs/${p.id}/file" download="${E(p.originalFileName)}">⬇ Download document (${E(p.originalFileName)})</a>
@@ -193,18 +221,38 @@
       const data = await RMW.api(`${endpoint}?size=50${q ? '&q=' + encodeURIComponent(q) : ''}`);
       const items = data.content || [];
       if (!items.length) { box.innerHTML = '<p class="muted">No users found.</p>'; return; }
-      box.innerHTML = `<table class="data"><thead><tr><th>User</th><th>Email / phone</th><th>Status</th><th>Actions</th></tr></thead><tbody>${
-        items.map(u => `<tr>
+      box.innerHTML = `<p class="muted" style="font-size:.82rem">Click a user to view their full profile.</p>
+        <table class="data"><thead><tr><th>User</th><th>Email / phone</th><th>Status</th><th>Actions</th></tr></thead><tbody>${
+        items.map(u => `<tr class="user-row" data-uid="${u.id}" style="cursor:pointer">
           <td><strong>${E(u.displayName)}</strong><br><span class="muted">@${E(u.username)}</span> · ${E(u.role)}
-            ${u.flaggedReason ? `<br><span class="badge rejected" title="${E(u.flaggedReason)}">FLAGGED</span>` : ''}</td>
+            ${u.flaggedReason ? `<br><span class="badge rejected">FLAGGED</span>` : ''}</td>
           <td>${E(u.email)} ${u.emailVerified ? '✅' : '❌'}<br>${E(u.phoneNumber)} ${u.phoneVerified ? '✅' : '❌'}</td>
           <td>${u.enabled ? '<span class="badge approved">Active</span>' : '<span class="badge rejected">Disabled</span>'}</td>
           <td>
             <button class="btn small secondary" data-flag="${u.id}">${u.flaggedReason ? 'Unflag' : 'Flag'}</button>
             ${isAdmin ? `<button class="btn small secondary" data-enable="${u.id}" data-val="${!u.enabled}">${u.enabled ? 'Disable' : 'Enable'}</button>
             <button class="btn small danger" data-del="${u.id}">Delete</button>` : ''}
+          </td></tr>
+          <tr class="user-detail" id="udet-${u.id}" style="display:none"><td colspan="4" style="background:var(--surface-2)">
+            <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:6px 18px;font-size:.86rem">
+              <div><span class="muted">Full name</span><br><strong>${E(u.fullName || '—')}</strong></div>
+              <div><span class="muted">Display name</span><br>${E(u.displayName)}</div>
+              <div><span class="muted">Username</span><br>@${E(u.username)}</div>
+              <div><span class="muted">Role</span><br>${E(u.role)}${(u.moderatorPermissions||[]).length ? ' — ' + u.moderatorPermissions.map(E).join(', ') : ''}</div>
+              <div><span class="muted">Email</span><br>${E(u.email)} ${u.emailVerified ? '✅ verified' : '❌ unverified'}</div>
+              <div><span class="muted">Phone</span><br>${E(u.phoneNumber)} ${u.phoneVerified ? '✅ verified' : '❌ unverified'}</div>
+              <div><span class="muted">Account</span><br>${u.enabled ? 'Active' : 'Disabled'}</div>
+              <div><span class="muted">Joined</span><br>${RMW.fmtDate(u.createdAt)}</div>
+              <div><span class="muted">Last login</span><br>${u.lastLoginAt ? RMW.fmtDate(u.lastLoginAt) : 'never'}</div>
+            </div>
+            ${u.flaggedReason ? `<p style="margin:8px 0 0"><span class="badge rejected">FLAGGED</span> <strong>Reason:</strong> ${E(u.flaggedReason)}</p>` : ''}
           </td></tr>`).join('')
       }</tbody></table>`;
+      box.querySelectorAll('.user-row').forEach(row => row.addEventListener('click', (e) => {
+        if (e.target.closest('button')) return; // let action buttons work without toggling
+        const d = document.getElementById('udet-' + row.dataset.uid);
+        d.style.display = d.style.display === 'none' ? 'table-row' : 'none';
+      }));
       box.querySelectorAll('[data-flag]').forEach(b => b.addEventListener('click', () => flagUser(b.dataset.flag)));
       box.querySelectorAll('[data-enable]').forEach(b => b.addEventListener('click', () => setEnabled(b.dataset.enable, b.dataset.val === 'true')));
       box.querySelectorAll('[data-del]').forEach(b => b.addEventListener('click', () => deleteUser(b.dataset.del)));
@@ -362,6 +410,41 @@
     } catch (e) { RMW.toast(alertEl, 'error', e.message); }
   });
 
+  // ---------------- Records (audit log) ----------------
+  let auditPage = 0;
+  async function loadAudit() {
+    const box = document.getElementById('auditList');
+    const cat = document.getElementById('auditCategory').value;
+    box.innerHTML = '<p class="muted">Loading…</p>';
+    try {
+      const data = await RMW.api(`/api/admin/audit?category=${cat}&page=${auditPage}&size=30`);
+      const items = data.content || [];
+      if (!items.length) { box.innerHTML = '<p class="muted">No records yet.</p>'; document.getElementById('auditPagination').innerHTML = ''; return; }
+      const badgeClass = a => a === 'APPROVED' ? 'approved' : (a === 'REJECTED' ? 'rejected' : 'pending');
+      box.innerHTML = items.map(a => `
+        <div class="card" style="margin-bottom:10px">
+          <span class="tag">${E(a.category)}</span>
+          <span class="badge ${badgeClass(a.action)}">${E(a.action)}</span>
+          <span class="muted" style="font-size:.8rem">${RMW.fmtDate(a.createdAt)} · by @${E(a.actor || 'system')}</span>
+          <p style="margin:8px 0 4px"><strong>${E(a.summary)}</strong></p>
+          ${a.detail ? `<pre style="white-space:pre-wrap;font-family:inherit;margin:0;color:var(--muted);font-size:.85rem">${E(a.detail)}</pre>` : ''}
+        </div>`).join('');
+      renderAuditPagination(data);
+    } catch (e) { box.innerHTML = `<p class="muted">${E(e.message)}</p>`; }
+  }
+  function renderAuditPagination(data) {
+    const pag = document.getElementById('auditPagination');
+    const total = data.page.totalPages, cur = data.page.number;
+    if (total <= 1) { pag.innerHTML = ''; return; }
+    let html = `<button ${cur===0?'disabled':''} data-p="${cur-1}">‹</button>`;
+    for (let i = 0; i < total; i++) html += `<button class="${i===cur?'active':''}" data-p="${i}">${i+1}</button>`;
+    html += `<button ${cur>=total-1?'disabled':''} data-p="${cur+1}">›</button>`;
+    pag.innerHTML = html;
+    pag.querySelectorAll('button[data-p]').forEach(b => b.addEventListener('click', () => { auditPage = parseInt(b.dataset.p,10); loadAudit(); }));
+  }
+  document.getElementById('reloadAudit').addEventListener('click', () => { auditPage = 0; loadAudit(); });
+  document.getElementById('auditCategory').addEventListener('change', () => { auditPage = 0; loadAudit(); });
+
   // reload buttons
   document.getElementById('reloadFeedback').addEventListener('click', loadFeedback);
   document.getElementById('feedbackStatus').addEventListener('change', loadFeedback);
@@ -372,7 +455,7 @@
   const LOADERS = {
     stats: loadStats, workplaces: loadWorkplaces, proofs: loadProofs, feedback: loadFeedback,
     users: loadUsers, categories: loadCategories, siteFeedback: loadSiteFeedback, updates: loadUpdates,
-    moderators: () => {}
+    audit: loadAudit, moderators: () => {}
   };
 
   init();

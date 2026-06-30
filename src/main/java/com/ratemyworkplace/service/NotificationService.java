@@ -9,18 +9,21 @@ import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Service;
 
 /**
- * Sends verification codes and notices. When {@code app.mail.enabled=false}
- * (the default for local development) messages are logged instead of e-mailed,
- * so the platform is fully testable without an SMTP server. SMS for phone
- * verification is logged the same way (wire a real gateway in production).
+ * Sends transactional emails (verification codes, account &amp; moderation notices).
+ * When {@code app.mail.enabled=false} (the local-dev default) messages are logged
+ * instead of sent, so the platform is fully testable without an SMTP server.
  *
- * <p>Sends run on a background executor ({@code @Async}) so a slow SMTP server
- * never blocks the request thread for register / profile-update / resend.
+ * <p>All sends run on a background executor ({@code @Async}) so a slow SMTP server
+ * never blocks the request thread.
  */
 @Service
 public class NotificationService {
 
     private static final Logger log = LoggerFactory.getLogger(NotificationService.class);
+
+    private static final String SIGNOFF =
+            "\n\nBest regards,\nThe RateMyWorkplace Team"
+            + "\n\n—\nThis is an automated message from RateMyWorkplace. Please do not reply to this email.";
 
     private final AppMailProperties mailProperties;
     private final JavaMailSender mailSender;
@@ -30,48 +33,65 @@ public class NotificationService {
         this.mailSender = mailSender;
     }
 
+    // ----- verification -----
     @Async
     public void sendEmailCode(String email, String code) {
-        String subject = "Your RateMyWorkplace verification code";
-        String text = "Welcome to RateMyWorkplace!\n\nYour email verification code is: " + code
-                + "\n\nThis code expires in 30 minutes.";
-        send(email, subject, text);
+        String body = "Welcome to RateMyWorkplace.\n\n"
+                + "To finish verifying your email address, please enter the following code:\n\n"
+                + "    " + code + "\n\n"
+                + "For your security, this code will expire in 30 minutes. "
+                + "If you did not create an account, you can safely ignore this email.";
+        send(email, "Verify your email address", greeting(null) + body + SIGNOFF);
     }
 
     @Async
     public void sendPhoneCode(String phoneNumber, String code) {
         // No SMS gateway configured by default; log so codes are usable in dev.
-        log.info("[SMS->{}] RateMyWorkplace verification code: {}", phoneNumber, code);
+        log.info("[SMS->{}] Your RateMyWorkplace verification code is {} (expires in 30 minutes).", phoneNumber, code);
+    }
+
+    @Async
+    public void notifyPasswordReset(String email, String displayName, String code) {
+        String body = "We received a request to reset the password for your RateMyWorkplace account.\n\n"
+                + "Please enter the following code to choose a new password:\n\n"
+                + "    " + code + "\n\n"
+                + "This code will expire in 30 minutes. If you did not request a password reset, "
+                + "no action is needed — your password will remain unchanged.";
+        send(email, "Reset your RateMyWorkplace password", greeting(displayName) + body + SIGNOFF);
     }
 
     // ----- account lifecycle -----
     @Async
     public void notifyAccountDisabled(String to, String displayName) {
-        send(to, "Your RateMyWorkplace account has been disabled",
-                greeting(displayName) + "Your account has been disabled by an administrator, so you can no "
-                        + "longer sign in. If you believe this is a mistake, reply to this email or contact support.");
+        String body = "We are writing to let you know that your RateMyWorkplace account has been disabled by our "
+                + "team, and you will not be able to sign in until it is reinstated.\n\n"
+                + "If you believe this was done in error, please contact our support team and we will be happy to help.";
+        send(to, "Your RateMyWorkplace account has been disabled", greeting(displayName) + body + SIGNOFF);
     }
 
     @Async
     public void notifyAccountEnabled(String to, String displayName) {
-        send(to, "Your RateMyWorkplace account has been re-enabled",
-                greeting(displayName) + "Good news — your account has been re-enabled and you can sign in again.");
+        String body = "Good news — your RateMyWorkplace account has been reinstated and you can now sign in again.\n\n"
+                + "Thank you for your patience.";
+        send(to, "Your RateMyWorkplace account has been reinstated", greeting(displayName) + body + SIGNOFF);
     }
 
     @Async
     public void notifyAccountDeleted(String to, String displayName) {
-        send(to, "Your RateMyWorkplace account has been removed",
-                greeting(displayName) + "Your account and its content have been removed from RateMyWorkplace. "
-                        + "If you believe this was a mistake, please contact support.");
+        String body = "We are writing to confirm that your RateMyWorkplace account, along with its associated "
+                + "content, has been permanently removed.\n\n"
+                + "If you believe this was done in error, please contact our support team.";
+        send(to, "Your RateMyWorkplace account has been removed", greeting(displayName) + body + SIGNOFF);
     }
 
     // ----- feedback -----
     @Async
     public void notifyFeedbackRemoved(String to, String displayName, String companyName) {
-        send(to, "Your feedback was removed",
-                greeting(displayName) + "Your feedback for \"" + companyName + "\" has been removed by a moderator, "
-                        + "typically due to a Terms & Conditions violation. You're welcome to post new feedback that "
-                        + "follows our guidelines.");
+        String body = "We are writing to let you know that your review of \"" + companyName + "\" has been removed "
+                + "by our moderation team, as it was found to be inconsistent with our Terms & Conditions and "
+                + "community guidelines.\n\n"
+                + "You are welcome to submit a new review that follows our guidelines at any time.";
+        send(to, "Your review has been removed", greeting(displayName) + body + SIGNOFF);
     }
 
     // ----- employment proof review -----
@@ -79,47 +99,39 @@ public class NotificationService {
     public void notifyProofReviewed(String to, String displayName, String companyName, String locationLabel,
                                     boolean approved, String note) {
         String scope = (locationLabel == null || locationLabel.isBlank())
-                ? companyName + " (company-wide)" : companyName + " — " + locationLabel;
-        String subject = approved
-                ? "Your employment verification was approved"
-                : "Your employment verification was rejected";
+                ? companyName + " (all locations)" : companyName + " — " + locationLabel;
+        String subject;
         StringBuilder body = new StringBuilder(greeting(displayName));
         if (approved) {
-            body.append("Your employment proof for ").append(scope)
-                    .append(" has been approved. You can now post feedback for this location.");
+            subject = "Your employment verification has been approved";
+            body.append("Good news — your employment verification for ").append(scope)
+                    .append(" has been approved. You can now share feedback about this workplace.");
         } else {
-            body.append("Your employment proof for ").append(scope).append(" was rejected.");
+            subject = "Update on your employment verification";
+            body.append("Thank you for submitting an employment verification for ").append(scope)
+                    .append(". After review, we were unable to approve it at this time.");
         }
         appendNote(body, note);
-        send(to, subject, body.toString());
+        send(to, subject, body.append(SIGNOFF).toString());
     }
 
     // ----- workplace submission review -----
     @Async
     public void notifyWorkplaceReviewed(String to, String displayName, String companyName,
                                         boolean approved, String note) {
-        String subject = approved
-                ? "Your workplace submission was approved"
-                : "Your workplace submission was rejected";
+        String subject;
         StringBuilder body = new StringBuilder(greeting(displayName));
         if (approved) {
-            body.append("The workplace you submitted, \"").append(companyName)
-                    .append("\", has been approved and is now publicly listed. Thank you for contributing!");
+            subject = "Your workplace submission has been approved";
+            body.append("Thank you for contributing to RateMyWorkplace. The workplace you submitted, \"")
+                    .append(companyName).append("\", has been approved and is now publicly listed.");
         } else {
-            body.append("The workplace you submitted, \"").append(companyName).append("\", was not approved.");
+            subject = "Update on your workplace submission";
+            body.append("Thank you for submitting \"").append(companyName)
+                    .append("\" to RateMyWorkplace. After review, we were unable to approve it at this time.");
         }
         appendNote(body, note);
-        send(to, subject, body.toString());
-    }
-
-    private static String greeting(String displayName) {
-        return "Hi " + (displayName == null || displayName.isBlank() ? "there" : displayName) + ",\n\n";
-    }
-
-    private static void appendNote(StringBuilder body, String note) {
-        if (note != null && !note.isBlank()) {
-            body.append("\n\nNote from the reviewer: ").append(note);
-        }
+        send(to, subject, body.append(SIGNOFF).toString());
     }
 
     @Async
@@ -137,6 +149,16 @@ public class NotificationService {
             mailSender.send(message);
         } catch (Exception ex) {
             log.warn("Failed to send email to {}: {}", to, ex.getMessage());
+        }
+    }
+
+    private static String greeting(String displayName) {
+        return "Dear " + (displayName == null || displayName.isBlank() ? "Member" : displayName) + ",\n\n";
+    }
+
+    private static void appendNote(StringBuilder body, String note) {
+        if (note != null && !note.isBlank()) {
+            body.append("\n\nNote from the reviewer: ").append(note);
         }
     }
 }

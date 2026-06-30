@@ -8,7 +8,7 @@ import java.time.Instant;
 @Table(name = "verification_tokens", indexes = @Index(name = "idx_token_user", columnList = "user_id"))
 public class VerificationToken {
 
-    public enum Channel { EMAIL, PHONE }
+    public enum Channel { EMAIL, PHONE, PASSWORD_RESET }
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)

@@ -12,6 +12,8 @@ public final class Requests {
     private Requests() { }
 
     public record RegisterRequest(
+            @NotBlank @Size(max = 60) String firstName,
+            @NotBlank @Size(max = 60) String lastName,
             @NotBlank @Size(max = 80) String displayName,
             @NotBlank @Pattern(regexp = "^[A-Za-z0-9_.]{3,40}$",
                     message = "Username must be 3-40 chars: letters, digits, underscore or dot") String username,
@@ -21,11 +23,22 @@ public final class Requests {
     }
 
     public record UpdateProfileRequest(
+            @NotBlank @Size(max = 60) String firstName,
+            @NotBlank @Size(max = 60) String lastName,
             @NotBlank @Size(max = 80) String displayName,
             @NotBlank @Email @Size(max = 160) String email,
             @NotBlank @Pattern(regexp = "^[+0-9 ()-]{7,30}$") String phoneNumber,
             String currentPassword,
             @Size(min = 8, max = 72) String newPassword) {
+    }
+
+    public record ForgotPasswordRequest(@NotBlank @Email String email) {
+    }
+
+    public record ResetPasswordRequest(
+            @NotBlank @Email String email,
+            @NotBlank String code,
+            @NotBlank @Size(min = 8, max = 72, message = "Password must be 8-72 characters") String newPassword) {
     }
 
     public record VerifyRequest(

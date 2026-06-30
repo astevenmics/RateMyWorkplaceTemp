@@ -26,15 +26,17 @@ public class ProofService {
     private final LocationRepository locationRepository;
     private final FileStorageService fileStorageService;
     private final NotificationService notificationService;
+    private final AuditService auditService;
 
     public ProofService(EmploymentProofRepository proofRepository, CompanyRepository companyRepository,
                         LocationRepository locationRepository, FileStorageService fileStorageService,
-                        NotificationService notificationService) {
+                        NotificationService notificationService, AuditService auditService) {
         this.proofRepository = proofRepository;
         this.companyRepository = companyRepository;
         this.locationRepository = locationRepository;
         this.fileStorageService = fileStorageService;
         this.notificationService = notificationService;
+        this.auditService = auditService;
     }
 
     @Transactional
@@ -116,6 +118,14 @@ public class ProofService {
                 ? com.ratemyworkplace.dto.DtoMapper.locationLabel(saved.getLocation()) : null;
         notificationService.notifyProofReviewed(owner.getEmail(), owner.getDisplayName(),
                 saved.getCompany().getName(), locationLabel, approve, note);
+        auditService.record(com.ratemyworkplace.domain.AuditCategory.PROOF,
+                approve ? com.ratemyworkplace.domain.AuditAction.APPROVED : com.ratemyworkplace.domain.AuditAction.REJECTED,
+                "Employment proof for '" + saved.getCompany().getName() + "' by " + owner.getDisplayName()
+                        + " " + (approve ? "approved" : "rejected"),
+                "Submitter: " + owner.getFullName() + " (@" + owner.getUsername() + ")"
+                        + (locationLabel != null ? "\nLocation: " + locationLabel : " (company-wide)")
+                        + (note != null && !note.isBlank() ? "\nReviewer note: " + note : ""),
+                saved.getId());
         return saved;
     }
 

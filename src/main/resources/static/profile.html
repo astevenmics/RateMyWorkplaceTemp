@@ -4,6 +4,7 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>My profile — RateMyWorkplace</title>
+  <script>(function(){var t=localStorage.getItem("rmw-theme");if(t)document.documentElement.setAttribute("data-theme",t);})();</script>
   <link rel="stylesheet" href="/css/styles.css">
 </head>
 <body>
@@ -88,8 +89,21 @@
             <strong>${RMW.escapeHtml(p.companyName)}</strong> ${p.locationLabel ? '· ' + RMW.escapeHtml(p.locationLabel) : '(company-wide)'}
             <span class="badge ${p.status.toLowerCase()}">${p.status}</span>
             <div class="muted" style="font-size:.82rem">${RMW.escapeHtml(p.originalFileName)} · ${RMW.fmtDate(p.createdAt)}${p.reviewNote ? ' · Note: ' + RMW.escapeHtml(p.reviewNote) : ''}</div>
+            ${p.status === 'PENDING' ? `<button class="btn ghost small" data-cancel="${p.id}" style="margin-top:6px">Cancel submission</button>` : ''}
           </div>`).join('');
+        box.querySelectorAll('[data-cancel]').forEach(b => b.addEventListener('click', () => cancelProof(b.dataset.cancel)));
       } catch (e) { box.innerHTML = '<p class="muted">Could not load proofs.</p>'; }
+    }
+
+    async function cancelProof(id) {
+      if (!confirm('Cancel this pending employment proof? You can submit a new one afterwards.')) return;
+      try {
+        await RMW.api('/api/proofs/' + id, { method: 'DELETE' });
+        RMW.toast(alertEl, 'success', 'Submission cancelled.');
+        loadProofs();
+      } catch (e) {
+        RMW.toast(alertEl, 'error', e.message);
+      }
     }
 
     document.getElementById('profileForm').addEventListener('submit', async (e) => {

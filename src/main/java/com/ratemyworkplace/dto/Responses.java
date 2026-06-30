@@ -42,6 +42,7 @@ public final class Responses {
 
     public record ProofDto(
             Long id, Long companyId, String companyName, Long locationId, String locationLabel,
+            Long submitterId, String submitterDisplayName, String submitterUsername,
             String originalFileName, String contentType, String note, String status,
             String reviewNote, Instant createdAt, Instant reviewedAt) {
     }

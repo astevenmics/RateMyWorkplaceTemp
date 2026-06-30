@@ -45,4 +45,12 @@ public class ProofController {
         User user = currentUserService.require();
         return proofService.myProofs(user).stream().map(DtoMapper::proof).toList();
     }
+
+    /** Cancel one of the current user's still-pending proof submissions. */
+    @DeleteMapping("/{id}")
+    public Responses.SimpleMessage cancel(@PathVariable Long id) {
+        User user = currentUserService.require();
+        proofService.cancel(user, id);
+        return Responses.SimpleMessage.ok("Submission cancelled");
+    }
 }

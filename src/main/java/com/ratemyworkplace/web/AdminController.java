@@ -93,6 +93,12 @@ public class AdminController {
         return DtoMapper.siteUpdate(siteContentService.createUpdate(currentUserService.require(), request));
     }
 
+    @PutMapping("/site-updates/{id}")
+    public Responses.SiteUpdateDto editUpdate(@PathVariable Long id,
+                                              @Valid @RequestBody Requests.SiteUpdateRequest request) {
+        return DtoMapper.siteUpdate(siteContentService.editUpdate(id, request));
+    }
+
     @DeleteMapping("/site-updates/{id}")
     public Responses.SimpleMessage deleteUpdate(@PathVariable Long id) {
         siteContentService.deleteUpdate(id);

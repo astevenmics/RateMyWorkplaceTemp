@@ -122,8 +122,14 @@
         <div class="card" style="margin-bottom:12px">
           <strong>${E(p.companyName)}</strong> ${p.locationLabel ? '· ' + E(p.locationLabel) : '(company-wide)'}
           <span class="badge pending">PENDING</span>
-          <p class="muted" style="font-size:.85rem">${E(p.note || 'No note.')}</p>
-          <p><a class="pill-link" href="/api/mod/proofs/${p.id}/file" target="_blank">📎 View document (${E(p.originalFileName)})</a></p>
+          <p class="muted" style="font-size:.85rem;margin:6px 0 2px">
+            Submitted by <strong>${E(p.submitterDisplayName || 'Unknown')}</strong>
+            ${p.submitterUsername ? '(@' + E(p.submitterUsername) + ')' : ''}
+            · ${RMW.fmtDate(p.createdAt)}
+          </p>
+          <p class="muted" style="font-size:.85rem;margin:2px 0">Note: ${E(p.note || 'No note.')}</p>
+          <p><a class="pill-link" href="/api/mod/proofs/${p.id}/file" download="${E(p.originalFileName)}">⬇ Download document (${E(p.originalFileName)})</a>
+             <span class="muted" style="font-size:.78rem">— downloads instead of opening, to avoid running malicious/corrupt files</span></p>
           <button class="btn success small" data-approve="${p.id}">Approve</button>
           <button class="btn danger small" data-reject="${p.id}">Reject</button>
         </div>`).join('');
@@ -277,22 +283,63 @@
   }
 
   // ---------------- Updates ----------------
+  let editingUpdateId = null;
+  let updateCache = [];
+
+  function resetUpdateForm() {
+    editingUpdateId = null;
+    document.getElementById('updateTitle').value = '';
+    document.getElementById('updateBody').value = '';
+    document.getElementById('updateTag').value = '';
+    document.getElementById('postUpdateBtn').textContent = 'Publish update';
+    const cancel = document.getElementById('cancelEditUpdate');
+    if (cancel) cancel.style.display = 'none';
+  }
+
+  function startEditUpdate(id) {
+    const u = updateCache.find(x => String(x.id) === String(id));
+    if (!u) return;
+    editingUpdateId = u.id;
+    document.getElementById('updateTitle').value = u.title || '';
+    document.getElementById('updateBody').value = u.body || '';
+    document.getElementById('updateTag').value = u.tag || '';
+    document.getElementById('postUpdateBtn').textContent = 'Save changes';
+    let cancel = document.getElementById('cancelEditUpdate');
+    if (!cancel) {
+      cancel = document.createElement('button');
+      cancel.id = 'cancelEditUpdate';
+      cancel.className = 'btn ghost small';
+      cancel.style.marginLeft = '8px';
+      cancel.textContent = 'Cancel edit';
+      cancel.addEventListener('click', resetUpdateForm);
+      document.getElementById('postUpdateBtn').after(cancel);
+    }
+    cancel.style.display = 'inline-flex';
+    document.getElementById('updateTitle').scrollIntoView({ behavior: 'smooth', block: 'center' });
+  }
+
   async function loadUpdates() {
     const box = document.getElementById('updatesList');
     try {
       const data = await RMW.api('/api/site/updates?size=20');
-      const items = data.content || [];
-      box.innerHTML = items.map(u => `
+      updateCache = data.content || [];
+      box.innerHTML = updateCache.map(u => `
         <div class="card" style="margin-bottom:10px">
           <strong>${E(u.title)}</strong> ${u.tag ? `<span class="tag">${E(u.tag)}</span>` : ''}
           <span class="muted" style="font-size:.8rem">${RMW.fmtDate(u.createdAt)}</span>
-          <p style="margin:8px 0">${E(u.body)}</p>
+          <p class="muted" style="margin:8px 0;font-size:.85rem">${E((u.body || '').slice(0, 160))}${(u.body || '').length > 160 ? '…' : ''}</p>
+          <a class="btn small secondary" href="/update.html?id=${u.id}" target="_blank">View</a>
+          <button class="btn small secondary" data-edit="${u.id}">Edit</button>
           <button class="btn small danger" data-del="${u.id}">Delete</button>
         </div>`).join('') || '<p class="muted">No updates yet.</p>';
+      box.querySelectorAll('[data-edit]').forEach(b => b.addEventListener('click', () => startEditUpdate(b.dataset.edit)));
       box.querySelectorAll('[data-del]').forEach(b => b.addEventListener('click', async () => {
         if (!confirm('Delete this update?')) return;
-        try { await RMW.api(`/api/admin/site-updates/${b.dataset.del}`, { method: 'DELETE' }); loadUpdates(); }
-        catch (e) { gAlert('error', e.message); }
+        try {
+          await RMW.api(`/api/admin/site-updates/${b.dataset.del}`, { method: 'DELETE' });
+          if (String(editingUpdateId) === String(b.dataset.del)) resetUpdateForm();
+          loadUpdates();
+        } catch (e) { gAlert('error', e.message); }
       }));
     } catch (e) { box.innerHTML = `<p class="muted">${E(e.message)}</p>`; }
   }
@@ -303,9 +350,14 @@
     const alertEl = document.getElementById('updateAlert');
     if (!title || !body) { RMW.toast(alertEl, 'error', 'Title and body are required.'); return; }
     try {
-      await RMW.api('/api/admin/site-updates', { method: 'POST', body: { title, body, tag } });
-      RMW.toast(alertEl, 'success', 'Update published.');
-      document.getElementById('updateTitle').value = ''; document.getElementById('updateBody').value = ''; document.getElementById('updateTag').value = '';
+      if (editingUpdateId) {
+        await RMW.api(`/api/admin/site-updates/${editingUpdateId}`, { method: 'PUT', body: { title, body, tag } });
+        RMW.toast(alertEl, 'success', 'Update saved.');
+      } else {
+        await RMW.api('/api/admin/site-updates', { method: 'POST', body: { title, body, tag } });
+        RMW.toast(alertEl, 'success', 'Update published.');
+      }
+      resetUpdateForm();
       loadUpdates();
     } catch (e) { RMW.toast(alertEl, 'error', e.message); }
   });

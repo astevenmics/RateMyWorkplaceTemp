@@ -17,13 +17,16 @@ public class FeedbackService {
     private final LocationRepository locationRepository;
     private final ProofService proofService;
     private final CompanyService companyService;
+    private final NotificationService notificationService;
 
     public FeedbackService(FeedbackRepository feedbackRepository, LocationRepository locationRepository,
-                           ProofService proofService, CompanyService companyService) {
+                           ProofService proofService, CompanyService companyService,
+                           NotificationService notificationService) {
         this.feedbackRepository = feedbackRepository;
         this.locationRepository = locationRepository;
         this.proofService = proofService;
         this.companyService = companyService;
+        this.notificationService = notificationService;
     }
 
     public Page<Feedback> forLocation(Long locationId, Pageable pageable) {
@@ -89,7 +92,17 @@ public class FeedbackService {
         Feedback feedback = feedbackRepository.findById(id)
                 .orElseThrow(() -> ApiException.notFound("Feedback not found"));
         Location location = feedback.getLocation();
+        // Capture author + company details before the row is gone, to notify them.
+        User author = feedback.getAuthor();
+        String authorEmail = author != null ? author.getEmail() : null;
+        String authorName = author != null ? author.getDisplayName() : null;
+        String companyName = feedback.getCompany().getName();
+
         feedbackRepository.delete(feedback);
         companyService.recomputeAggregates(location);
+
+        if (authorEmail != null) {
+            notificationService.notifyFeedbackRemoved(authorEmail, authorName, companyName);
+        }
     }
 }

@@ -57,10 +57,14 @@ public final class DtoMapper {
     }
 
     public static Responses.ProofDto proof(EmploymentProof p) {
+        User submitter = p.getUser();
         return new Responses.ProofDto(
                 p.getId(), p.getCompany().getId(), p.getCompany().getName(),
                 p.getLocation() != null ? p.getLocation().getId() : null,
                 p.getLocation() != null ? locationLabel(p.getLocation()) : null,
+                submitter != null ? submitter.getId() : null,
+                submitter != null ? submitter.getDisplayName() : null,
+                submitter != null ? submitter.getUsername() : null,
                 p.getOriginalFileName(), p.getContentType(), p.getNote(), p.getStatus().name(),
                 p.getReviewNote(), p.getCreatedAt(), p.getReviewedAt());
     }

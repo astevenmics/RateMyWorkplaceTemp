@@ -44,6 +44,84 @@ public class NotificationService {
         log.info("[SMS->{}] RateMyWorkplace verification code: {}", phoneNumber, code);
     }
 
+    // ----- account lifecycle -----
+    @Async
+    public void notifyAccountDisabled(String to, String displayName) {
+        send(to, "Your RateMyWorkplace account has been disabled",
+                greeting(displayName) + "Your account has been disabled by an administrator, so you can no "
+                        + "longer sign in. If you believe this is a mistake, reply to this email or contact support.");
+    }
+
+    @Async
+    public void notifyAccountEnabled(String to, String displayName) {
+        send(to, "Your RateMyWorkplace account has been re-enabled",
+                greeting(displayName) + "Good news — your account has been re-enabled and you can sign in again.");
+    }
+
+    @Async
+    public void notifyAccountDeleted(String to, String displayName) {
+        send(to, "Your RateMyWorkplace account has been removed",
+                greeting(displayName) + "Your account and its content have been removed from RateMyWorkplace. "
+                        + "If you believe this was a mistake, please contact support.");
+    }
+
+    // ----- feedback -----
+    @Async
+    public void notifyFeedbackRemoved(String to, String displayName, String companyName) {
+        send(to, "Your feedback was removed",
+                greeting(displayName) + "Your feedback for \"" + companyName + "\" has been removed by a moderator, "
+                        + "typically due to a Terms & Conditions violation. You're welcome to post new feedback that "
+                        + "follows our guidelines.");
+    }
+
+    // ----- employment proof review -----
+    @Async
+    public void notifyProofReviewed(String to, String displayName, String companyName, String locationLabel,
+                                    boolean approved, String note) {
+        String scope = (locationLabel == null || locationLabel.isBlank())
+                ? companyName + " (company-wide)" : companyName + " — " + locationLabel;
+        String subject = approved
+                ? "Your employment verification was approved"
+                : "Your employment verification was rejected";
+        StringBuilder body = new StringBuilder(greeting(displayName));
+        if (approved) {
+            body.append("Your employment proof for ").append(scope)
+                    .append(" has been approved. You can now post feedback for this location.");
+        } else {
+            body.append("Your employment proof for ").append(scope).append(" was rejected.");
+        }
+        appendNote(body, note);
+        send(to, subject, body.toString());
+    }
+
+    // ----- workplace submission review -----
+    @Async
+    public void notifyWorkplaceReviewed(String to, String displayName, String companyName,
+                                        boolean approved, String note) {
+        String subject = approved
+                ? "Your workplace submission was approved"
+                : "Your workplace submission was rejected";
+        StringBuilder body = new StringBuilder(greeting(displayName));
+        if (approved) {
+            body.append("The workplace you submitted, \"").append(companyName)
+                    .append("\", has been approved and is now publicly listed. Thank you for contributing!");
+        } else {
+            body.append("The workplace you submitted, \"").append(companyName).append("\", was not approved.");
+        }
+        appendNote(body, note);
+        send(to, subject, body.toString());
+    }
+
+    private static String greeting(String displayName) {
+        return "Hi " + (displayName == null || displayName.isBlank() ? "there" : displayName) + ",\n\n";
+    }
+
+    private static void appendNote(StringBuilder body, String note) {
+        if (note != null && !note.isBlank()) {
+            body.append("\n\nNote from the reviewer: ").append(note);
+        }
+    }
+
     @Async
     public void send(String to, String subject, String text) {
         if (!mailProperties.isEnabled()) {

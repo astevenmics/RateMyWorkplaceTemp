@@ -4,6 +4,7 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Admin panel — RateMyWorkplace</title>
+  <script>(function(){var t=localStorage.getItem("rmw-theme");if(t)document.documentElement.setAttribute("data-theme",t);})();</script>
   <link rel="stylesheet" href="/css/styles.css">
 </head>
 <body>
@@ -117,7 +118,7 @@
             <div class="card form-card" style="margin:0 0 20px">
               <div class="field"><label>Title</label><input type="text" id="updateTitle" maxlength="160"></div>
               <div class="field"><label>Tag (optional)</label><input type="text" id="updateTag" maxlength="40" placeholder="feature / fix / launch"></div>
-              <div class="field"><label>Body</label><textarea id="updateBody" rows="4" maxlength="8000"></textarea></div>
+              <div class="field"><label>Body</label><textarea id="updateBody" rows="6" maxlength="8000" placeholder="Supports Markdown: # heading, **bold**, *italic*, [links](https://…), - lists, `code`, &gt; quotes"></textarea><div class="hint">Markdown is supported and rendered on the post page.</div></div>
               <button class="btn" id="postUpdateBtn">Publish update</button>
             </div>
             <div id="updatesList"></div>

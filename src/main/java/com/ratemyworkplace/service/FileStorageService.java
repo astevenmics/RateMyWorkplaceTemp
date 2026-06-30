@@ -68,4 +68,19 @@ public class FileStorageService {
         }
         return target;
     }
+
+    /** Best-effort delete of a stored file (e.g. when a pending proof is cancelled). */
+    public void delete(String storedFileName) {
+        if (storedFileName == null || storedFileName.isBlank()) {
+            return;
+        }
+        try {
+            Path target = root.resolve(storedFileName).normalize();
+            if (target.startsWith(root)) {
+                Files.deleteIfExists(target);
+            }
+        } catch (IOException ignored) {
+            // Don't fail the operation if the file is already gone.
+        }
+    }
 }

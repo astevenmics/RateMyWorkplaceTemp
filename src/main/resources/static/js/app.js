@@ -1,5 +1,5 @@
 /* ============================================================
-   RateMyWork — shared frontend helpers
+   RateMyWorkplace — shared frontend helpers
    ============================================================ */
 const RMW = (() => {
 
@@ -123,18 +123,42 @@ const RMW = (() => {
     }
     function clearToast(el) { if (el) el.className = 'alert'; }
 
+    /**
+     * Toggle a button into a disabled, spinner "loading" state to prevent
+     * double-submits / spam, and restore it afterwards.
+     */
+    function setLoading(btn, loading, label = 'Please wait…') {
+        if (!btn) return;
+        if (loading) {
+            if (btn.dataset.originalHtml === undefined) {
+                btn.dataset.originalHtml = btn.innerHTML;
+            }
+            btn.disabled = true;
+            btn.classList.add('loading');
+            btn.setAttribute('aria-busy', 'true');
+            btn.innerHTML = `<span class="spinner-circle"></span> ${escapeHtml(label)}`;
+        } else {
+            btn.disabled = false;
+            btn.classList.remove('loading');
+            btn.removeAttribute('aria-busy');
+            if (btn.dataset.originalHtml !== undefined) {
+                btn.innerHTML = btn.dataset.originalHtml;
+                delete btn.dataset.originalHtml;
+            }
+        }
+    }
+
     // ---- shared header / footer ----
     async function mountHeader() {
         const header = document.getElementById('site-header');
         if (!header) return;
         header.innerHTML = `
           <div class="container nav">
-            <a class="brand" href="/index.html">Rate<span class="dot">My</span>Work</a>
+            <a class="brand" href="/index.html">Rate<span class="dot">My</span>Workplace</a>
             <button class="nav-toggle" aria-label="Menu" id="navToggle">☰</button>
             <nav class="nav-links" id="navLinks">
               <a href="/workplaces.html">Browse</a>
               <a href="/submit-workplace.html">Add Workplace</a>
-              <a href="/submit-proof.html">Verify Employment</a>
               <span id="authArea"></span>
             </nav>
           </div>`;
@@ -147,7 +171,10 @@ const RMW = (() => {
         if (user) {
             const adminLink = (user.role === 'ADMIN' || user.role === 'MODERATOR')
                 ? '<a href="/admin.html">Admin</a>' : '';
+            // "Verify Employment" is only relevant once you have an account, so show it to
+            // logged-in users only.
             authArea.innerHTML = `
+              <a href="/submit-proof.html">Verify Employment</a>
               ${adminLink}
               <a href="/profile.html">${escapeHtml(user.displayName)}</a>
               <a href="#" id="logoutLink">Logout</a>`;
@@ -164,7 +191,7 @@ const RMW = (() => {
           <div class="container">
             <div class="footer-grid">
               <div>
-                <h3>Rate<span style="color:var(--primary)">My</span>Work</h3>
+                <h3>Rate<span style="color:var(--primary)">My</span>Workplace</h3>
                 <p>Honest, verified feedback about workplaces and working conditions — from people who were actually there.</p>
                 <p class="muted">Feedback is only accepted from members who verify their employment.</p>
               </div>
@@ -192,7 +219,7 @@ const RMW = (() => {
               </div>
             </div>
             <div class="footer-bottom">
-              © ${new Date().getFullYear()} RateMyWork. Built as a complete Spring Boot demo. Ads shown on workplace pages are illustrative AdSense slots.
+              © ${new Date().getFullYear()} RateMyWorkplace. Built as a complete Spring Boot demo. Ads shown on workplace pages are illustrative AdSense slots.
             </div>
           </div>`;
 
@@ -233,7 +260,7 @@ const RMW = (() => {
     }
 
     return { api, currentUser, login, logout, stars, escapeHtml, fmtDate, qs, toast, clearToast,
-             mountChrome, mountHeader, mountFooter, ensureCsrf };
+             setLoading, mountChrome, mountHeader, mountFooter, ensureCsrf };
 })();
 
 document.addEventListener('DOMContentLoaded', () => { RMW.mountChrome(); });

@@ -12,11 +12,17 @@ import java.io.UncheckedIOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
+import java.util.Collection;
+import java.util.List;
 import java.util.UUID;
 
 /** Stores employment-proof uploads on the local filesystem under {@code app.upload.dir}. */
 @Service
 public class FileStorageService {
+
+    /** Image types accepted for profile pictures (a subset of proof-friendly types). */
+    private static final List<String> IMAGE_CONTENT_TYPES =
+            List.of("image/png", "image/jpeg", "image/webp", "image/gif");
 
     private final UploadProperties properties;
     private Path root;
@@ -37,15 +43,27 @@ public class FileStorageService {
 
     /** Validates the upload and stores it under a random name. Returns the stored file name. */
     public String store(MultipartFile file) {
+        return store(file, properties.getAllowedContentTypes(),
+                "Please attach a proof document", "Only PDF, PNG or JPG files are accepted");
+    }
+
+    /** Validates an image upload (profile picture) and stores it under a random name. */
+    public String storeImage(MultipartFile file) {
+        return store(file, IMAGE_CONTENT_TYPES,
+                "Please choose an image", "Only PNG, JPG, WEBP or GIF images are accepted");
+    }
+
+    private String store(MultipartFile file, Collection<String> allowedContentTypes,
+                         String emptyMessage, String typeMessage) {
         if (file == null || file.isEmpty()) {
-            throw ApiException.badRequest("Please attach a proof document");
+            throw ApiException.badRequest(emptyMessage);
         }
         String contentType = file.getContentType();
-        if (contentType == null || !properties.getAllowedContentTypes().contains(contentType)) {
-            throw ApiException.badRequest("Only PDF, PNG or JPG files are accepted");
+        if (contentType == null || !allowedContentTypes.contains(contentType)) {
+            throw ApiException.badRequest(typeMessage);
         }
         String original = StringUtils.cleanPath(
-                file.getOriginalFilename() == null ? "proof" : file.getOriginalFilename());
+                file.getOriginalFilename() == null ? "upload" : file.getOriginalFilename());
         String extension = StringUtils.getFilenameExtension(original);
         String stored = UUID.randomUUID() + (extension != null ? "." + extension.toLowerCase() : "");
         try {
@@ -69,7 +87,7 @@ public class FileStorageService {
         return target;
     }
 
-    /** Best-effort delete of a stored file (e.g. when a pending proof is cancelled). */
+    /** Best-effort delete of a stored file (e.g. a cancelled proof or a replaced avatar). */
     public void delete(String storedFileName) {
         if (storedFileName == null || storedFileName.isBlank()) {
             return;

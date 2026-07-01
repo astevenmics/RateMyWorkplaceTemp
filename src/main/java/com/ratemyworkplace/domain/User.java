@@ -41,6 +41,14 @@ public class User {
     @Column(nullable = false, length = 100)
     private String passwordHash;
 
+    /** Stored file name of the user's profile picture, or {@code null} if none has been set. */
+    @Column(length = 255)
+    private String avatarFileName;
+
+    /** Content type of the stored profile picture (e.g. {@code image/png}). */
+    @Column(length = 80)
+    private String avatarContentType;
+
     @Enumerated(EnumType.STRING)
     @Column(nullable = false, length = 20)
     private Role role = Role.USER;
@@ -99,6 +107,10 @@ public class User {
     public void setPhoneNumber(String phoneNumber) { this.phoneNumber = phoneNumber; }
     public String getPasswordHash() { return passwordHash; }
     public void setPasswordHash(String passwordHash) { this.passwordHash = passwordHash; }
+    public String getAvatarFileName() { return avatarFileName; }
+    public void setAvatarFileName(String avatarFileName) { this.avatarFileName = avatarFileName; }
+    public String getAvatarContentType() { return avatarContentType; }
+    public void setAvatarContentType(String avatarContentType) { this.avatarContentType = avatarContentType; }
     public Role getRole() { return role; }
     public void setRole(Role role) { this.role = role; }
     public Set<ModeratorPermission> getModeratorPermissions() { return moderatorPermissions; }

@@ -23,6 +23,7 @@ RateMyWorkplace is a complete Spring Boot web application for discovering workpl
 - **Registration** with Display Name, Username, Email, Phone Number and Password.
 - **Email + phone verification** — both required before submitting workplaces or feedback. (In dev mode the codes are printed to the server log; wire SMTP/SMS for production.)
 - **Editable profile** (reachable from the header) — change details and password; changing email/phone re-triggers verification.
+- **Editable profile picture** — upload a PNG/JPG/WEBP/GIF avatar (or remove it); shown in the header and on the profile page, with an initials fallback when none is set.
 - **Suggest a workplace** for public listing — supports multiple **locations** (different addresses/ZIPs) and multiple **categories**.
 - **Verify employment** — upload a **PDF/PNG/JPG** proof (offer letter, employment confirmation, …) scoped to a company *and* location.
 - **Post feedback** — 1–5 stars with a short/detailed explanation, **only** for companies/locations where the member has an **approved** proof.
@@ -119,6 +120,7 @@ src/main/resources/static/          # HTML + CSS + JS frontend
 | Area | Endpoints |
 |------|-----------|
 | Auth | `POST /api/auth/register`, `POST /api/auth/login`, `POST /api/auth/logout`, `GET /api/auth/me`, `POST /api/auth/verify` |
+| Profile | `GET /api/profile`, `PUT /api/profile`, `POST /api/profile/avatar` (multipart), `DELETE /api/profile/avatar`, `GET /api/users/{id}/avatar` (public) |
 | Companies | `GET /api/companies` (search/filter/sort/paginate), `GET /api/companies/top`, `GET /api/companies/{id}`, `POST /api/companies` |
 | Feedback | `GET /api/feedback/location/{id}`, `GET /api/feedback/eligibility/{id}`, `POST /api/feedback` |
 | Proofs | `POST /api/proofs` (multipart), `GET /api/proofs/mine` |

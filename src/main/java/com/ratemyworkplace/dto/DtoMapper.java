@@ -18,7 +18,20 @@ public final class DtoMapper {
                 u.getRole().name(),
                 u.getModeratorPermissions().stream().map(Enum::name).collect(Collectors.toSet()),
                 u.isEmailVerified(), u.isPhoneVerified(), u.isFullyVerified(), u.isEnabled(),
-                u.getFlaggedReason(), u.getCreatedAt(), u.getLastLoginAt());
+                u.getFlaggedReason(), avatarUrl(u), u.getCreatedAt(), u.getLastLoginAt());
+    }
+
+    /**
+     * Public URL for a user's profile picture, or {@code null} if none is set. The
+     * {@code v} parameter changes whenever the stored file changes so browsers refetch
+     * a freshly uploaded avatar rather than serving a stale cached copy.
+     */
+    private static String avatarUrl(User u) {
+        if (u.getAvatarFileName() == null || u.getId() == null) {
+            return null;
+        }
+        return "/api/users/" + u.getId() + "/avatar?v="
+                + Integer.toHexString(u.getAvatarFileName().hashCode());
     }
 
     public static Responses.CategoryDto category(Category c) {

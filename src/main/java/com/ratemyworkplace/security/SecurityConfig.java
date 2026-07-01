@@ -61,7 +61,7 @@ public class SecurityConfig {
                     .requestMatchers(org.springframework.http.HttpMethod.GET,
                             "/api/companies/**", "/api/categories/**", "/api/locations/**",
                             "/api/feedback/location/**", "/api/feedback/company/**",
-                            "/api/site/updates/**", "/api/stats/public").permitAll()
+                            "/api/site/updates/**", "/api/stats/public", "/api/users/*/avatar").permitAll()
                     .requestMatchers("/api/auth/register", "/api/auth/login", "/api/auth/csrf",
                             "/api/auth/me", "/api/auth/forgot-password", "/api/auth/reset-password",
                             "/api/site/feedback").permitAll()

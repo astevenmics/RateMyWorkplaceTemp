@@ -10,6 +10,7 @@ import com.ratemyworkplace.web.ApiException;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.web.multipart.MultipartFile;
 
 import java.util.EnumSet;
 import java.util.Set;
@@ -22,13 +23,16 @@ public class UserService {
     private final PasswordEncoder passwordEncoder;
     private final VerificationService verificationService;
     private final AnalyticsService analyticsService;
+    private final FileStorageService fileStorageService;
 
     public UserService(UserRepository userRepository, PasswordEncoder passwordEncoder,
-                       VerificationService verificationService, AnalyticsService analyticsService) {
+                       VerificationService verificationService, AnalyticsService analyticsService,
+                       FileStorageService fileStorageService) {
         this.userRepository = userRepository;
         this.passwordEncoder = passwordEncoder;
         this.verificationService = verificationService;
         this.analyticsService = analyticsService;
+        this.fileStorageService = fileStorageService;
     }
 
     @Transactional
@@ -85,6 +89,34 @@ public class UserService {
             user.setPasswordHash(passwordEncoder.encode(req.newPassword()));
         }
         return userRepository.save(user);
+    }
+
+    /** Stores a new profile picture, replacing (and deleting) any previous one. */
+    @Transactional
+    public User updateAvatar(User user, MultipartFile file) {
+        String stored = fileStorageService.storeImage(file);
+        String previous = user.getAvatarFileName();
+        user.setAvatarFileName(stored);
+        user.setAvatarContentType(file.getContentType());
+        User saved = userRepository.save(user);
+        if (previous != null && !previous.equals(stored)) {
+            fileStorageService.delete(previous);
+        }
+        return saved;
+    }
+
+    /** Removes the current profile picture, if any. */
+    @Transactional
+    public User removeAvatar(User user) {
+        String previous = user.getAvatarFileName();
+        if (previous == null) {
+            return user;
+        }
+        user.setAvatarFileName(null);
+        user.setAvatarContentType(null);
+        User saved = userRepository.save(user);
+        fileStorageService.delete(previous);
+        return saved;
     }
 
     @Transactional

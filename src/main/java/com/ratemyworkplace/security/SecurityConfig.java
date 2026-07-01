@@ -53,6 +53,25 @@ public class SecurityConfig {
             .addFilterBefore(rateLimitFilter, UsernamePasswordAuthenticationFilter.class)
             .addFilterAfter(new CsrfCookieFilter(), UsernamePasswordAuthenticationFilter.class)
             .sessionManagement(s -> s.sessionCreationPolicy(SessionCreationPolicy.IF_REQUIRED))
+            // The frontend is plain HTML with inline <script>/<style> blocks (no bundler,
+            // no nonces), so script-src/style-src need 'unsafe-inline'. Every other
+            // directive is locked to 'self'/'none' so an XSS bug still can't load a
+            // remote payload, exfiltrate via fetch/XHR, or frame/embed the site.
+            .headers(headers -> headers
+                    .contentSecurityPolicy(csp -> csp.policyDirectives(
+                            "default-src 'self'; " +
+                            "script-src 'self' 'unsafe-inline'; " +
+                            "style-src 'self' 'unsafe-inline'; " +
+                            "img-src 'self' data:; " +
+                            "connect-src 'self'; " +
+                            "object-src 'none'; " +
+                            "frame-ancestors 'none'; " +
+                            "base-uri 'self'; " +
+                            "form-action 'self'"))
+                    .referrerPolicy(r -> r.policy(
+                            org.springframework.security.web.header.writers.ReferrerPolicyHeaderWriter.ReferrerPolicy.STRICT_ORIGIN_WHEN_CROSS_ORIGIN))
+                    .permissionsPolicyHeader(p -> p.policy(
+                            "geolocation=(), camera=(), microphone=(), payment=(), usb=()")))
             .authorizeHttpRequests(auth -> auth
                     // ---- public static pages & assets ----
                     .requestMatchers("/", "/index.html", "/css/**", "/js/**", "/img/**",

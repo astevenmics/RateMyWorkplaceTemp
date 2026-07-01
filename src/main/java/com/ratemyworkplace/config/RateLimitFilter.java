@@ -103,10 +103,15 @@ public class RateLimitFilter extends OncePerRequestFilter {
     }
 
     private String clientIp(HttpServletRequest request) {
-        String forwarded = request.getHeader("X-Forwarded-For");
-        if (StringUtils.hasText(forwarded)) {
-            int comma = forwarded.indexOf(',');
-            return (comma > 0 ? forwarded.substring(0, comma) : forwarded).trim();
+        // X-Forwarded-For is attacker-controlled unless a trusted reverse proxy
+        // overwrites it, so it's ignored by default: honouring it blindly would let
+        // any client bypass rate limiting by sending a different value per request.
+        if (props.isTrustForwardedFor()) {
+            String forwarded = request.getHeader("X-Forwarded-For");
+            if (StringUtils.hasText(forwarded)) {
+                int comma = forwarded.indexOf(',');
+                return (comma > 0 ? forwarded.substring(0, comma) : forwarded).trim();
+            }
         }
         return request.getRemoteAddr();
     }

@@ -177,11 +177,13 @@ public class DataInitializer implements CommandLineRunner {
 
     private void recompute(Company company) {
         for (Location location : company.getLocations()) {
-            location.setAverageRating(feedbackRepository.averageForLocation(location.getId()));
-            location.setRatingCount(feedbackRepository.countForLocation(location.getId()));
+            FeedbackRepository.RatingStats stats = feedbackRepository.locationStats(location.getId());
+            location.setAverageRating(stats.getAverage());
+            location.setRatingCount(stats.getCount());
         }
-        company.setAverageRating(feedbackRepository.averageForCompany(company.getId()));
-        company.setRatingCount(feedbackRepository.countForCompany(company.getId()));
+        FeedbackRepository.RatingStats companyStats = feedbackRepository.companyStats(company.getId());
+        company.setAverageRating(companyStats.getAverage());
+        company.setRatingCount(companyStats.getCount());
         companyRepository.save(company);
     }
 

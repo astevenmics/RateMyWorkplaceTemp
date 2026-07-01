@@ -1,6 +1,8 @@
 package com.ratemyworkplace.domain;
 
 import jakarta.persistence.*;
+import org.hibernate.annotations.Fetch;
+import org.hibernate.annotations.FetchMode;
 import java.time.Instant;
 import java.util.ArrayList;
 import java.util.HashSet;
@@ -31,13 +33,18 @@ public class Company {
     @Column(length = 255)
     private String logoUrl;
 
+    // SUBSELECT batches the collection load for every Company in the current
+    // page/session into a single extra query, instead of one per-row SELECT
+    // (the default for an EAGER @ManyToMany) when listing/searching companies.
     @ManyToMany(fetch = FetchType.EAGER)
     @JoinTable(name = "company_categories",
             joinColumns = @JoinColumn(name = "company_id"),
             inverseJoinColumns = @JoinColumn(name = "category_id"))
+    @Fetch(FetchMode.SUBSELECT)
     private Set<Category> categories = new HashSet<>();
 
     @OneToMany(mappedBy = "company", cascade = CascadeType.ALL, orphanRemoval = true)
+    @Fetch(FetchMode.SUBSELECT)
     private List<Location> locations = new ArrayList<>();
 
     @Enumerated(EnumType.STRING)

@@ -1,0 +1,132 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Browse workplaces — RateMyWorkplace</title>
+  <link rel="stylesheet" href="/css/styles.css">
+</head>
+<body>
+<header class="site-header" id="site-header"></header>
+
+<section class="section">
+  <div class="container">
+    <h2>Browse workplaces</h2>
+    <p class="subtitle">All approved workplaces. Filter by category, sort, and search.</p>
+
+    <div class="toolbar">
+      <input type="text" id="q" placeholder="Search company, city, ZIP…" style="min-width:220px">
+      <select id="categoryId"><option value="">All categories</option></select>
+      <select id="sort">
+        <option value="top">Top rated</option>
+        <option value="rated">Most reviewed</option>
+        <option value="az">A → Z</option>
+        <option value="za">Z → A</option>
+        <option value="newest">Newest</option>
+      </select>
+      <button class="btn" id="applyBtn">Apply</button>
+      <span class="spacer"></span>
+      <span class="muted" id="resultCount"></span>
+    </div>
+
+    <div class="grid" id="results"><div class="spinner">Loading…</div></div>
+    <div class="pagination" id="pagination"></div>
+  </div>
+</section>
+
+<footer class="site-footer" id="site-footer"></footer>
+
+<script src="/js/app.js"></script>
+<script>
+  let state = { page: 0, size: 30 };
+
+  function readControls() {
+    state.q = document.getElementById('q').value.trim();
+    state.categoryId = document.getElementById('categoryId').value;
+    state.sort = document.getElementById('sort').value;
+  }
+
+  async function loadCategories() {
+    try {
+      const cats = await RMW.api('/api/categories');
+      const sel = document.getElementById('categoryId');
+      cats.forEach(c => {
+        const o = document.createElement('option');
+        o.value = c.id; o.textContent = c.name;
+        sel.appendChild(o);
+      });
+    } catch (e) { /* ignore */ }
+  }
+
+  async function load() {
+    const box = document.getElementById('results');
+    box.innerHTML = '<div class="spinner">Loading…</div>';
+    const params = new URLSearchParams({ page: state.page, size: state.size, sort: state.sort || 'top' });
+    if (state.q) params.set('q', state.q);
+    if (state.categoryId) params.set('categoryId', state.categoryId);
+    try {
+      const data = await RMW.api('/api/companies?' + params.toString());
+      renderResults(data);
+      renderPagination(data);
+      document.getElementById('resultCount').textContent =
+              `${data.page.totalElements} result${data.page.totalElements === 1 ? '' : 's'}`;
+    } catch (e) {
+      box.innerHTML = '<p class="muted">Could not load workplaces.</p>';
+    }
+  }
+
+  function renderResults(data) {
+    const box = document.getElementById('results');
+    const items = data.content || [];
+    if (!items.length) { box.innerHTML = '<p class="muted">No workplaces match your filters.</p>'; return; }
+    box.innerHTML = items.map(c => {
+      const cats = (c.categories || []).slice(0, 3).map(x => `<span class="tag">${RMW.escapeHtml(x)}</span>`).join('');
+      return `<a class="card company-card" href="/company.html?id=${c.id}">
+          <div class="title">${RMW.escapeHtml(c.name)}</div>
+          <div class="rating-line">${RMW.stars(c.averageRating)}
+            <span class="score">${c.averageRating.toFixed(1)}</span>
+            <span class="count">(${c.ratingCount})</span></div>
+          <div class="meta">${c.locationCount} location${c.locationCount === 1 ? '' : 's'}</div>
+          <div class="tags">${cats || '<span class="tag muted">Unrated</span>'}</div>
+        </a>`;
+    }).join('');
+  }
+
+  function renderPagination(data) {
+    const pag = document.getElementById('pagination');
+    const totalPages = data.page.totalPages;
+    const current = data.page.number;
+    if (totalPages <= 1) { pag.innerHTML = ''; return; }
+    let html = '';
+    html += `<button ${current === 0 ? 'disabled' : ''} data-page="${current - 1}">‹ Prev</button>`;
+    const start = Math.max(0, current - 2);
+    const end = Math.min(totalPages - 1, current + 2);
+    if (start > 0) html += `<button data-page="0">1</button>${start > 1 ? '<span class="muted">…</span>' : ''}`;
+    for (let i = start; i <= end; i++) {
+      html += `<button class="${i === current ? 'active' : ''}" data-page="${i}">${i + 1}</button>`;
+    }
+    if (end < totalPages - 1) html += `${end < totalPages - 2 ? '<span class="muted">…</span>' : ''}<button data-page="${totalPages - 1}">${totalPages}</button>`;
+    html += `<button ${current >= totalPages - 1 ? 'disabled' : ''} data-page="${current + 1}">Next ›</button>`;
+    pag.innerHTML = html;
+    pag.querySelectorAll('button[data-page]').forEach(b => b.addEventListener('click', () => {
+      state.page = parseInt(b.dataset.page, 10);
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+      load();
+    }));
+  }
+
+  document.getElementById('applyBtn').addEventListener('click', () => { readControls(); state.page = 0; load(); });
+  document.getElementById('q').addEventListener('keydown', (e) => { if (e.key === 'Enter') { readControls(); state.page = 0; load(); } });
+  document.getElementById('sort').addEventListener('change', () => { readControls(); state.page = 0; load(); });
+  document.getElementById('categoryId').addEventListener('change', () => { readControls(); state.page = 0; load(); });
+
+  (async function init() {
+    await loadCategories();
+    const q = RMW.qs('q');
+    if (q) document.getElementById('q').value = q;
+    readControls();
+    load();
+  })();
+</script>
+</body>
+</html>

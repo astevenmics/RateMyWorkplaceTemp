@@ -1,0 +1,267 @@
+/* ============================================================
+   RateMyWorkplace — shared frontend helpers
+   ============================================================ */
+const RMW = (() => {
+
+    // ---- cookie / CSRF ----
+    function getCookie(name) {
+        const match = document.cookie.match('(^|;)\\s*' + name + '\\s*=\\s*([^;]+)');
+        return match ? decodeURIComponent(match.pop()) : null;
+    }
+
+    async function ensureCsrf() {
+        if (!getCookie('XSRF-TOKEN')) {
+            try { await fetch('/api/auth/csrf', { credentials: 'same-origin' }); } catch (e) { /* ignore */ }
+        }
+    }
+
+    // ---- core fetch wrapper ----
+    async function api(path, { method = 'GET', body, form, headers = {} } = {}, _retried = false) {
+        const opts = { method, credentials: 'same-origin', headers: { ...headers } };
+
+        if (method !== 'GET' && method !== 'HEAD') {
+            await ensureCsrf();
+            const token = getCookie('XSRF-TOKEN');
+            if (token) opts.headers['X-XSRF-TOKEN'] = token;
+        }
+        if (form) {
+            opts.body = form; // FormData / URLSearchParams — let the browser set Content-Type
+        } else if (body !== undefined) {
+            opts.headers['Content-Type'] = 'application/json';
+            opts.body = JSON.stringify(body);
+        }
+
+        const res = await fetch(path, opts);
+
+        // The CSRF token rotates on login/logout; transparently refresh once and retry.
+        if (res.status === 403 && method !== 'GET' && method !== 'HEAD' && !_retried) {
+            try { await fetch('/api/auth/csrf', { credentials: 'same-origin' }); } catch (e) { /* ignore */ }
+            return api(path, { method, body, form, headers }, true);
+        }
+        const text = await res.text();
+        let data = null;
+        if (text) { try { data = JSON.parse(text); } catch (e) { data = text; } }
+
+        if (!res.ok) {
+            const message = (data && data.message) || (typeof data === 'string' && data) || res.statusText;
+            const err = new Error(message || 'Request failed');
+            err.status = res.status;
+            err.data = data;
+            throw err;
+        }
+        return data;
+    }
+
+    // ---- auth ----
+    let cachedUser = undefined;
+    async function currentUser(force = false) {
+        if (cachedUser !== undefined && !force) return cachedUser;
+        try {
+            const data = await api('/api/auth/me');
+            cachedUser = (data && data.username) ? data : null;
+        } catch (e) {
+            cachedUser = null;
+        }
+        return cachedUser;
+    }
+
+    async function login(username, password) {
+        await ensureCsrf();
+        const formData = new URLSearchParams({ username, password });
+        const res = await fetch('/api/auth/login', {
+            method: 'POST',
+            credentials: 'same-origin',
+            headers: { 'Content-Type': 'application/x-www-form-urlencoded', 'X-XSRF-TOKEN': getCookie('XSRF-TOKEN') || '' },
+            body: formData
+        });
+        if (!res.ok) {
+            const data = await res.json().catch(() => ({}));
+            throw new Error(data.message || 'Invalid credentials');
+        }
+        cachedUser = undefined;
+        return true;
+    }
+
+    async function logout() {
+        try { await api('/api/auth/logout', { method: 'POST' }); } catch (e) { /* ignore */ }
+        cachedUser = null;
+        window.location.href = '/index.html';
+    }
+
+    // ---- rendering helpers ----
+    function stars(value) {
+        const rounded = Math.round(value);
+        let out = '';
+        for (let i = 1; i <= 5; i++) {
+            out += i <= rounded ? '★' : '<span class="empty">★</span>';
+        }
+        return `<span class="stars">${out}</span>`;
+    }
+
+    function escapeHtml(str) {
+        if (str === null || str === undefined) return '';
+        return String(str)
+            .replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;')
+            .replace(/"/g, '&quot;').replace(/'/g, '&#39;');
+    }
+
+    function fmtDate(iso) {
+        if (!iso) return '';
+        try { return new Date(iso).toLocaleDateString(undefined, { year: 'numeric', month: 'short', day: 'numeric' }); }
+        catch (e) { return iso; }
+    }
+
+    function qs(name, defaultValue = null) {
+        return new URLSearchParams(window.location.search).get(name) ?? defaultValue;
+    }
+
+    function toast(el, type, message) {
+        if (!el) return;
+        el.className = `alert ${type} show`;
+        el.textContent = message;
+        el.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+    }
+    function clearToast(el) { if (el) el.className = 'alert'; }
+
+    /**
+     * Toggle a button into a disabled, spinner "loading" state to prevent
+     * double-submits / spam, and restore it afterwards.
+     */
+    function setLoading(btn, loading, label = 'Please wait…') {
+        if (!btn) return;
+        if (loading) {
+            if (btn.dataset.originalHtml === undefined) {
+                btn.dataset.originalHtml = btn.innerHTML;
+            }
+            btn.disabled = true;
+            btn.classList.add('loading');
+            btn.setAttribute('aria-busy', 'true');
+            btn.innerHTML = `<span class="spinner-circle"></span> ${escapeHtml(label)}`;
+        } else {
+            btn.disabled = false;
+            btn.classList.remove('loading');
+            btn.removeAttribute('aria-busy');
+            if (btn.dataset.originalHtml !== undefined) {
+                btn.innerHTML = btn.dataset.originalHtml;
+                delete btn.dataset.originalHtml;
+            }
+        }
+    }
+
+
+    // ---- shared header / footer ----
+    async function mountHeader() {
+        const header = document.getElementById('site-header');
+        if (!header) return;
+        header.innerHTML = `
+          <div class="container nav">
+            <a class="brand" href="/index.html">Rate<span class="dot">My</span>Workplace</a>
+            <button class="nav-toggle" aria-label="Menu" id="navToggle">☰</button>
+            <nav class="nav-links" id="navLinks">
+              <a href="/workplaces.html">Browse</a>
+              <a href="/submit-workplace.html">Add Workplace</a>
+              <span id="authArea"></span>
+            </nav>
+          </div>`;
+        document.getElementById('navToggle').addEventListener('click', () => {
+            document.getElementById('navLinks').classList.toggle('open');
+        });
+
+        const user = await currentUser();
+        const authArea = document.getElementById('authArea');
+        if (user) {
+            const adminLink = (user.role === 'ADMIN' || user.role === 'MODERATOR')
+                ? '<a href="/admin.html">Admin</a>' : '';
+            // "Verify Employment" is only relevant once you have an account, so show it to
+            // logged-in users only.
+            authArea.innerHTML = `
+              <a href="/submit-proof.html">Verify Employment</a>
+              ${adminLink}
+              <a href="/profile.html">${escapeHtml(user.displayName)}</a>
+              <a href="#" id="logoutLink">Logout</a>`;
+            document.getElementById('logoutLink').addEventListener('click', (e) => { e.preventDefault(); logout(); });
+        } else {
+            authArea.innerHTML = `<a href="/login.html">Log in</a> <a class="btn small" href="/register.html">Sign up</a>`;
+        }
+    }
+
+    async function mountFooter() {
+        const footer = document.getElementById('site-footer');
+        if (!footer) return;
+        footer.innerHTML = `
+          <div class="container">
+            <div class="footer-grid">
+              <div>
+                <h3>Rate<span style="color:var(--primary)">My</span>Workplace</h3>
+                <p>Honest, verified feedback about workplaces and working conditions — from people who were actually there.</p>
+                <p class="muted">Feedback is only accepted from members who verify their employment.</p>
+              </div>
+              <div>
+                <h3>Send us feedback</h3>
+                <p class="muted" style="font-size:.85rem">Spotted a bug or have an idea? Let the admins know.</p>
+                <div id="siteFeedbackAlert" class="alert"></div>
+                <form id="siteFeedbackForm">
+                  <div class="field"><input name="contactEmail" type="email" placeholder="Your email (optional)"></div>
+                  <div class="field">
+                    <select name="category">
+                      <option value="Bug">Bug report</option>
+                      <option value="Idea">Feature idea</option>
+                      <option value="Content">Report content</option>
+                      <option value="Other">Other</option>
+                    </select>
+                  </div>
+                  <div class="field"><textarea name="message" rows="3" placeholder="Your message" required></textarea></div>
+                  <button class="btn small" type="submit">Send feedback</button>
+                </form>
+              </div>
+              <div>
+                <h3>What's new</h3>
+                <div id="footerNews"><p class="muted">Loading…</p></div>
+              </div>
+            </div>
+            <div class="footer-bottom">
+              © ${new Date().getFullYear()} RateMyWorkplace. Built as a complete Spring Boot demo. Ads shown on workplace pages are illustrative AdSense slots.
+            </div>
+          </div>`;
+
+        // load news
+        try {
+            const news = await api('/api/site/updates/latest');
+            const box = document.getElementById('footerNews');
+            box.innerHTML = news.length ? news.map(n => `
+              <div class="news-item">
+                <div class="t">${escapeHtml(n.title)}</div>
+                <div class="d">${fmtDate(n.createdAt)}${n.tag ? ' · ' + escapeHtml(n.tag) : ''}</div>
+              </div>`).join('') : '<p class="muted">No updates yet.</p>';
+        } catch (e) { /* ignore */ }
+
+        // site feedback form
+        const form = document.getElementById('siteFeedbackForm');
+        const alertEl = document.getElementById('siteFeedbackAlert');
+        form.addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const fd = new FormData(form);
+            try {
+                await api('/api/site/feedback', { method: 'POST', body: {
+                        contactEmail: fd.get('contactEmail') || null,
+                        category: fd.get('category'),
+                        message: fd.get('message')
+                    }});
+                toast(alertEl, 'success', 'Thanks! Your feedback was sent.');
+                form.reset();
+            } catch (err) {
+                toast(alertEl, 'error', err.message);
+            }
+        });
+    }
+
+    async function mountChrome() {
+        await mountHeader();
+        await mountFooter();
+    }
+
+    return { api, currentUser, login, logout, stars, escapeHtml, fmtDate, qs, toast, clearToast,
+        setLoading, mountChrome, mountHeader, mountFooter, ensureCsrf };
+})();
+
+document.addEventListener('DOMContentLoaded', () => { RMW.mountChrome(); });

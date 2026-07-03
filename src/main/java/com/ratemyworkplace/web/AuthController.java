@@ -6,6 +6,7 @@ import com.ratemyworkplace.dto.DtoMapper;
 import com.ratemyworkplace.dto.Requests;
 import com.ratemyworkplace.dto.Responses;
 import com.ratemyworkplace.service.CurrentUserService;
+import com.ratemyworkplace.service.PasswordResetService;
 import com.ratemyworkplace.service.UserService;
 import com.ratemyworkplace.service.VerificationService;
 import jakarta.validation.Valid;
@@ -23,12 +24,17 @@ public class AuthController {
     private final UserService userService;
     private final VerificationService verificationService;
     private final CurrentUserService currentUserService;
+    private final PasswordResetService passwordResetService;
 
-    public AuthController(UserService userService, VerificationService verificationService,
-                          CurrentUserService currentUserService) {
+    public AuthController(
+            UserService userService,
+            VerificationService verificationService,
+            CurrentUserService currentUserService,
+            PasswordResetService passwordResetService) {
         this.userService = userService;
         this.verificationService = verificationService;
         this.currentUserService = currentUserService;
+        this.passwordResetService = passwordResetService;
     }
 
     /** Lets the JS frontend prime the {@code XSRF-TOKEN} cookie before its first write. */
@@ -63,7 +69,21 @@ public class AuthController {
     public Responses.SimpleMessage resend(@Valid @RequestBody Requests.ResendVerificationRequest request) {
         User user = currentUserService.require();
         VerificationToken.Channel channel = VerificationToken.Channel.valueOf(request.channel());
-        verificationService.issue(user, channel);
+        verificationService.resend(user, channel);
         return Responses.SimpleMessage.ok("A new code has been sent");
+    }
+
+    /** Step 1 of password reset: email a reset code. Always returns OK (doesn't reveal account existence). */
+    @PostMapping("/forgot-password")
+    public Responses.SimpleMessage forgotPassword(@Valid @RequestBody Requests.ForgotPasswordRequest request) {
+        passwordResetService.requestReset(request.email());
+        return Responses.SimpleMessage.ok("If an account exists for that email, a reset code has been sent.");
+    }
+
+    /** Step 2 of password reset: verify the code and set a new password. */
+    @PostMapping("/reset-password")
+    public Responses.SimpleMessage resetPassword(@Valid @RequestBody Requests.ResetPasswordRequest request) {
+        passwordResetService.reset(request.email(), request.code(), request.newPassword());
+        return Responses.SimpleMessage.ok("Your password has been reset. You can now sign in.");
     }
 }

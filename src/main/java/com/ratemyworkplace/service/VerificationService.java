@@ -31,6 +31,9 @@ public class VerificationService {
         this.notificationService = notificationService;
     }
 
+    /** Minimum interval between resend requests for the same channel. */
+    private static final long RESEND_COOLDOWN_MINUTES = 5;
+
     @Transactional
     public void issue(User user, VerificationToken.Channel channel) {
         String code = String.format("%06d", RANDOM.nextInt(1_000_000));
@@ -46,6 +49,33 @@ public class VerificationService {
         } else {
             notificationService.sendPhoneCode(user.getPhoneNumber(), code);
         }
+    }
+
+    /**
+     * Re-issues a verification code, but only if the channel isn't already verified and the
+     * last code was sent more than {@value #RESEND_COOLDOWN_MINUTES} minutes ago.
+     */
+    @Transactional
+    public void resend(User user, VerificationToken.Channel channel) {
+        boolean alreadyVerified = channel == VerificationToken.Channel.EMAIL
+                ? user.isEmailVerified() : user.isPhoneVerified();
+        if (alreadyVerified) {
+            throw ApiException.badRequest("That contact is already verified.");
+        }
+        // A token has a 30-minute lifetime; if the latest one still has > 25 minutes left,
+        // it was issued within the last 5 minutes, so enforce the cooldown.
+        tokenRepository.findFirstByUserIdAndChannelAndConsumedFalseOrderByIdDesc(user.getId(), channel)
+                .ifPresent(latest -> {
+                    Instant issuedFloor = Instant.now()
+                            .plus(EXPIRY_MINUTES - RESEND_COOLDOWN_MINUTES, ChronoUnit.MINUTES);
+                    if (latest.getExpiresAt().isAfter(issuedFloor)) {
+                        long secs = java.time.Duration.between(issuedFloor, latest.getExpiresAt()).getSeconds();
+                        throw new ApiException(org.springframework.http.HttpStatus.TOO_MANY_REQUESTS,
+                                "Please wait about " + Math.max(1, (secs + 59) / 60)
+                                        + " more minute(s) before requesting another code.");
+                    }
+                });
+        issue(user, channel);
     }
 
     @Transactional

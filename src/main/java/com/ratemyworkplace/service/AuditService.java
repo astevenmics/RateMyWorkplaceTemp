@@ -24,6 +24,13 @@ public class AuditService {
     @Transactional
     public void record(AuditCategory category, AuditAction action, String summary, String detail, Long targetId) {
         String actor = currentUserService.current().map(u -> u.getUsername()).orElse("system");
+        record(category, action, summary, detail, targetId, actor);
+    }
+
+    /** Use when the caller already has the acting user in hand, to avoid a redundant lookup. */
+    @Transactional
+    public void record(AuditCategory category, AuditAction action, String summary, String detail,
+                       Long targetId, String actor) {
         repository.save(new AuditLog(category, action, summary, detail, actor, targetId));
     }
 

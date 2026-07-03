@@ -51,7 +51,11 @@ public class Company {
     @Column(nullable = false, length = 20)
     private ApprovalStatus status = ApprovalStatus.PENDING;
 
+    // JOIN is safe (unlike on a collection) since a to-one association can't multiply
+    // result rows; this avoids a per-row SELECT when DtoMapper.companyDetail() reads
+    // submittedBy (e.g. once per row on the admin pending-workplaces listing).
     @ManyToOne(fetch = FetchType.LAZY)
+    @Fetch(FetchMode.JOIN)
     @JoinColumn(name = "submitted_by")
     private User submittedBy;
 

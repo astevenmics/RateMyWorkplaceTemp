@@ -1,6 +1,9 @@
 package com.ratemyworkplace.domain;
 
 import jakarta.persistence.*;
+import org.hibernate.annotations.Fetch;
+import org.hibernate.annotations.FetchMode;
+
 import java.time.Instant;
 import java.util.ArrayList;
 import java.util.HashSet;
@@ -45,6 +48,7 @@ public class Company {
     private ApprovalStatus status = ApprovalStatus.PENDING;
 
     @ManyToOne(fetch = FetchType.LAZY)
+    @Fetch(FetchMode.JOIN)
     @JoinColumn(name = "submitted_by")
     private User submittedBy;
 

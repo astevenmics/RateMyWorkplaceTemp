@@ -13,7 +13,8 @@ public final class DtoMapper {
 
     public static Responses.UserDto user(User u) {
         return new Responses.UserDto(
-                u.getId(), u.getDisplayName(), u.getUsername(), u.getEmail(), u.getPhoneNumber(),
+                u.getId(), u.getFirstName(), u.getLastName(), u.getFullName(),
+                u.getDisplayName(), u.getUsername(), u.getEmail(), u.getPhoneNumber(),
                 u.getRole().name(),
                 u.getModeratorPermissions().stream().map(Enum::name).collect(Collectors.toSet()),
                 u.isEmailVerified(), u.isPhoneVerified(), u.isFullyVerified(), u.isEnabled(),
@@ -43,9 +44,12 @@ public final class DtoMapper {
                 .map(DtoMapper::category).collect(Collectors.toCollection(java.util.LinkedHashSet::new));
         List<Responses.LocationDto> locs = c.getLocations().stream()
                 .map(DtoMapper::location).collect(Collectors.toList());
+        User submitter = c.getSubmittedBy();
         return new Responses.CompanyDetailDto(
                 c.getId(), c.getName(), c.getDescription(), c.getWebsite(), c.getLogoUrl(),
-                cats, locs, round(c.getAverageRating()), c.getRatingCount(), c.getStatus().name(), c.getCreatedAt());
+                cats, locs, round(c.getAverageRating()), c.getRatingCount(), c.getStatus().name(), c.getCreatedAt(),
+                submitter != null ? submitter.getDisplayName() : null,
+                submitter != null ? submitter.getUsername() : null);
     }
 
     public static Responses.FeedbackDto feedback(Feedback f) {
@@ -57,10 +61,15 @@ public final class DtoMapper {
     }
 
     public static Responses.ProofDto proof(EmploymentProof p) {
+        User submitter = p.getUser();
         return new Responses.ProofDto(
                 p.getId(), p.getCompany().getId(), p.getCompany().getName(),
                 p.getLocation() != null ? p.getLocation().getId() : null,
                 p.getLocation() != null ? locationLabel(p.getLocation()) : null,
+                submitter != null ? submitter.getId() : null,
+                submitter != null ? submitter.getDisplayName() : null,
+                submitter != null ? submitter.getUsername() : null,
+                submitter != null ? submitter.getFullName() : null,
                 p.getOriginalFileName(), p.getContentType(), p.getNote(), p.getStatus().name(),
                 p.getReviewNote(), p.getCreatedAt(), p.getReviewedAt());
     }
@@ -69,6 +78,12 @@ public final class DtoMapper {
         return new Responses.SiteFeedbackDto(
                 s.getId(), s.getAuthor() != null ? s.getAuthor().getUsername() : null,
                 s.getContactEmail(), s.getCategory(), s.getMessage(), s.isResolved(), s.getCreatedAt());
+    }
+
+    public static Responses.AuditLogDto audit(AuditLog a) {
+        return new Responses.AuditLogDto(
+                a.getId(), a.getCategory().name(), a.getAction().name(), a.getSummary(),
+                a.getDetail(), a.getActor(), a.getTargetId(), a.getCreatedAt());
     }
 
     public static Responses.SiteUpdateDto siteUpdate(SiteUpdate s) {

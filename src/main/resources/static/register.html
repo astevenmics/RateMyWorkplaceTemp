@@ -4,6 +4,7 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Sign up — RateMyWorkplace</title>
+  <script>(function(){var t=localStorage.getItem("rmw-theme");if(t)document.documentElement.setAttribute("data-theme",t);})();</script>
   <link rel="stylesheet" href="/css/styles.css">
 </head>
 <body>
@@ -16,9 +17,20 @@
       <p class="subtitle">You'll verify your email and phone next. Both are required before posting.</p>
       <div id="alert" class="alert"></div>
       <form id="registerForm">
+        <div class="field-row">
+          <div class="field">
+            <label for="firstName">First name</label>
+            <input type="text" id="firstName" name="firstName" required maxlength="60" autocomplete="given-name">
+          </div>
+          <div class="field">
+            <label for="lastName">Last name</label>
+            <input type="text" id="lastName" name="lastName" required maxlength="60" autocomplete="family-name">
+          </div>
+        </div>
         <div class="field">
           <label for="displayName">Display name</label>
           <input type="text" id="displayName" name="displayName" required maxlength="80">
+          <div class="hint">Shown publicly on your reviews. Your real name stays private (used only to verify your employment proofs).</div>
         </div>
         <div class="field">
           <label for="username">Username</label>
@@ -56,6 +68,8 @@
     RMW.clearToast(alertEl);
     RMW.setLoading(submitBtn, true, 'Creating account…');
     const payload = {
+      firstName: document.getElementById('firstName').value.trim(),
+      lastName: document.getElementById('lastName').value.trim(),
       displayName: document.getElementById('displayName').value.trim(),
       username: document.getElementById('username').value.trim(),
       email: document.getElementById('email').value.trim(),

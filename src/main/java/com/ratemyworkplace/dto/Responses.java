@@ -11,7 +11,8 @@ public final class Responses {
     private Responses() { }
 
     public record UserDto(
-            Long id, String displayName, String username, String email, String phoneNumber,
+            Long id, String firstName, String lastName, String fullName,
+            String displayName, String username, String email, String phoneNumber,
             String role, Set<String> moderatorPermissions, boolean emailVerified, boolean phoneVerified,
             boolean fullyVerified, boolean enabled, String flaggedReason, Instant createdAt, Instant lastLoginAt) {
     }
@@ -32,7 +33,8 @@ public final class Responses {
     public record CompanyDetailDto(
             Long id, String name, String description, String website, String logoUrl,
             Set<CategoryDto> categories, List<LocationDto> locations,
-            double averageRating, long ratingCount, String status, Instant createdAt) {
+            double averageRating, long ratingCount, String status, Instant createdAt,
+            String submittedByDisplayName, String submittedByUsername) {
     }
 
     public record FeedbackDto(
@@ -42,6 +44,7 @@ public final class Responses {
 
     public record ProofDto(
             Long id, Long companyId, String companyName, Long locationId, String locationLabel,
+            Long submitterId, String submitterDisplayName, String submitterUsername, String submitterFullName,
             String originalFileName, String contentType, String note, String status,
             String reviewNote, Instant createdAt, Instant reviewedAt) {
     }
@@ -54,6 +57,11 @@ public final class Responses {
     public record SiteUpdateDto(
             Long id, String title, String body, String tag, String authorDisplayName,
             boolean published, Instant createdAt) {
+    }
+
+    public record AuditLogDto(
+            Long id, String category, String action, String summary, String detail,
+            String actor, Long targetId, Instant createdAt) {
     }
 
     public record StatsDto(

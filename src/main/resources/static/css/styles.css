@@ -19,6 +19,29 @@
     --shadow: 0 6px 20px rgba(20, 35, 70, 0.08);
     --shadow-sm: 0 2px 8px rgba(20, 35, 70, 0.06);
     --maxw: 1180px;
+    --header-bg: rgba(255, 255, 255, 0.92);
+    color-scheme: light;
+}
+
+/* ---------------- Dark theme ---------------- */
+:root[data-theme="dark"] {
+    --bg: #0f1420;
+    --surface: #171d2b;
+    --surface-2: #1f2636;
+    --text: #e6eaf2;
+    --muted: #9aa6bd;
+    --border: #2a3346;
+    --primary: #5a86ff;
+    --primary-dark: #3f6cf0;
+    --primary-soft: #1e2942;
+    --star: #ffc24d;
+    --success: #34c277;
+    --danger: #f06a82;
+    --warn: #e0a64a;
+    --shadow: 0 6px 22px rgba(0, 0, 0, 0.45);
+    --shadow-sm: 0 2px 10px rgba(0, 0, 0, 0.35);
+    --header-bg: rgba(23, 29, 43, 0.92);
+    color-scheme: dark;
 }
 
 * { box-sizing: border-box; }
@@ -48,10 +71,21 @@ img { max-width: 100%; }
     position: sticky;
     top: 0;
     z-index: 50;
-    background: rgba(255, 255, 255, 0.92);
+    background: var(--header-bg);
     backdrop-filter: saturate(180%) blur(8px);
     border-bottom: 1px solid var(--border);
 }
+
+.theme-toggle {
+    background: var(--surface-2);
+    border: 1px solid var(--border);
+    border-radius: 9px;
+    width: 38px; height: 38px;
+    font-size: 1.05rem; cursor: pointer; color: var(--text);
+    display: inline-flex; align-items: center; justify-content: center;
+}
+.theme-toggle:hover { background: var(--primary-soft); }
+
 .nav {
     display: flex;
     align-items: center;
@@ -261,10 +295,41 @@ img { max-width: 100%; }
 
 /* ---------------- Filters / toolbar ---------------- */
 .toolbar { display: flex; gap: 12px; flex-wrap: wrap; align-items: center; margin-bottom: 18px; }
-.toolbar select, .toolbar input {
-    padding: 9px 12px; border: 1px solid var(--border); border-radius: 10px; background: var(--surface); font-size: .9rem;
-}
+
 .toolbar .spacer { margin-left: auto; }
+
+/* Polished, theme-aware select control (custom caret, matches inputs/buttons) */
+select, .field select, .toolbar select {
+    appearance: none;
+    -webkit-appearance: none;
+    -moz-appearance: none;
+    font-family: inherit;
+    font-size: .92rem;
+    font-weight: 600;
+    color: var(--text);
+    background-color: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 10px 38px 10px 14px;
+    line-height: 1.3;
+    cursor: pointer;
+    transition: border-color .15s, box-shadow .15s, background-color .15s;
+    background-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='14' height='14' viewBox='0 0 24 24' fill='none' stroke='%238791a5' stroke-width='2.5' stroke-linecap='round' stroke-linejoin='round'><polyline points='6 9 12 15 18 9'/></svg>");
+    background-repeat: no-repeat;
+    background-position: right 13px center;
+    background-size: 14px;
+}
+.toolbar select { font-size: .88rem; padding-top: 9px; padding-bottom: 9px; }
+select:hover, .toolbar select:hover { border-color: var(--primary); }
+select:focus, .field select:focus, .toolbar select:focus {
+    outline: none; border-color: var(--primary); box-shadow: 0 0 0 3px var(--primary-soft);
+}
+select option { background: var(--surface); color: var(--text); }
+.toolbar input {
+    padding: 9px 12px; border: 1px solid var(--border); border-radius: 10px;
+    background: var(--surface); color: var(--text); font-size: .9rem; font-family: inherit;
+}
+.toolbar input:focus { outline: none; border-color: var(--primary); box-shadow: 0 0 0 3px var(--primary-soft); }
 
 /* ---------------- Pagination ---------------- */
 .pagination { display: flex; gap: 6px; justify-content: center; margin-top: 26px; flex-wrap: wrap; }
@@ -357,4 +422,53 @@ table.data tr:hover td { background: var(--surface-2); }
     .search-bar { flex-direction: column; }
     .search-bar .btn { width: 100%; }
     table.data { display: block; overflow-x: auto; white-space: nowrap; }
+}
+
+/* ---------------- Markdown content (admin updates) ---------------- */
+.markdown { line-height: 1.7; color: var(--text); word-wrap: break-word; }
+.markdown h1, .markdown h2, .markdown h3 { letter-spacing: -0.02em; margin: 1.2em 0 0.5em; }
+.markdown h1 { font-size: 1.7rem; }
+.markdown h2 { font-size: 1.35rem; }
+.markdown h3 { font-size: 1.12rem; }
+.markdown p { margin: 0.7em 0; }
+.markdown ul, .markdown ol { margin: 0.7em 0; padding-left: 1.4em; }
+.markdown li { margin: 0.25em 0; }
+.markdown a { color: var(--primary); }
+.markdown code {
+    background: var(--surface-2); border: 1px solid var(--border);
+    padding: 1px 6px; border-radius: 6px; font-size: .9em;
+    font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+}
+.markdown pre {
+    background: var(--surface-2); border: 1px solid var(--border);
+    border-radius: 10px; padding: 14px 16px; overflow-x: auto;
+}
+.markdown pre code { background: none; border: none; padding: 0; }
+.markdown blockquote {
+    margin: 0.8em 0; padding: 4px 16px; border-left: 4px solid var(--primary);
+    color: var(--muted); background: var(--surface-2); border-radius: 0 8px 8px 0;
+}
+.markdown hr { border: none; border-top: 1px solid var(--border); margin: 1.4em 0; }
+.markdown img { border-radius: 10px; }
+.markdown table { border-collapse: collapse; margin: 0.8em 0; }
+.markdown th, .markdown td { border: 1px solid var(--border); padding: 6px 10px; }
+
+/* ---------------- Update post (ads on both sides) ---------------- */
+.layout-3col { display: grid; grid-template-columns: 160px 1fr 160px; gap: 26px; align-items: start; }
+.layout-3col .ad-rail { position: sticky; top: 84px; display: flex; flex-direction: column; gap: 16px; }
+.layout-3col .ad-rail .ad-slot { min-height: 320px; }
+
+.update-list-item {
+    display: flex; justify-content: space-between; align-items: center; gap: 14px;
+    padding: 14px 16px; border: 1px solid var(--border); border-radius: 12px;
+    background: var(--surface); margin-bottom: 10px; transition: transform .12s, box-shadow .12s;
+}
+.update-list-item:hover { transform: translateY(-2px); box-shadow: var(--shadow); text-decoration: none; }
+.update-list-item .t { font-weight: 700; color: var(--text); }
+.update-list-item .d { color: var(--muted); font-size: .82rem; white-space: nowrap; }
+
+@media (max-width: 980px) {
+    .layout-3col { grid-template-columns: 1fr; }
+    .layout-3col .ad-rail { position: static; flex-direction: row; flex-wrap: wrap; }
+    .layout-3col .ad-rail .ad-slot { flex: 1; min-width: 240px; min-height: 120px; }
 }

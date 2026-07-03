@@ -19,6 +19,9 @@ public class PasswordResetService {
 
     private static final SecureRandom RANDOM = new SecureRandom();
     private static final long EXPIRY_MINUTES = 30;
+    private static final int MAX_ATTEMPTS = 5;
+    /** Single generic message for every failure mode, so the response can't be used to enumerate accounts. */
+    private static final String INVALID_MESSAGE = "Invalid or expired reset code. Request a new one.";
 
     private final UserRepository userRepository;
     private final VerificationTokenRepository tokenRepository;
@@ -48,19 +51,27 @@ public class PasswordResetService {
         });
     }
 
-    @Transactional
+    // noRollbackFor is required: without it, the attempts/consumed write below would be undone by Spring's default
+    // rollback-on-RuntimeException before ApiException leaves this method, silently defeating the attempt cap.
+    @Transactional(noRollbackFor = ApiException.class)
     public void reset(String email, String code, String newPassword) {
+        // Every failure below throws the same message/status
         User user = userRepository.findByEmailIgnoreCase(email.trim())
-                .orElseThrow(() -> ApiException.badRequest("Invalid email or code"));
+                .orElseThrow(() -> ApiException.badRequest(INVALID_MESSAGE));
         VerificationToken token = tokenRepository
                 .findFirstByUserIdAndChannelAndConsumedFalseOrderByIdDesc(
                         user.getId(), VerificationToken.Channel.PASSWORD_RESET)
-                .orElseThrow(() -> ApiException.badRequest("No active reset request. Start over."));
+                .orElseThrow(() -> ApiException.badRequest(INVALID_MESSAGE));
         if (token.isExpired()) {
-            throw ApiException.badRequest("That code has expired. Request a new one.");
+            throw ApiException.badRequest(INVALID_MESSAGE);
         }
         if (!token.getCode().equals(code.trim())) {
-            throw ApiException.badRequest("Incorrect code.");
+            token.setAttempts(token.getAttempts() + 1);
+            if (token.getAttempts() >= MAX_ATTEMPTS) {
+                token.setConsumed(true);
+            }
+            tokenRepository.save(token);
+            throw ApiException.badRequest(INVALID_MESSAGE);
         }
         token.setConsumed(true);
         user.setPasswordHash(passwordEncoder.encode(newPassword));

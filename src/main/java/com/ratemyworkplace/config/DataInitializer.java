@@ -61,6 +61,8 @@ public class DataInitializer implements CommandLineRunner {
             return;
         }
         User admin = new User();
+        admin.setFirstName("Site");
+        admin.setLastName("Administrator");
         admin.setDisplayName("Administrator");
         admin.setUsername(adminProps.getUsername());
         admin.setEmail(adminProps.getEmail());
@@ -90,6 +92,8 @@ public class DataInitializer implements CommandLineRunner {
 
         User demoAuthor = userRepository.findByUsernameIgnoreCase("demo_reviewer").orElseGet(() -> {
             User u = new User();
+            u.setFirstName("Jordan");
+            u.setLastName("Avery");
             u.setDisplayName("Jordan A.");
             u.setUsername("demo_reviewer");
             u.setEmail("demo.reviewer@ratemyworkplace.local");

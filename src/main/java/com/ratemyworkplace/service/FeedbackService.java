@@ -17,13 +17,23 @@ public class FeedbackService {
     private final LocationRepository locationRepository;
     private final ProofService proofService;
     private final CompanyService companyService;
+    private final NotificationService notificationService;
+    private final AuditService auditService;
 
-    public FeedbackService(FeedbackRepository feedbackRepository, LocationRepository locationRepository,
-                           ProofService proofService, CompanyService companyService) {
+    public FeedbackService(
+            FeedbackRepository feedbackRepository,
+            LocationRepository locationRepository,
+            ProofService proofService,
+            CompanyService companyService,
+            NotificationService notificationService,
+            AuditService auditService
+    ) {
         this.feedbackRepository = feedbackRepository;
         this.locationRepository = locationRepository;
         this.proofService = proofService;
         this.companyService = companyService;
+        this.notificationService = notificationService;
+        this.auditService = auditService;
     }
 
     public Page<Feedback> forLocation(Long locationId, Pageable pageable) {
@@ -81,6 +91,15 @@ public class FeedbackService {
         feedback.setModerationNote(note);
         feedback = feedbackRepository.save(feedback);
         companyService.recomputeAggregates(feedback.getLocation());
+
+        String author = feedback.getAuthor() != null ? feedback.getAuthor().getDisplayName() : "Anonymous";
+        auditService.record(com.ratemyworkplace.domain.AuditCategory.FEEDBACK,
+                hide ? com.ratemyworkplace.domain.AuditAction.REJECTED : com.ratemyworkplace.domain.AuditAction.APPROVED,
+                "Review by " + author + " for '" + feedback.getCompany().getName() + "' "
+                        + (hide ? "hidden" : "restored"),
+                (feedback.getTitle() != null ? feedback.getTitle() + "\n" : "") + feedback.getBody()
+                        + (note != null && !note.isBlank() ? "\n\nModerator note: " + note : ""),
+                feedback.getId());
         return feedback;
     }
 
@@ -89,7 +108,18 @@ public class FeedbackService {
         Feedback feedback = feedbackRepository.findById(id)
                 .orElseThrow(() -> ApiException.notFound("Feedback not found"));
         Location location = feedback.getLocation();
+
+        // Capture author + company details before the row is gone, to notify them.
+        User author = feedback.getAuthor();
+        String authorEmail = author != null ? author.getEmail() : null;
+        String authorName = author != null ? author.getDisplayName() : null;
+        String companyName = feedback.getCompany().getName();
+
         feedbackRepository.delete(feedback);
         companyService.recomputeAggregates(location);
+
+        if (authorEmail != null) {
+            notificationService.notifyFeedbackRemoved(authorEmail, authorName, companyName);
+        }
     }
 }

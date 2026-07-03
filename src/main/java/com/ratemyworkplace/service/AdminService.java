@@ -30,13 +30,17 @@ public class AdminService {
     private final SiteUpdateRepository siteUpdateRepository;
     private final VerificationTokenRepository verificationTokenRepository;
     private final VisitLogRepository visitLogRepository;
+    private final NotificationService notificationService;
+    private final AuditService auditService;
 
     public AdminService(CompanyRepository companyRepository, LocationRepository locationRepository,
                         FeedbackRepository feedbackRepository, EmploymentProofRepository proofRepository,
                         UserRepository userRepository, SiteFeedbackRepository siteFeedbackRepository,
                         SiteUpdateRepository siteUpdateRepository,
                         VerificationTokenRepository verificationTokenRepository,
-                        VisitLogRepository visitLogRepository) {
+                        VisitLogRepository visitLogRepository,
+                        NotificationService notificationService,
+                        AuditService auditService) {
         this.companyRepository = companyRepository;
         this.locationRepository = locationRepository;
         this.feedbackRepository = feedbackRepository;
@@ -46,6 +50,8 @@ public class AdminService {
         this.siteUpdateRepository = siteUpdateRepository;
         this.verificationTokenRepository = verificationTokenRepository;
         this.visitLogRepository = visitLogRepository;
+        this.notificationService = notificationService;
+        this.auditService = auditService;
     }
 
     // ---- workplace approval ----
@@ -58,7 +64,21 @@ public class AdminService {
         Company company = companyRepository.findById(id)
                 .orElseThrow(() -> ApiException.notFound("Workplace not found"));
         company.setStatus(approve ? ApprovalStatus.APPROVED : ApprovalStatus.REJECTED);
-        return companyRepository.save(company);
+        Company saved = companyRepository.save(company);
+
+        User submitter = saved.getSubmittedBy();
+        if (submitter != null) {
+            notificationService.notifyWorkplaceReviewed(submitter.getEmail(), submitter.getDisplayName(),
+                    saved.getName(), approve, null);
+        }
+        String submittedBy = submitter != null ? submitter.getDisplayName() + " (@" + submitter.getUsername() + ")" : "unknown";
+        auditService.record(AuditCategory.WORKPLACE, approve ? AuditAction.APPROVED : AuditAction.REJECTED,
+                "Workplace '" + saved.getName() + "' " + (approve ? "approved" : "rejected"),
+                "Submitted by " + submittedBy
+                        + (saved.getWebsite() != null ? "\nWebsite: " + saved.getWebsite() : "")
+                        + (saved.getDescription() != null ? "\n" + saved.getDescription() : ""),
+                saved.getId());
+        return saved;
     }
 
     @Transactional
@@ -88,8 +108,16 @@ public class AdminService {
         if (user.getRole() == Role.ADMIN && !enabled) {
             throw ApiException.badRequest("You cannot disable an admin account");
         }
-        user.setEnabled(enabled);
-        return userRepository.save(user);
+        boolean wasEnabled = user.isEnabled();
+        User saved = userRepository.save(user);
+        if (wasEnabled != enabled) {
+            if (enabled) {
+                notificationService.notifyAccountEnabled(saved.getEmail(), saved.getDisplayName());
+            } else {
+                notificationService.notifyAccountDisabled(saved.getEmail(), saved.getDisplayName());
+            }
+        }
+        return saved;
     }
 
     @Transactional
@@ -107,6 +135,18 @@ public class AdminService {
         if (user.getRole() == Role.ADMIN) {
             throw ApiException.badRequest("Admin accounts cannot be deleted from the panel");
         }
+        // Capture details before the account is removed, to notify them and keep a record.
+        String email = user.getEmail();
+        String displayName = user.getDisplayName();
+        String snapshot = "Name: " + user.getFullName()
+                + "\nDisplay name: " + displayName
+                + "\nUsername: @" + user.getUsername()
+                + "\nEmail: " + email
+                + "\nPhone: " + user.getPhoneNumber()
+                + "\nRole: " + user.getRole()
+                + "\nVerified: email=" + user.isEmailVerified() + ", phone=" + user.isPhoneVerified()
+                + (user.getFlaggedReason() != null ? "\nFlagged: " + user.getFlaggedReason() : "")
+                + "\nJoined: " + user.getCreatedAt();
         // Clear or remove everything that references the user before deleting it.
         feedbackRepository.deleteByAuthorId(userId);
         proofRepository.deleteByUserId(userId);
@@ -116,6 +156,10 @@ public class AdminService {
         siteUpdateRepository.detachAuthor(userId);
         companyRepository.detachSubmitter(userId);
         userRepository.delete(user);
+
+        notificationService.notifyAccountDeleted(email, displayName);
+        auditService.record(AuditCategory.USER, AuditAction.DELETED,
+                "User @" + user.getUsername() + " (" + displayName + ") deleted", snapshot, userId);
     }
 
     // ---- statistics ----

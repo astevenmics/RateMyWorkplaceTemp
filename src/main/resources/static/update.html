@@ -1,0 +1,68 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Update — RateMyWorkplace</title>
+    <script>(function(){var t=localStorage.getItem('rmw-theme');if(t)document.documentElement.setAttribute('data-theme',t);})();</script>
+    <link rel="stylesheet" href="/css/styles.css">
+    <!-- Google AdSense: add your client/slot IDs and uncomment to monetise these rails.
+    <script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-XXXXXXXXXXXXXXXX" crossorigin="anonymous"></script>
+    -->
+</head>
+<body>
+<header class="site-header" id="site-header"></header>
+
+<section class="section">
+    <div class="container">
+        <p><a href="/updates.html" class="pill-link">← All updates</a></p>
+        <div id="loading" class="spinner">Loading…</div>
+
+        <div id="content" class="hidden layout-3col" style="margin-top:8px">
+            <!-- Left ad rail -->
+            <aside class="ad-rail">
+                <div class="ad-slot"><div><strong>Advertisement</strong><br>Google AdSense<br><span style="font-size:.78rem">(160×600)</span></div></div>
+            </aside>
+
+            <!-- Post -->
+            <article>
+                <span id="postTag"></span>
+                <h1 id="postTitle" style="margin:.2em 0 .1em"></h1>
+                <p class="muted" id="postMeta" style="margin-top:0"></p>
+                <hr style="border:none;border-top:1px solid var(--border);margin:14px 0">
+                <div class="markdown" id="postBody"></div>
+            </article>
+
+            <!-- Right ad rail -->
+            <aside class="ad-rail">
+                <div class="ad-slot"><div><strong>Advertisement</strong><br>Google AdSense<br><span style="font-size:.78rem">(160×600)</span></div></div>
+            </aside>
+        </div>
+    </div>
+</section>
+
+<footer class="site-footer" id="site-footer"></footer>
+
+<script src="/js/app.js"></script>
+<script>
+    const id = RMW.qs('id');
+    if (!id) window.location.href = '/updates.html';
+
+    (async function () {
+        try {
+            const u = await RMW.api('/api/site/updates/' + id);
+            document.title = u.title + ' — RateMyWorkplace';
+            document.getElementById('postTitle').textContent = u.title;
+            document.getElementById('postMeta').textContent =
+                `${RMW.fmtDate(u.createdAt)} · by ${u.authorDisplayName || 'RateMyWorkplace Team'}`;
+            if (u.tag) document.getElementById('postTag').innerHTML = `<span class="tag">${RMW.escapeHtml(u.tag)}</span>`;
+            document.getElementById('postBody').innerHTML = RMW.markdown(u.body);
+            document.getElementById('loading').classList.add('hidden');
+            document.getElementById('content').classList.remove('hidden');
+        } catch (e) {
+            document.getElementById('loading').textContent = 'Update not found.';
+        }
+    })();
+</script>
+</body>
+</html>

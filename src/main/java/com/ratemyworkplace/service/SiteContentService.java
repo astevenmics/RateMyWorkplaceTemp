@@ -59,6 +59,16 @@ public class SiteContentService {
         return siteUpdateRepository.findTop5ByPublishedTrueOrderByCreatedAtDesc();
     }
 
+    /** Fetch a single published update for the public post page. */
+    public SiteUpdate getPublishedUpdate(Long id) {
+        SiteUpdate update = siteUpdateRepository.findById(id)
+                .orElseThrow(() -> ApiException.notFound("Update not found"));
+        if (!update.isPublished()) {
+            throw ApiException.notFound("Update not found");
+        }
+        return update;
+    }
+
     @Transactional
     public SiteUpdate createUpdate(User author, Requests.SiteUpdateRequest req) {
         SiteUpdate update = new SiteUpdate();
@@ -67,6 +77,16 @@ public class SiteContentService {
         update.setTag(req.tag());
         update.setAuthor(author);
         update.setPublished(true);
+        return siteUpdateRepository.save(update);
+    }
+
+    @Transactional
+    public SiteUpdate editUpdate(Long id, Requests.SiteUpdateRequest req) {
+        SiteUpdate update = siteUpdateRepository.findById(id)
+                .orElseThrow(() -> ApiException.notFound("Update not found"));
+        update.setTitle(req.title());
+        update.setBody(req.body());
+        update.setTag(req.tag());
         return siteUpdateRepository.save(update);
     }
 

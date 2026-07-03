@@ -49,4 +49,9 @@ public class SiteController {
     public List<Responses.SiteUpdateDto> latest() {
         return siteContentService.latestUpdates().stream().map(DtoMapper::siteUpdate).toList();
     }
+
+    @GetMapping("/updates/{id}")
+    public Responses.SiteUpdateDto update(@PathVariable Long id) {
+        return DtoMapper.siteUpdate(siteContentService.getPublishedUpdate(id));
+    }
 }

@@ -22,20 +22,36 @@ public class AdminController {
     private final CategoryService categoryService;
     private final SiteContentService siteContentService;
     private final CurrentUserService currentUserService;
+    private final AuditService auditService;
 
     public AdminController(AdminService adminService, UserService userService, CategoryService categoryService,
-                           SiteContentService siteContentService, CurrentUserService currentUserService) {
+                           SiteContentService siteContentService, CurrentUserService currentUserService,
+                           AuditService auditService) {
         this.adminService = adminService;
         this.userService = userService;
         this.categoryService = categoryService;
         this.siteContentService = siteContentService;
         this.currentUserService = currentUserService;
+        this.auditService = auditService;
     }
 
     // ---- statistics dashboard ----
     @GetMapping("/stats")
     public Responses.StatsDto stats() {
         return adminService.stats();
+    }
+
+    // ---- audit trail (records of approved/rejected workplaces & reviews, deleted users) ----
+    @GetMapping("/audit")
+    public Page<Responses.AuditLogDto> audit(
+            @RequestParam(required = false) String category,
+            @PageableDefault(size = 30, sort = "createdAt",
+                    direction = org.springframework.data.domain.Sort.Direction.DESC) Pageable pageable) {
+        com.ratemyworkplace.domain.AuditCategory cat = null;
+        if (category != null && !category.isBlank() && !"ALL".equalsIgnoreCase(category)) {
+            cat = com.ratemyworkplace.domain.AuditCategory.valueOf(category.toUpperCase());
+        }
+        return auditService.list(cat, pageable).map(DtoMapper::audit);
     }
 
     // ---- user management ----
@@ -91,6 +107,12 @@ public class AdminController {
     @PostMapping("/site-updates")
     public Responses.SiteUpdateDto createUpdate(@Valid @RequestBody Requests.SiteUpdateRequest request) {
         return DtoMapper.siteUpdate(siteContentService.createUpdate(currentUserService.require(), request));
+    }
+
+    @PutMapping("/site-updates/{id}")
+    public Responses.SiteUpdateDto editUpdate(@PathVariable Long id,
+                                              @Valid @RequestBody Requests.SiteUpdateRequest request) {
+        return DtoMapper.siteUpdate(siteContentService.editUpdate(id, request));
     }
 
     @DeleteMapping("/site-updates/{id}")

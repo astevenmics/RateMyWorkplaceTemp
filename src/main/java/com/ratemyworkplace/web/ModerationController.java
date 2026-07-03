@@ -57,10 +57,13 @@ public class ModerationController {
     public ResponseEntity<Resource> proofFile(@PathVariable Long id) {
         EmploymentProof proof = proofService.get(id);
         Resource resource = new FileSystemResource(fileStorageService.resolve(proof.getStoredFileName()));
+        // Force a download (attachment) rather than rendering inline, so a malicious or
+        // corrupted upload is never executed/rendered in the reviewer's browser.
         return ResponseEntity.ok()
-                .contentType(MediaType.parseMediaType(proof.getContentType()))
+                .contentType(MediaType.APPLICATION_OCTET_STREAM)
                 .header(HttpHeaders.CONTENT_DISPOSITION,
-                        "inline; filename=\"" + proof.getOriginalFileName() + "\"")
+                        "attachment; filename=\"" + proof.getOriginalFileName() + "\"")
+                .header("X-Content-Type-Options", "nosniff")
                 .body(resource);
     }
 

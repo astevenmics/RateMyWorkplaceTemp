@@ -4,6 +4,7 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Verify your account — RateMyWorkplace</title>
+  <script>(function(){var t=localStorage.getItem("rmw-theme");if(t)document.documentElement.setAttribute("data-theme",t);})();</script>
   <link rel="stylesheet" href="/css/styles.css">
 </head>
 <body>
@@ -55,26 +56,74 @@
       document.getElementById('done').className = user.fullyVerified ? 'alert success show' : 'alert success';
     }
 
+    const COOLDOWN_MS = 5 * 60 * 1000; // resend allowed every 5 minutes
+    const verifiedState = { email: false, phone: false };
+    const timers = {};
+
     function setStatus(channel, ok) {
+      verifiedState[channel] = ok;
       const el = document.getElementById(channel + 'Status');
       el.textContent = ok ? 'Verified' : 'Pending';
       el.className = 'badge ' + (ok ? 'approved' : 'pending');
       document.getElementById(channel + 'Block').style.opacity = ok ? '0.6' : '1';
+
+      const verifyBtn = document.getElementById('verify' + cap(channel) + 'Btn');
+      const codeInput = document.getElementById(channel + 'Code');
+      if (ok) {
+        // Once verified, lock the section so no more codes/attempts can be sent.
+        verifyBtn.disabled = true;
+        codeInput.disabled = true;
+        clearInterval(timers[channel]);
+        const resendBtn = document.getElementById('resend' + cap(channel) + 'Btn');
+        resendBtn.disabled = true;
+        resendBtn.textContent = 'Verified';
+      } else {
+        verifyBtn.disabled = false;
+        codeInput.disabled = false;
+        refreshCooldown(channel);
+      }
+    }
+
+    function cap(s) { return s.charAt(0).toUpperCase() + s.slice(1); }
+    function cooldownKey(channel) { return 'rmw-resend-' + channel; }
+
+    function refreshCooldown(channel) {
+      if (verifiedState[channel]) return;
+      const resendBtn = document.getElementById('resend' + cap(channel) + 'Btn');
+      clearInterval(timers[channel]);
+      const tick = () => {
+        const started = parseInt(localStorage.getItem(cooldownKey(channel)) || '0', 10);
+        const remaining = started + COOLDOWN_MS - Date.now();
+        if (remaining > 0) {
+          const m = Math.floor(remaining / 60000), s = Math.floor((remaining % 60000) / 1000);
+          resendBtn.disabled = true;
+          resendBtn.textContent = `Resend in ${m}:${String(s).padStart(2, '0')}`;
+        } else {
+          resendBtn.disabled = false;
+          resendBtn.textContent = 'Resend';
+          clearInterval(timers[channel]);
+        }
+      };
+      tick();
+      timers[channel] = setInterval(tick, 1000);
     }
 
     async function verify(channel, code) {
       if (!code.trim()) { RMW.toast(alertEl, 'error', 'Enter the code first.'); return; }
       try {
         await RMW.api('/api/auth/verify', { method: 'POST', body: { channel, code: code.trim() } });
-        RMW.toast(alertEl, 'success', channel + ' verified!');
+        RMW.toast(alertEl, 'success', cap(channel.toLowerCase()) + ' verified!');
         await refresh();
       } catch (err) { RMW.toast(alertEl, 'error', err.message); }
     }
 
     async function resend(channel) {
+      const key = channel.toLowerCase();
       try {
         await RMW.api('/api/auth/verify/resend', { method: 'POST', body: { channel } });
-        RMW.toast(alertEl, 'info', 'A new code was sent (check the server log in dev mode).');
+        localStorage.setItem(cooldownKey(key), String(Date.now()));
+        refreshCooldown(key);
+        RMW.toast(alertEl, 'info', 'A new code was sent (check the server log in dev mode). You can resend again in 5 minutes.');
       } catch (err) { RMW.toast(alertEl, 'error', err.message); }
     }
 

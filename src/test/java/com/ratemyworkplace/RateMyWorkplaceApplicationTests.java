@@ -61,7 +61,7 @@ class RateMyWorkplaceApplicationTests {
     @Test
     void registrationCreatesAccount() throws Exception {
         var request = new Requests.RegisterRequest(
-                "Test User", "test_user_1", "test1@example.com", "+15551230000", "Password123");
+                "Test", "User", "Test User", "test_user_1", "test1@example.com", "+15551230000", "Password123");
         mockMvc.perform(post("/api/auth/register")
                         .with(csrf())
                         .contentType(MediaType.APPLICATION_JSON)
@@ -74,7 +74,7 @@ class RateMyWorkplaceApplicationTests {
     @Test
     void registrationRejectsBadUsername() throws Exception {
         var request = new Requests.RegisterRequest(
-                "Bad", "x", "bad@example.com", "+15551230000", "Password123");
+                "Bad", "Name", "Bad", "x", "bad@example.com", "+15551230000", "Password123");
         mockMvc.perform(post("/api/auth/register")
                         .with(csrf())
                         .contentType(MediaType.APPLICATION_JSON)

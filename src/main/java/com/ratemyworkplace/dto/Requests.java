@@ -38,7 +38,9 @@ public final class Requests {
     public record ResetPasswordRequest(
             @NotBlank @Email String email,
             @NotBlank String code,
-            @NotBlank @Size(min = 8, max = 72, message = "Password must be 8-72 characters") String newPassword) {
+            @NotBlank @Size(min = 8, max = 72, message = "Password must be 8-72 characters")
+            @Pattern(regexp = "^(?=.*[A-Za-z])(?=.*\\d).*$",
+                    message = "Password must include at least one letter and one number") String newPassword) {
     }
 
     public record VerifyRequest(

@@ -41,6 +41,8 @@ public class UserService {
         }
 
         User user = new User();
+        user.setFirstName(req.firstName().trim());
+        user.setLastName(req.lastName().trim());
         user.setDisplayName(req.displayName().trim());
         user.setUsername(req.username().trim());
         user.setEmail(req.email().trim().toLowerCase());
@@ -71,6 +73,8 @@ public class UserService {
             user.setPhoneVerified(false);
             verificationService.issue(user, VerificationToken.Channel.PHONE);
         }
+        user.setFirstName(req.firstName().trim());
+        user.setLastName(req.lastName().trim());
         user.setDisplayName(req.displayName().trim());
 
         if (req.newPassword() != null && !req.newPassword().isBlank()) {

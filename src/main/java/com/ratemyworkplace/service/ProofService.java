@@ -17,17 +17,31 @@ import java.util.List;
 @Service
 public class ProofService {
 
+    /** A user may not have more than one proof per location while it's pending or approved. */
+    private static final List<ApprovalStatus> ACTIVE_STATUSES =
+            List.of(ApprovalStatus.PENDING, ApprovalStatus.APPROVED);
+
     private final EmploymentProofRepository proofRepository;
     private final CompanyRepository companyRepository;
     private final LocationRepository locationRepository;
     private final FileStorageService fileStorageService;
+    private final NotificationService notificationService;
+    private final AuditService auditService;
 
-    public ProofService(EmploymentProofRepository proofRepository, CompanyRepository companyRepository,
-                        LocationRepository locationRepository, FileStorageService fileStorageService) {
+    public ProofService(
+            EmploymentProofRepository proofRepository,
+            CompanyRepository companyRepository,
+            LocationRepository locationRepository,
+            FileStorageService fileStorageService,
+            NotificationService notificationService,
+            AuditService auditService
+    ) {
         this.proofRepository = proofRepository;
         this.companyRepository = companyRepository;
         this.locationRepository = locationRepository;
         this.fileStorageService = fileStorageService;
+        this.notificationService = notificationService;
+        this.auditService = auditService;
     }
 
     @Transactional
@@ -42,6 +56,16 @@ public class ProofService {
             if (!location.getCompany().getId().equals(companyId)) {
                 throw ApiException.badRequest("That location does not belong to the selected workplace");
             }
+        }
+
+        // Enforce one active (pending/approved) proof per location (or per company for a company-wide proof).
+        boolean duplicate = (location != null)
+                ? proofRepository.existsByUserIdAndLocationIdAndStatusIn(user.getId(), location.getId(), ACTIVE_STATUSES)
+                : proofRepository.existsByUserIdAndCompanyIdAndLocationIsNullAndStatusIn(
+                user.getId(), companyId, ACTIVE_STATUSES);
+        if (duplicate) {
+            throw ApiException.conflict("You already have a pending or approved proof for this "
+                    + (location != null ? "location" : "company") + ". Cancel it first to submit a new one.");
         }
 
         String stored = fileStorageService.store(file);
@@ -71,6 +95,20 @@ public class ProofService {
                 .orElseThrow(() -> ApiException.notFound("Proof not found"));
     }
 
+    /** Cancel a still-pending proof. Only the owner may cancel, and only while PENDING. */
+    @Transactional
+    public void cancel(User user, Long id) {
+        EmploymentProof proof = get(id);
+        if (!proof.getUser().getId().equals(user.getId())) {
+            throw ApiException.forbidden("You can only cancel your own submissions");
+        }
+        if (proof.getStatus() != ApprovalStatus.PENDING) {
+            throw ApiException.badRequest("Only pending submissions can be cancelled");
+        }
+        fileStorageService.delete(proof.getStoredFileName());
+        proofRepository.delete(proof);
+    }
+
     @Transactional
     public EmploymentProof review(Long id, boolean approve, String note, User reviewer) {
         EmploymentProof proof = get(id);
@@ -78,7 +116,22 @@ public class ProofService {
         proof.setReviewNote(note);
         proof.setReviewedBy(reviewer);
         proof.setReviewedAt(Instant.now());
-        return proofRepository.save(proof);
+        EmploymentProof saved = proofRepository.save(proof);
+
+        User owner = saved.getUser();
+        String locationLabel = saved.getLocation() != null
+                ? com.ratemyworkplace.dto.DtoMapper.locationLabel(saved.getLocation()) : null;
+        notificationService.notifyProofReviewed(owner.getEmail(), owner.getDisplayName(),
+                saved.getCompany().getName(), locationLabel, approve, note);
+        auditService.record(com.ratemyworkplace.domain.AuditCategory.PROOF,
+                approve ? com.ratemyworkplace.domain.AuditAction.APPROVED : com.ratemyworkplace.domain.AuditAction.REJECTED,
+                "Employment proof for '" + saved.getCompany().getName() + "' by " + owner.getDisplayName()
+                        + " " + (approve ? "approved" : "rejected"),
+                "Submitter: " + owner.getFullName() + " (@" + owner.getUsername() + ")"
+                        + (locationLabel != null ? "\nLocation: " + locationLabel : " (company-wide)")
+                        + (note != null && !note.isBlank() ? "\nReviewer note: " + note : ""),
+                saved.getId());
+        return saved;
     }
 
     /**

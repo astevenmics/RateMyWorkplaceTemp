@@ -9,6 +9,7 @@ import org.springframework.data.jpa.repository.Modifying;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 
+import java.util.Collection;
 import java.util.List;
 
 public interface EmploymentProofRepository extends JpaRepository<EmploymentProof, Long> {
@@ -36,4 +37,11 @@ public interface EmploymentProofRepository extends JpaRepository<EmploymentProof
 
     /** A proof scoped to one specific location. */
     boolean existsByUserIdAndLocationIdAndStatus(Long userId, Long locationId, ApprovalStatus status);
+
+
+    // ----- one-proof-per-location enforcement (any of the given statuses) -----
+    boolean existsByUserIdAndLocationIdAndStatusIn(Long userId, Long locationId, Collection<ApprovalStatus> statuses);
+
+    boolean existsByUserIdAndCompanyIdAndLocationIsNullAndStatusIn(
+            Long userId, Long companyId, Collection<ApprovalStatus> statuses);
 }

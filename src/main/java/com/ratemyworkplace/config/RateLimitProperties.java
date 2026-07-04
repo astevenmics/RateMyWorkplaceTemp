@@ -13,8 +13,15 @@ public class RateLimitProperties {
     private long sensitiveRefillTokens = 15;
     private long sensitiveRefillPeriodSeconds = 60;
 
+    /**
+     * To be turned true if a trusted reverse proxy/load balancer is used
+     */
+    private boolean trustForwardedFor = false;
+
     public boolean isEnabled() { return enabled; }
     public void setEnabled(boolean enabled) { this.enabled = enabled; }
+    public boolean isTrustForwardedFor() { return trustForwardedFor; }
+    public void setTrustForwardedFor(boolean trustForwardedFor) { this.trustForwardedFor = trustForwardedFor; }
     public long getCapacity() { return capacity; }
     public void setCapacity(long capacity) { this.capacity = capacity; }
     public long getRefillTokens() { return refillTokens; }

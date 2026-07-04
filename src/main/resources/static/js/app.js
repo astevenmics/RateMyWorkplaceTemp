@@ -105,6 +105,16 @@ const RMW = (() => {
             .replace(/"/g, '&quot;').replace(/'/g, '&#39;');
     }
 
+    /** Render a user's avatar: their uploaded picture, or their initials as a fallback. */
+    function avatarHtml(user, sizeClass = 'sm') {
+        const name = (user && (user.displayName || user.username)) || '?';
+        const initials = name.trim().charAt(0) || '?';
+        if (user && user.avatarUrl) {
+            return `<img class="avatar ${sizeClass}" src="${escapeHtml(user.avatarUrl)}" alt="${escapeHtml(name)}">`;
+        }
+        return `<span class="avatar ${sizeClass}" aria-hidden="true">${escapeHtml(initials)}</span>`;
+    }
+
     function fmtDate(iso) {
         if (!iso) return '';
         try { return new Date(iso).toLocaleDateString(undefined, { year: 'numeric', month: 'short', day: 'numeric' }); }
@@ -148,6 +158,65 @@ const RMW = (() => {
         }
     }
 
+    // ---- theme (light / dark) ----
+    function currentTheme() {
+        return document.documentElement.getAttribute('data-theme')
+            || localStorage.getItem('rmw-theme') || 'light';
+    }
+    function applyTheme(theme) {
+        document.documentElement.setAttribute('data-theme', theme);
+        try { localStorage.setItem('rmw-theme', theme); } catch (e) { /* ignore */ }
+        const btn = document.getElementById('themeToggle');
+        if (btn) {
+            btn.textContent = theme === 'dark' ? '☀️' : '🌙';
+            btn.title = theme === 'dark' ? 'Switch to light mode' : 'Switch to dark mode';
+        }
+    }
+    function toggleTheme() { applyTheme(currentTheme() === 'dark' ? 'light' : 'dark'); }
+    // Apply the stored preference as early as possible (a head snippet also does this to avoid flash).
+    applyTheme(localStorage.getItem('rmw-theme') || 'light');
+
+    // ---- minimal, safe markdown renderer (admin-authored update bodies) ----
+    function markdown(src) {
+        if (!src) return '';
+        let s = escapeHtml(src);
+        const blocks = [];
+        s = s.replace(/```([\s\S]*?)```/g, (m, code) => { blocks.push(code.replace(/^\n/, '')); return `B${blocks.length - 1}`; });
+        const inline = [];
+        s = s.replace(/`([^`]+)`/g, (m, c) => { inline.push(c); return `I${inline.length - 1}`; });
+        s = s.replace(/^###### (.*)$/gm, '<h6>$1</h6>')
+            .replace(/^##### (.*)$/gm, '<h5>$1</h5>')
+            .replace(/^#### (.*)$/gm, '<h4>$1</h4>')
+            .replace(/^### (.*)$/gm, '<h3>$1</h3>')
+            .replace(/^## (.*)$/gm, '<h2>$1</h2>')
+            .replace(/^# (.*)$/gm, '<h1>$1</h1>');
+        s = s.replace(/^\s*([-*_])\1{2,}\s*$/gm, '<hr>');
+        s = s.replace(/^&gt; ?(.*)$/gm, '<blockquote>$1</blockquote>')
+            .replace(/<\/blockquote>\n<blockquote>/g, '\n');
+        s = s.replace(/!\[([^\]]*)\]\((https?:\/\/[^\s)]+|\/[^\s)]*)\)/g, '<img alt="$1" src="$2">');
+        s = s.replace(/\[([^\]]+)\]\((https?:\/\/[^\s)]+|\/[^\s)]*)\)/g,
+            '<a href="$2" target="_blank" rel="noopener nofollow">$1</a>');
+        s = s.replace(/\*\*([^*]+)\*\*/g, '<strong>$1</strong>')
+            .replace(/__([^_]+)__/g, '<strong>$1</strong>')
+            .replace(/(^|[^*])\*([^*\n]+)\*/g, '$1<em>$2</em>');
+        s = s.replace(/(?:^|\n)((?:[-*+] .*(?:\n|$))+)/g, (m, list) => {
+            const items = list.trim().split('\n').map(li => `<li>${li.replace(/^[-*+] /, '')}</li>`).join('');
+            return `\n<ul>${items}</ul>\n`;
+        });
+        s = s.replace(/(?:^|\n)((?:\d+\. .*(?:\n|$))+)/g, (m, list) => {
+            const items = list.trim().split('\n').map(li => `<li>${li.replace(/^\d+\. /, '')}</li>`).join('');
+            return `\n<ol>${items}</ol>\n`;
+        });
+        s = s.split(/\n{2,}/).map(b => {
+            const t = b.trim();
+            if (!t) return '';
+            if (/^<(h\d|ul|ol|pre|blockquote|hr|table|img)/.test(t)) return t;
+            return `<p>${t.replace(/\n/g, '<br>')}</p>`;
+        }).join('\n');
+        s = s.replace(/I(\d+)/g, (m, i) => `<code>${inline[i]}</code>`);
+        s = s.replace(/B(\d+)/g, (m, i) => `<pre><code>${blocks[i]}</code></pre>`);
+        return s;
+    }
 
     // ---- shared header / footer ----
     async function mountHeader() {
@@ -159,13 +228,18 @@ const RMW = (() => {
             <button class="nav-toggle" aria-label="Menu" id="navToggle">☰</button>
             <nav class="nav-links" id="navLinks">
               <a href="/workplaces.html">Browse</a>
+              <a href="/updates.html">Updates</a>
               <a href="/submit-workplace.html">Add Workplace</a>
               <span id="authArea"></span>
+              <button class="theme-toggle" id="themeToggle" type="button" aria-label="Toggle dark mode">🌙</button>
             </nav>
           </div>`;
         document.getElementById('navToggle').addEventListener('click', () => {
             document.getElementById('navLinks').classList.toggle('open');
         });
+        const themeBtn = document.getElementById('themeToggle');
+        themeBtn.addEventListener('click', toggleTheme);
+        applyTheme(currentTheme()); // sync the toggle icon to the active theme
 
         const user = await currentUser();
         const authArea = document.getElementById('authArea');
@@ -177,7 +251,7 @@ const RMW = (() => {
             authArea.innerHTML = `
               <a href="/submit-proof.html">Verify Employment</a>
               ${adminLink}
-              <a href="/profile.html">${escapeHtml(user.displayName)}</a>
+              <a class="nav-user" href="/profile.html">${avatarHtml(user)} ${escapeHtml(user.displayName)}</a>
               <a href="#" id="logoutLink">Logout</a>`;
             document.getElementById('logoutLink').addEventListener('click', (e) => { e.preventDefault(); logout(); });
         } else {
@@ -217,6 +291,7 @@ const RMW = (() => {
               <div>
                 <h3>What's new</h3>
                 <div id="footerNews"><p class="muted">Loading…</p></div>
+                <p style="margin-top:10px"><a href="/updates.html">View all updates →</a></p>
               </div>
             </div>
             <div class="footer-bottom">
@@ -228,11 +303,12 @@ const RMW = (() => {
         try {
             const news = await api('/api/site/updates/latest');
             const box = document.getElementById('footerNews');
+            // "What's new" shows only the title and date; each links to the full post.
             box.innerHTML = news.length ? news.map(n => `
-              <div class="news-item">
+              <a class="news-item" href="/update.html?id=${n.id}" style="display:block;text-decoration:none">
                 <div class="t">${escapeHtml(n.title)}</div>
-                <div class="d">${fmtDate(n.createdAt)}${n.tag ? ' · ' + escapeHtml(n.tag) : ''}</div>
-              </div>`).join('') : '<p class="muted">No updates yet.</p>';
+                <div class="d">${fmtDate(n.createdAt)}</div>
+              </a>`).join('') : '<p class="muted">No updates yet.</p>';
         } catch (e) { /* ignore */ }
 
         // site feedback form
@@ -260,8 +336,9 @@ const RMW = (() => {
         await mountFooter();
     }
 
-    return { api, currentUser, login, logout, stars, escapeHtml, fmtDate, qs, toast, clearToast,
-        setLoading, mountChrome, mountHeader, mountFooter, ensureCsrf };
+    return { api, currentUser, login, logout, stars, avatarHtml, escapeHtml, fmtDate, qs, toast, clearToast,
+        setLoading, markdown, applyTheme, toggleTheme, currentTheme,
+        mountChrome, mountHeader, mountFooter, ensureCsrf };
 })();
 
 document.addEventListener('DOMContentLoaded', () => { RMW.mountChrome(); });

@@ -27,15 +27,17 @@ public interface FeedbackRepository extends JpaRepository<Feedback, Long> {
 
     long countByStatus(ApprovalStatus status);
 
-    @Query("select coalesce(avg(f.rating),0) from Feedback f where f.location.id = :locationId and f.status = 'APPROVED'")
-    double averageForLocation(@Param("locationId") Long locationId);
+    /** Average rating + review count in one aggregate query (used to keep denormalized roll ups in sync). */
+    interface RatingStats {
+        double getAverage();
+        long getCount();
+    }
 
-    @Query("select count(f) from Feedback f where f.location.id = :locationId and f.status = 'APPROVED'")
-    long countForLocation(@Param("locationId") Long locationId);
+    @Query("select coalesce(avg(f.rating),0) as average, count(f) as count " +
+            "from Feedback f where f.location.id = :locationId and f.status = 'APPROVED'")
+    RatingStats locationStats(@Param("locationId") Long locationId);
 
-    @Query("select coalesce(avg(f.rating),0) from Feedback f where f.company.id = :companyId and f.status = 'APPROVED'")
-    double averageForCompany(@Param("companyId") Long companyId);
-
-    @Query("select count(f) from Feedback f where f.company.id = :companyId and f.status = 'APPROVED'")
-    long countForCompany(@Param("companyId") Long companyId);
+    @Query("select coalesce(avg(f.rating),0) as average, count(f) as count " +
+            "from Feedback f where f.company.id = :companyId and f.status = 'APPROVED'")
+    RatingStats companyStats(@Param("companyId") Long companyId);
 }

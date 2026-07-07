@@ -38,9 +38,11 @@ public class Company {
     @JoinTable(name = "company_categories",
             joinColumns = @JoinColumn(name = "company_id"),
             inverseJoinColumns = @JoinColumn(name = "category_id"))
+    @Fetch(FetchMode.SUBSELECT)
     private Set<Category> categories = new HashSet<>();
 
     @OneToMany(mappedBy = "company", cascade = CascadeType.ALL, orphanRemoval = true)
+    @Fetch(FetchMode.SUBSELECT)
     private List<Location> locations = new ArrayList<>();
 
     @Enumerated(EnumType.STRING)

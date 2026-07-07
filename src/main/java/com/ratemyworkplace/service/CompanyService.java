@@ -92,16 +92,18 @@ public class CompanyService {
         return companyRepository.save(company);
     }
 
-    /** Recomputes denormalised rating aggregates for a location and its parent company. */
+    /** Recomputes denormalized rating aggregates for a location and its parent company. */
     @Transactional
     public void recomputeAggregates(Location location) {
-        location.setAverageRating(feedbackRepository.averageForLocation(location.getId()));
-        location.setRatingCount(feedbackRepository.countForLocation(location.getId()));
+        FeedbackRepository.RatingStats locationStats = feedbackRepository.locationStats(location.getId());
+        location.setAverageRating(locationStats.getAverage());
+        location.setRatingCount(locationStats.getCount());
         locationRepository.save(location);
 
         Company company = location.getCompany();
-        company.setAverageRating(feedbackRepository.averageForCompany(company.getId()));
-        company.setRatingCount(feedbackRepository.countForCompany(company.getId()));
+        FeedbackRepository.RatingStats companyStats = feedbackRepository.companyStats(company.getId());
+        company.setAverageRating(companyStats.getAverage());
+        company.setRatingCount(companyStats.getCount());
         companyRepository.save(company);
     }
 

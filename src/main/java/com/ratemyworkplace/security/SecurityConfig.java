@@ -53,10 +53,25 @@ public class SecurityConfig {
                 .addFilterBefore(rateLimitFilter, UsernamePasswordAuthenticationFilter.class)
                 .addFilterAfter(new CsrfCookieFilter(), UsernamePasswordAuthenticationFilter.class)
                 .sessionManagement(s -> s.sessionCreationPolicy(SessionCreationPolicy.IF_REQUIRED))
+                .headers(headers -> headers
+                        .contentSecurityPolicy(csp -> csp.policyDirectives(
+                                "default-src 'self'; " +
+                                        "script-src 'self' 'unsafe-inline'; " +
+                                        "style-src 'self' 'unsafe-inline'; " +
+                                        "img-src 'self' data:; " +
+                                        "connect-src 'self'; " +
+                                        "object-src 'none'; " +
+                                        "frame-ancestors 'none'; " +
+                                        "base-uri 'self'; " +
+                                        "form-action 'self'"))
+                        .referrerPolicy(r -> r.policy(
+                                org.springframework.security.web.header.writers.ReferrerPolicyHeaderWriter.ReferrerPolicy.STRICT_ORIGIN_WHEN_CROSS_ORIGIN))
+                        .permissionsPolicyHeader(p -> p.policy(
+                                "geolocation=(), camera=(), microphone=(), payment=(), usb=()")))
                 .authorizeHttpRequests(auth -> auth
                         // ---- public static pages & assets ----
                         .requestMatchers("/", "/index.html", "/css/**", "/js/**", "/img/**",
-                                "/assets/**", "/favicon.ico", "/*.html", "/error").permitAll()
+                                "/assets/**", "/favicon/**", "/*.html", "/error").permitAll()
                         // ---- public read-only API ----
                         .requestMatchers(org.springframework.http.HttpMethod.GET,
                                 "/api/companies/**", "/api/categories/**", "/api/locations/**",

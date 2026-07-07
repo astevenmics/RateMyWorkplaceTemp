@@ -31,6 +31,10 @@ public class VerificationToken {
     @Column(nullable = false)
     private boolean consumed = false;
 
+    /** Failed verification attempts against this specific code, so a code can't be brute-forced. */
+    @Column(nullable = false)
+    private int attempts = 0;
+
     public boolean isExpired() {
         return Instant.now().isAfter(expiresAt);
     }
@@ -47,4 +51,6 @@ public class VerificationToken {
     public void setExpiresAt(Instant expiresAt) { this.expiresAt = expiresAt; }
     public boolean isConsumed() { return consumed; }
     public void setConsumed(boolean consumed) { this.consumed = consumed; }
+    public int getAttempts() { return attempts; }
+    public void setAttempts(int attempts) { this.attempts = attempts; }
 }

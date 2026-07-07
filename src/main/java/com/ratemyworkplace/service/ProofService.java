@@ -125,7 +125,7 @@ public class ProofService {
                 "Submitter: " + owner.getFullName() + " (@" + owner.getUsername() + ")"
                         + (locationLabel != null ? "\nLocation: " + locationLabel : " (company-wide)")
                         + (note != null && !note.isBlank() ? "\nReviewer note: " + note : ""),
-                saved.getId());
+                saved.getId(), reviewer.getUsername());
         return saved;
     }
 

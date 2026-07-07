@@ -19,7 +19,9 @@ public final class Requests {
                     message = "Username must be 3-40 chars: letters, digits, underscore or dot") String username,
             @NotBlank @Email @Size(max = 160) String email,
             @NotBlank @Pattern(regexp = "^[+0-9 ()-]{7,30}$", message = "Enter a valid phone number") String phoneNumber,
-            @NotBlank @Size(min = 8, max = 72, message = "Password must be 8-72 characters") String password) {
+            @NotBlank @Size(min = 8, max = 72, message = "Password must be 8-72 characters")
+            @Pattern(regexp = "^(?=.*[A-Za-z])(?=.*\\d).*$",
+                    message = "Password must include at least one letter and one number") String password) {
     }
 
     public record UpdateProfileRequest(
@@ -29,7 +31,9 @@ public final class Requests {
             @NotBlank @Email @Size(max = 160) String email,
             @NotBlank @Pattern(regexp = "^[+0-9 ()-]{7,30}$") String phoneNumber,
             String currentPassword,
-            @Size(min = 8, max = 72) String newPassword) {
+            @Size(min = 8, max = 72, message = "Password must be 8-72 characters")
+            @Pattern(regexp = "^(?=.*[A-Za-z])(?=.*\\d).*$",
+                    message = "Password must include at least one letter and one number") String newPassword) {
     }
 
     public record ForgotPasswordRequest(@NotBlank @Email String email) {
@@ -38,7 +42,9 @@ public final class Requests {
     public record ResetPasswordRequest(
             @NotBlank @Email String email,
             @NotBlank String code,
-            @NotBlank @Size(min = 8, max = 72, message = "Password must be 8-72 characters") String newPassword) {
+            @NotBlank @Size(min = 8, max = 72, message = "Password must be 8-72 characters")
+            @Pattern(regexp = "^(?=.*[A-Za-z])(?=.*\\d).*$",
+                    message = "Password must include at least one letter and one number") String newPassword) {
     }
 
     public record VerifyRequest(

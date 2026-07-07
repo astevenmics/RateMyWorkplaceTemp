@@ -32,7 +32,8 @@
               <hr style="border:none;border-top:1px solid var(--border);margin:18px 0">
               <p class="muted" style="font-size:.9rem">Change password (optional)</p>
               <div class="field"><label>Current password</label><input type="password" name="currentPassword" autocomplete="current-password"></div>
-              <div class="field"><label>New password</label><input type="password" name="newPassword" minlength="8" autocomplete="new-password"></div>
+              <div class="field"><label>New password</label><input type="password" name="newPassword" minlength="8" pattern="(?=.*[A-Za-z])(?=.*\d).*" autocomplete="new-password">
+                <div class="hint">Leave blank to keep your current password. At least 8 characters, including a letter and a number.</div></div>
               <button class="btn" type="submit">Save changes</button>
             </form>
           </div>
@@ -46,6 +47,20 @@
 
         <aside>
           <div class="card">
+            <h3 style="margin-top:0">Profile picture</h3>
+            <div id="avatarAlert" class="alert"></div>
+            <div class="avatar-editor">
+              <div id="avatarPreview"></div>
+              <div class="avatar-actions">
+                <button class="btn small" type="button" id="avatarUploadBtn">Upload photo</button>
+                <button class="btn secondary small" type="button" id="avatarRemoveBtn" style="display:none">Remove</button>
+                <input type="file" id="avatarInput" accept="image/png,image/jpeg,image/webp,image/gif" hidden>
+              </div>
+            </div>
+            <div class="hint" style="margin-top:10px">PNG, JPG, WEBP or GIF, up to 10&nbsp;MB.</div>
+          </div>
+
+          <div class="card" style="margin-top:20px">
             <h3 style="margin-top:0">Verification</h3>
             <p>Email: <span id="emailBadge" class="badge">—</span></p>
             <p>Phone: <span id="phoneBadge" class="badge">—</span></p>
@@ -62,6 +77,7 @@
   <script src="/js/app.js"></script>
   <script>
     const alertEl = document.getElementById('alert');
+    const avatarAlert = document.getElementById('avatarAlert');
 
     async function load() {
       const user = await RMW.currentUser(true);
@@ -76,8 +92,57 @@
       badge('emailBadge', user.emailVerified);
       badge('phoneBadge', user.phoneVerified);
       document.getElementById('roleBadge').textContent = user.role;
+      renderAvatar(user);
       loadProofs();
     }
+
+    function renderAvatar(user) {
+      document.getElementById('avatarPreview').innerHTML = RMW.avatarHtml(user, 'lg');
+      document.getElementById('avatarRemoveBtn').style.display = user.avatarUrl ? '' : 'none';
+    }
+
+    document.getElementById('avatarUploadBtn').addEventListener('click', () => {
+      document.getElementById('avatarInput').click();
+    });
+
+    document.getElementById('avatarInput').addEventListener('change', async (e) => {
+      const file = e.target.files[0];
+      if (!file) return;
+      RMW.clearToast(avatarAlert);
+      const fd = new FormData();
+      fd.append('file', file);
+      const btn = document.getElementById('avatarUploadBtn');
+      RMW.setLoading(btn, true, 'Uploading…');
+      try {
+        const user = await RMW.api('/api/profile/avatar', { method: 'POST', form: fd });
+        RMW.toast(avatarAlert, 'success', 'Profile picture updated.');
+        renderAvatar(user);
+        await RMW.currentUser(true);
+        RMW.mountHeader();
+      } catch (err) {
+        RMW.toast(avatarAlert, 'error', err.message);
+      } finally {
+        RMW.setLoading(btn, false);
+        e.target.value = '';
+      }
+    });
+
+    document.getElementById('avatarRemoveBtn').addEventListener('click', async () => {
+      RMW.clearToast(avatarAlert);
+      const btn = document.getElementById('avatarRemoveBtn');
+      RMW.setLoading(btn, true, 'Removing…');
+      try {
+        const user = await RMW.api('/api/profile/avatar', { method: 'DELETE' });
+        RMW.toast(avatarAlert, 'success', 'Profile picture removed.');
+        renderAvatar(user);
+        await RMW.currentUser(true);
+        RMW.mountHeader();
+      } catch (err) {
+        RMW.toast(avatarAlert, 'error', err.message);
+      } finally {
+        RMW.setLoading(btn, false);
+      }
+    });
 
     function badge(id, ok) {
       const el = document.getElementById(id);

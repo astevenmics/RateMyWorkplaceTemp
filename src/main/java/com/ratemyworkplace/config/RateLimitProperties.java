@@ -13,8 +13,19 @@ public class RateLimitProperties {
     private long sensitiveRefillTokens = 15;
     private long sensitiveRefillPeriodSeconds = 60;
 
+    /**
+     * Whether to honour the client-supplied {@code X-Forwarded-For} header when
+     * bucketing by IP. Only enable this if the app sits behind a trusted reverse
+     * proxy/load balancer that overwrites the header itself: otherwise any client
+     * can set an arbitrary value and rotate it per request to bypass rate limiting
+     * entirely.
+     */
+    private boolean trustForwardedFor = false;
+
     public boolean isEnabled() { return enabled; }
     public void setEnabled(boolean enabled) { this.enabled = enabled; }
+    public boolean isTrustForwardedFor() { return trustForwardedFor; }
+    public void setTrustForwardedFor(boolean trustForwardedFor) { this.trustForwardedFor = trustForwardedFor; }
     public long getCapacity() { return capacity; }
     public void setCapacity(long capacity) { this.capacity = capacity; }
     public long getRefillTokens() { return refillTokens; }

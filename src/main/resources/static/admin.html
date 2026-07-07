@@ -80,18 +80,49 @@
           <h3>Moderator access</h3>
           <p class="muted">Grant limited moderation rights to a user by username.</p>
           <div id="modAlert" class="alert"></div>
-          <div class="card form-card" style="margin:0">
+          <div class="card" style="max-width:720px;margin:0 0 28px">
             <div class="field"><label>Username</label><input type="text" id="modUsername" placeholder="e.g. jordan_a"></div>
-            <div class="field">
-              <label>Permissions</label>
-              <label style="display:block"><input type="checkbox" value="APPROVE_WORKPLACES"> Approve workplaces</label>
-              <label style="display:block"><input type="checkbox" value="APPROVE_PROOFS"> Approve employment proofs</label>
-              <label style="display:block"><input type="checkbox" value="MODERATE_FEEDBACK"> Moderate feedback</label>
-              <label style="display:block"><input type="checkbox" value="MANAGE_USERS"> Manage / flag users</label>
+            <label style="display:block;font-weight:600;margin-bottom:6px;font-size:.92rem">Permissions</label>
+            <div class="mod-permissions-grid">
+              <label class="mod-permission-card">
+                <input type="checkbox" value="APPROVE_WORKPLACES">
+                <span class="icon">🏢</span>
+                <span>
+                  <span class="title">Approve workplaces</span>
+                  <span class="desc" style="display:block">Review and approve/reject newly submitted companies.</span>
+                </span>
+              </label>
+              <label class="mod-permission-card">
+                <input type="checkbox" value="APPROVE_PROOFS">
+                <span class="icon">🪪</span>
+                <span>
+                  <span class="title">Approve employment proofs</span>
+                  <span class="desc" style="display:block">Review uploaded proof documents and verify employment.</span>
+                </span>
+              </label>
+              <label class="mod-permission-card">
+                <input type="checkbox" value="MODERATE_FEEDBACK">
+                <span class="icon">💬</span>
+                <span>
+                  <span class="title">Moderate feedback</span>
+                  <span class="desc" style="display:block">Hide, restore or delete employee reviews.</span>
+                </span>
+              </label>
+              <label class="mod-permission-card">
+                <input type="checkbox" value="MANAGE_USERS">
+                <span class="icon">👥</span>
+                <span>
+                  <span class="title">Manage / flag users</span>
+                  <span class="desc" style="display:block">Search users and flag suspicious accounts.</span>
+                </span>
+              </label>
             </div>
             <button class="btn" id="saveModBtn">Save permissions</button>
-            <p class="hint">Setting no permissions removes moderator access (downgrades to a regular user).</p>
+            <p class="hint">Setting no permissions removes moderator access (downgrades to a regular user). Changes apply immediately — no need for the user to log out and back in.</p>
           </div>
+
+          <h3>Current moderators</h3>
+          <div id="modList"><p class="muted">Loading…</p></div>
         </div>
 
         <!-- Categories -->

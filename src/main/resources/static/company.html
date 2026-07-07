@@ -102,6 +102,7 @@
 <script src="/js/app.js"></script>
 <script>
   const companyId = RMW.qs('id');
+  const preselectLocationId = RMW.qs('locationId');
   let company = null;
   let fbState = { page: 0, size: 10 };
 
@@ -139,6 +140,10 @@
     const sel = document.getElementById('locationSelect');
     sel.innerHTML = company.locations.map(l =>
             `<option value="${l.id}">${RMW.escapeHtml(locLabel(l))} — ★ ${l.averageRating.toFixed(1)} (${l.ratingCount})</option>`).join('');
+    // Coming from a location card on the browse page: land straight on that one.
+    if (preselectLocationId && company.locations.some(l => String(l.id) === preselectLocationId)) {
+      sel.value = preselectLocationId;
+    }
     sel.addEventListener('change', () => { fbState.page = 0; loadFeedback(); refreshEligibility(); updateLocationMeta(); });
     updateLocationMeta();
   }
@@ -151,7 +156,10 @@
 
   function updateLocationMeta() {
     const l = currentLocation();
-    document.getElementById('locationMeta').textContent = l ? locLabel(l) : '';
+    const meta = document.getElementById('locationMeta');
+    if (!l) { meta.innerHTML = ''; return; }
+    const depts = (l.departments || []).map(d => `<span class="tag muted">${RMW.escapeHtml(d)}</span>`).join('');
+    meta.innerHTML = RMW.escapeHtml(locLabel(l)) + (depts ? `<div class="tags" style="margin-top:6px">${depts}</div>` : '');
   }
 
   function currentLocation() {

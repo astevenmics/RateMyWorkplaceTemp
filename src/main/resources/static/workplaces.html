@@ -70,7 +70,9 @@
     if (state.q) params.set('q', state.q);
     if (state.categoryId) params.set('categoryId', state.categoryId);
     try {
-      const data = await RMW.api('/api/companies?' + params.toString());
+      // One card per location (not per company) — a company with 20 locations lists as
+      // 20 distinct cards, each showing that specific location's own address and rating.
+      const data = await RMW.api('/api/locations?' + params.toString());
       renderResults(data);
       renderPagination(data);
       document.getElementById('resultCount').textContent =
@@ -80,19 +82,26 @@
     }
   }
 
+  function locLine(l) {
+    let s = l.label ? l.label + ' — ' : '';
+    s += [l.addressLine, l.city, l.state].filter(Boolean).join(', ');
+    return s;
+  }
+
   function renderResults(data) {
     const box = document.getElementById('results');
     const items = data.content || [];
     if (!items.length) { box.innerHTML = '<p class="muted">No workplaces match your filters.</p>'; return; }
-    box.innerHTML = items.map(c => {
-      const cats = (c.categories || []).slice(0, 3).map(x => `<span class="tag">${RMW.escapeHtml(x)}</span>`).join('');
-      return `<a class="card company-card" href="/company.html?id=${c.id}">
-          <div class="title">${RMW.escapeHtml(c.name)}</div>
-          <div class="rating-line">${RMW.stars(c.averageRating)}
-            <span class="score">${c.averageRating.toFixed(1)}</span>
-            <span class="count">(${c.ratingCount})</span></div>
-          <div class="meta">${c.locationCount} location${c.locationCount === 1 ? '' : 's'}</div>
-          <div class="tags">${cats || '<span class="tag muted">Unrated</span>'}</div>
+    box.innerHTML = items.map(l => {
+      const cats = (l.categories || []).slice(0, 3).map(x => `<span class="tag">${RMW.escapeHtml(x)}</span>`).join('');
+      const depts = (l.departments || []).slice(0, 3).map(x => `<span class="tag muted">${RMW.escapeHtml(x)}</span>`).join('');
+      return `<a class="card company-card" href="/company.html?id=${l.companyId}&locationId=${l.locationId}">
+          <div class="title">${RMW.escapeHtml(l.companyName)}</div>
+          <div class="rating-line">${RMW.stars(l.averageRating)}
+            <span class="score">${l.averageRating.toFixed(1)}</span>
+            <span class="count">(${l.ratingCount})</span></div>
+          <div class="meta">${RMW.escapeHtml(locLine(l))}</div>
+          <div class="tags">${cats || '<span class="tag muted">Unrated</span>'}${depts}</div>
         </a>`;
     }).join('');
   }

@@ -14,6 +14,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.util.StringUtils;
 
+import java.util.EnumSet;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
@@ -39,6 +40,13 @@ public class CompanyService {
         Pageable pageable = PageRequest.of(Math.max(page, 0), clampSize(size), resolveSort(sort));
         String q = StringUtils.hasText(query) ? query.trim() : null;
         return companyRepository.search(q, categoryId, ApprovalStatus.APPROVED, pageable);
+    }
+
+    /** Same search, but one row per location instead of per company (for the browse-page cards). */
+    public Page<Location> searchLocations(String query, Long categoryId, String sort, int page, int size) {
+        Pageable pageable = PageRequest.of(Math.max(page, 0), clampSize(size), resolveLocationSort(sort));
+        String q = StringUtils.hasText(query) ? query.trim() : null;
+        return locationRepository.searchCards(q, categoryId, ApprovalStatus.APPROVED, pageable);
     }
 
     public List<Company> topRated(int limit) {
@@ -87,9 +95,27 @@ public class CompanyService {
             location.setState(lr.state());
             location.setZipCode(lr.zipCode());
             location.setCountry(StringUtils.hasText(lr.country()) ? lr.country() : "USA");
+            location.setDepartments(parseDepartments(lr.departments()));
             company.getLocations().add(location);
         }
         return companyRepository.save(company);
+    }
+
+    private Set<Department> parseDepartments(Set<String> raw) {
+        if (raw == null || raw.isEmpty()) {
+            return EnumSet.noneOf(Department.class);
+        }
+        Set<Department> departments = EnumSet.noneOf(Department.class);
+        for (String name : raw) {
+            if (StringUtils.hasText(name)) {
+                try {
+                    departments.add(Department.valueOf(name.trim().toUpperCase().replace(' ', '_')));
+                } catch (IllegalArgumentException e) {
+                    throw ApiException.badRequest("Unknown department: " + name);
+                }
+            }
+        }
+        return departments;
     }
 
     /** Recomputes denormalized rating aggregates for a location and its parent company. */
@@ -121,6 +147,21 @@ public class CompanyService {
         return switch (sort.toLowerCase()) {
             case "az", "name", "alpha" -> Sort.by(Sort.Direction.ASC, "name");
             case "za" -> Sort.by(Sort.Direction.DESC, "name");
+            case "newest", "new" -> Sort.by(Sort.Direction.DESC, "createdAt");
+            case "rated", "reviews", "popular" -> Sort.by(Sort.Direction.DESC, "ratingCount");
+            default -> Sort.by(Sort.Direction.DESC, "averageRating")
+                    .and(Sort.by(Sort.Direction.DESC, "ratingCount"));
+        };
+    }
+
+    /** Same sort keys as resolveSort(), but against Location's own fields (and the parent company's name). */
+    private Sort resolveLocationSort(String sort) {
+        if (sort == null) {
+            sort = "top";
+        }
+        return switch (sort.toLowerCase()) {
+            case "az", "name", "alpha" -> Sort.by(Sort.Direction.ASC, "company.name");
+            case "za" -> Sort.by(Sort.Direction.DESC, "company.name");
             case "newest", "new" -> Sort.by(Sort.Direction.DESC, "createdAt");
             case "rated", "reviews", "popular" -> Sort.by(Sort.Direction.DESC, "ratingCount");
             default -> Sort.by(Sort.Direction.DESC, "averageRating")

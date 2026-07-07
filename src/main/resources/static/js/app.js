@@ -109,8 +109,12 @@ const RMW = (() => {
     function avatarHtml(user, sizeClass = 'sm') {
         const name = (user && (user.displayName || user.username)) || '?';
         const initials = name.trim().charAt(0) || '?';
+        // Explicit width/height (not just the CSS class) so the box is reserved before the
+        // image itself has loaded, avoiding a reflow of whatever sits next to it (e.g. the
+        // header) once it does.
+        const px = sizeClass === 'lg' ? 96 : 30;
         if (user && user.avatarUrl) {
-            return `<img class="avatar ${sizeClass}" src="${escapeHtml(user.avatarUrl)}" alt="${escapeHtml(name)}">`;
+            return `<img class="avatar ${sizeClass}" width="${px}" height="${px}" src="${escapeHtml(user.avatarUrl)}" alt="${escapeHtml(name)}">`;
         }
         return `<span class="avatar ${sizeClass}" aria-hidden="true">${escapeHtml(initials)}</span>`;
     }
@@ -251,7 +255,7 @@ const RMW = (() => {
             authArea.innerHTML = `
               <a href="/submit-proof.html">Verify Employment</a>
               ${adminLink}
-              <a class="nav-user" href="/profile.html">${avatarHtml(user)} ${escapeHtml(user.displayName)}</a>
+              <a class="nav-user" href="/profile.html"><span id="headerAvatarSlot">${avatarHtml(user)}</span> ${escapeHtml(user.displayName)}</a>
               <a href="#" id="logoutLink">Logout</a>`;
             document.getElementById('logoutLink').addEventListener('click', (e) => { e.preventDefault(); logout(); });
         } else {
@@ -336,9 +340,20 @@ const RMW = (() => {
         await mountFooter();
     }
 
+    /**
+     * Swap just the header's avatar image in place, instead of calling mountHeader()
+     * (which tears down and rebuilds the entire nav — brand, links, theme toggle — and
+     * briefly leaves it blank while it re-fetches the current user). Used after an
+     * avatar upload/removal so only the picture itself changes, not the whole bar.
+     */
+    function updateHeaderAvatar(user) {
+        const slot = document.getElementById('headerAvatarSlot');
+        if (slot) slot.innerHTML = avatarHtml(user);
+    }
+
     return { api, currentUser, login, logout, stars, avatarHtml, escapeHtml, fmtDate, qs, toast, clearToast,
         setLoading, markdown, applyTheme, toggleTheme, currentTheme,
-        mountChrome, mountHeader, mountFooter, ensureCsrf };
+        mountChrome, mountHeader, mountFooter, updateHeaderAvatar, ensureCsrf };
 })();
 
 document.addEventListener('DOMContentLoaded', () => { RMW.mountChrome(); });

@@ -12,11 +12,14 @@ import org.springframework.security.config.annotation.method.configuration.Enabl
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configurers.AbstractHttpConfigurer;
 import org.springframework.security.config.http.SessionCreationPolicy;
+import org.springframework.security.core.session.SessionRegistry;
+import org.springframework.security.core.session.SessionRegistryImpl;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.security.web.SecurityFilterChain;
 import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter;
 import org.springframework.security.web.csrf.CookieCsrfTokenRepository;
+import org.springframework.security.web.session.HttpSessionEventPublisher;
 
 import java.time.Instant;
 import java.util.Map;
@@ -44,15 +47,39 @@ public class SecurityConfig {
         return config.getAuthenticationManager();
     }
 
+    /**
+     * Tracks active sessions per principal so an admin action (disabling an account,
+     * changing moderator permissions) can force that user's already-logged-in sessions
+     * to re-authenticate, instead of the change being silently invisible until they
+     * happen to log out and back in on their own.
+     */
     @Bean
-    public SecurityFilterChain filterChain(HttpSecurity http) throws Exception {
+    public SessionRegistry sessionRegistry() {
+        return new SessionRegistryImpl();
+    }
+
+    /** Required so the session registry is told when a session is destroyed (browser logout, timeout, etc). */
+    @Bean
+    public HttpSessionEventPublisher httpSessionEventPublisher() {
+        return new HttpSessionEventPublisher();
+    }
+
+    @Bean
+    public SecurityFilterChain filterChain(HttpSecurity http, SessionRegistry sessionRegistry) throws Exception {
         http
                 .csrf(csrf -> csrf
                         .csrfTokenRepository(CookieCsrfTokenRepository.withHttpOnlyFalse())
                         .csrfTokenRequestHandler(new SpaCsrfTokenRequestHandler()))
                 .addFilterBefore(rateLimitFilter, UsernamePasswordAuthenticationFilter.class)
                 .addFilterAfter(new CsrfCookieFilter(), UsernamePasswordAuthenticationFilter.class)
-                .sessionManagement(s -> s.sessionCreationPolicy(SessionCreationPolicy.IF_REQUIRED))
+                .sessionManagement(s -> s
+                        .sessionCreationPolicy(SessionCreationPolicy.IF_REQUIRED)
+                        // A generous cap: this only exists to enable registry tracking for
+                        // forced invalidation, not to actually limit concurrent devices/browsers.
+                        .sessionConcurrency(concurrency -> concurrency
+                                .maximumSessions(20)
+                                .sessionRegistry(sessionRegistry)
+                                .expiredSessionStrategy(this::writeExpiredSession)))
                 .headers(headers -> headers
                         .contentSecurityPolicy(csp -> csp.policyDirectives(
                                 "default-src 'self'; " +
@@ -105,6 +132,14 @@ public class SecurityConfig {
                 .httpBasic(AbstractHttpConfigurer::disable);
 
         return http.build();
+    }
+
+    /** Same JSON-401 shape as RestAuthEntryPoint, so the SPA's generic error handling covers this too. */
+    private void writeExpiredSession(
+            org.springframework.security.web.session.SessionInformationExpiredEvent event) throws java.io.IOException {
+        writeJson(event.getResponse(), HttpServletResponse.SC_UNAUTHORIZED, Map.of(
+                "status", 401, "error", "Unauthorized",
+                "message", "Your session has ended because your account access changed. Please log in again."));
     }
 
     private void writeJson(HttpServletResponse response, int status, Map<String, Object> body) {

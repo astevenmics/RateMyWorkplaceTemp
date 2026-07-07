@@ -168,8 +168,16 @@
   async function reviewProof(id, decision) {
     let note = null;
     if (decision === 'REJECT') { note = prompt('Reason for rejection (optional):') || null; }
-    try { await RMW.api(`/api/mod/proofs/${id}/review`, { method: 'POST', body: { decision, note } }); gAlert('success', 'Proof ' + decision.toLowerCase() + 'd.'); loadProofs(); }
-    catch (e) { gAlert('error', e.message); }
+    try {
+      await RMW.api(`/api/mod/proofs/${id}/review`, { method: 'POST', body: { decision, note } });
+      gAlert('success', 'Proof ' + decision.toLowerCase() + 'd.');
+    } catch (e) {
+      // The user may have cancelled this submission after the list was loaded but before
+      // it was reviewed — surface that plainly instead of a generic "not found", and
+      // reload so the now-stale row doesn't just sit there to be clicked again.
+      gAlert('error', e.status === 404 ? 'This submission was cancelled by the user and no longer exists.' : e.message);
+    }
+    loadProofs();
   }
 
   // ---------------- Feedback ----------------
@@ -276,16 +284,63 @@
   }
 
   // ---------------- Moderators ----------------
-  document.getElementById('saveModBtn').addEventListener('click', async () => {
-    const username = document.getElementById('modUsername').value.trim();
-    const perms = [...document.querySelectorAll('[data-panel="moderators"] input[type=checkbox]:checked')].map(c => c.value);
+  const MOD_PERM_LABELS = {
+    APPROVE_WORKPLACES: 'Approve workplaces',
+    APPROVE_PROOFS: 'Approve proofs',
+    MODERATE_FEEDBACK: 'Moderate feedback',
+    MANAGE_USERS: 'Manage users'
+  };
+
+  function setModCheckboxes(perms) {
+    document.querySelectorAll('[data-panel="moderators"] input[type=checkbox]').forEach(c => {
+      c.checked = (perms || []).includes(c.value);
+    });
+  }
+
+  async function saveModerator(username, perms) {
     const alertEl = document.getElementById('modAlert');
-    if (!username) { RMW.toast(alertEl, 'error', 'Enter a username.'); return; }
     try {
       const u = await RMW.api('/api/admin/moderators', { method: 'POST', body: { username, permissions: perms } });
       RMW.toast(alertEl, 'success', `${u.username} is now ${u.role} (${(u.moderatorPermissions || []).join(', ') || 'no extra permissions'}).`);
+      loadModerators();
     } catch (e) { RMW.toast(alertEl, 'error', e.message); }
+  }
+
+  document.getElementById('saveModBtn').addEventListener('click', () => {
+    const username = document.getElementById('modUsername').value.trim();
+    const perms = [...document.querySelectorAll('[data-panel="moderators"] input[type=checkbox]:checked')].map(c => c.value);
+    if (!username) { RMW.toast(document.getElementById('modAlert'), 'error', 'Enter a username.'); return; }
+    saveModerator(username, perms);
   });
+
+  async function loadModerators() {
+    const box = document.getElementById('modList');
+    box.innerHTML = '<p class="muted">Loading…</p>';
+    try {
+      // No dedicated "list moderators" endpoint — the user search already returns role +
+      // permissions, so filter client-side. Fine at this app's scale.
+      const data = await RMW.api('/api/admin/users?size=200');
+      const mods = (data.content || []).filter(u => u.role === 'MODERATOR');
+      if (!mods.length) { box.innerHTML = '<p class="muted">No moderators yet.</p>'; return; }
+      box.innerHTML = mods.map(u => `
+        <div class="mod-list-item">
+          ${RMW.avatarHtml(u)}
+          <span class="who">${E(u.displayName)} <span class="muted" style="font-weight:400">@${E(u.username)}</span></span>
+          <span class="perms">${(u.moderatorPermissions || []).map(p => `<span class="tag">${E(MOD_PERM_LABELS[p] || p)}</span>`).join('') || '<span class="tag muted">none</span>'}</span>
+          <button class="btn small secondary" data-edit="${E(u.username)}">Edit</button>
+          <button class="btn small danger revoke" data-revoke="${E(u.username)}">Revoke</button>
+        </div>`).join('');
+      box.querySelectorAll('[data-edit]').forEach(b => b.addEventListener('click', () => {
+        const u = mods.find(m => m.username === b.dataset.edit);
+        document.getElementById('modUsername').value = u.username;
+        setModCheckboxes(u.moderatorPermissions);
+        document.getElementById('modUsername').scrollIntoView({ behavior: 'smooth', block: 'center' });
+      }));
+      box.querySelectorAll('[data-revoke]').forEach(b => b.addEventListener('click', () => {
+        if (confirm(`Revoke all moderator permissions from @${b.dataset.revoke}?`)) saveModerator(b.dataset.revoke, []);
+      }));
+    } catch (e) { box.innerHTML = `<p class="muted">${E(e.message)}</p>`; }
+  }
 
   // ---------------- Categories ----------------
   async function loadCategories() {
@@ -455,7 +510,7 @@
   const LOADERS = {
     stats: loadStats, workplaces: loadWorkplaces, proofs: loadProofs, feedback: loadFeedback,
     users: loadUsers, categories: loadCategories, siteFeedback: loadSiteFeedback, updates: loadUpdates,
-    audit: loadAudit, moderators: () => {}
+    audit: loadAudit, moderators: loadModerators
   };
 
   init();

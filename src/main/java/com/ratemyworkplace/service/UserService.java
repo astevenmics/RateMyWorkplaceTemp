@@ -6,6 +6,7 @@ import com.ratemyworkplace.domain.User;
 import com.ratemyworkplace.domain.VerificationToken;
 import com.ratemyworkplace.dto.Requests;
 import com.ratemyworkplace.repository.UserRepository;
+import com.ratemyworkplace.security.SessionInvalidationService;
 import com.ratemyworkplace.web.ApiException;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
@@ -24,15 +25,17 @@ public class UserService {
     private final VerificationService verificationService;
     private final AnalyticsService analyticsService;
     private final FileStorageService fileStorageService;
+    private final SessionInvalidationService sessionInvalidationService;
 
     public UserService(UserRepository userRepository, PasswordEncoder passwordEncoder,
                        VerificationService verificationService, AnalyticsService analyticsService,
-                       FileStorageService fileStorageService) {
+                       FileStorageService fileStorageService, SessionInvalidationService sessionInvalidationService) {
         this.userRepository = userRepository;
         this.passwordEncoder = passwordEncoder;
         this.verificationService = verificationService;
         this.analyticsService = analyticsService;
         this.fileStorageService = fileStorageService;
+        this.sessionInvalidationService = sessionInvalidationService;
     }
 
     @Transactional
@@ -132,7 +135,12 @@ public class UserService {
         if (user.getRole() != Role.ADMIN) {
             user.setRole(permissions.isEmpty() ? Role.USER : Role.MODERATOR);
         }
-        return userRepository.save(user);
+        User saved = userRepository.save(user);
+        // Authorities are snapshotted into the session at login and never re-checked
+        // per request, so without this a user who's currently logged in would keep
+        // their old (pre-change) permissions until they happened to log out and back in.
+        sessionInvalidationService.invalidateSessionsFor(saved.getUsername());
+        return saved;
     }
 
     private ModeratorPermission parsePermission(String raw) {

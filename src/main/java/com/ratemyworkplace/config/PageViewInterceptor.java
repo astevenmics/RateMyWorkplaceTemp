@@ -18,7 +18,8 @@ public class PageViewInterceptor implements HandlerInterceptor {
     }
 
     @Override
-    public boolean preHandle(@NonNull HttpServletRequest request, @NonNull HttpServletResponse response,
+    public boolean preHandle(@NonNull HttpServletRequest request,
+                             @NonNull HttpServletResponse response,
                              @NonNull Object handler) {
         if (!"GET".equals(request.getMethod())) {
             return true;

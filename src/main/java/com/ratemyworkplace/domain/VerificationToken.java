@@ -31,7 +31,6 @@ public class VerificationToken {
     @Column(nullable = false)
     private boolean consumed = false;
 
-    /** Failed verification attempts against this specific code, so a code can't be brute-forced. */
     @Column(nullable = false)
     private int attempts = 0;
 

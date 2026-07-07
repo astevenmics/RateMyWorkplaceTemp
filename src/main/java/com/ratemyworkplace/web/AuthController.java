@@ -26,8 +26,11 @@ public class AuthController {
     private final CurrentUserService currentUserService;
     private final PasswordResetService passwordResetService;
 
-    public AuthController(UserService userService, VerificationService verificationService,
-                          CurrentUserService currentUserService, PasswordResetService passwordResetService) {
+    public AuthController(
+            UserService userService,
+            VerificationService verificationService,
+            CurrentUserService currentUserService,
+            PasswordResetService passwordResetService) {
         this.userService = userService;
         this.verificationService = verificationService;
         this.currentUserService = currentUserService;

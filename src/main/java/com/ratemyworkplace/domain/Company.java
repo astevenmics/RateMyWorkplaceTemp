@@ -3,6 +3,7 @@ package com.ratemyworkplace.domain;
 import jakarta.persistence.*;
 import org.hibernate.annotations.Fetch;
 import org.hibernate.annotations.FetchMode;
+
 import java.time.Instant;
 import java.util.ArrayList;
 import java.util.HashSet;
@@ -10,8 +11,8 @@ import java.util.List;
 import java.util.Set;
 
 /**
- * A company/workplace brand. A company has many {@link Location}s (Starbucks at
- * two addresses, etc.) and may belong to several {@link Category}s.
+ * A company/workplace brand.
+ * A company has many {@link Location}s (Starbucks at two addresses, etc.) and may belong to several {@link Category}s.
  */
 @Entity
 @Table(name = "companies", indexes = @Index(name = "idx_company_name", columnList = "name"))
@@ -33,9 +34,6 @@ public class Company {
     @Column(length = 255)
     private String logoUrl;
 
-    // SUBSELECT batches the collection load for every Company in the current
-    // page/session into a single extra query, instead of one per-row SELECT
-    // (the default for an EAGER @ManyToMany) when listing/searching companies.
     @ManyToMany(fetch = FetchType.EAGER)
     @JoinTable(name = "company_categories",
             joinColumns = @JoinColumn(name = "company_id"),
@@ -51,9 +49,6 @@ public class Company {
     @Column(nullable = false, length = 20)
     private ApprovalStatus status = ApprovalStatus.PENDING;
 
-    // JOIN is safe (unlike on a collection) since a to-one association can't multiply
-    // result rows; this avoids a per-row SELECT when DtoMapper.companyDetail() reads
-    // submittedBy (e.g. once per row on the admin pending-workplaces listing).
     @ManyToOne(fetch = FetchType.LAZY)
     @Fetch(FetchMode.JOIN)
     @JoinColumn(name = "submitted_by")

@@ -47,66 +47,62 @@ public class SecurityConfig {
     @Bean
     public SecurityFilterChain filterChain(HttpSecurity http) throws Exception {
         http
-            .csrf(csrf -> csrf
-                    .csrfTokenRepository(CookieCsrfTokenRepository.withHttpOnlyFalse())
-                    .csrfTokenRequestHandler(new SpaCsrfTokenRequestHandler()))
-            .addFilterBefore(rateLimitFilter, UsernamePasswordAuthenticationFilter.class)
-            .addFilterAfter(new CsrfCookieFilter(), UsernamePasswordAuthenticationFilter.class)
-            .sessionManagement(s -> s.sessionCreationPolicy(SessionCreationPolicy.IF_REQUIRED))
-            // The frontend is plain HTML with inline <script>/<style> blocks (no bundler,
-            // no nonces), so script-src/style-src need 'unsafe-inline'. Every other
-            // directive is locked to 'self'/'none' so an XSS bug still can't load a
-            // remote payload, exfiltrate via fetch/XHR, or frame/embed the site.
-            .headers(headers -> headers
-                    .contentSecurityPolicy(csp -> csp.policyDirectives(
-                            "default-src 'self'; " +
-                            "script-src 'self' 'unsafe-inline'; " +
-                            "style-src 'self' 'unsafe-inline'; " +
-                            "img-src 'self' data:; " +
-                            "connect-src 'self'; " +
-                            "object-src 'none'; " +
-                            "frame-ancestors 'none'; " +
-                            "base-uri 'self'; " +
-                            "form-action 'self'"))
-                    .referrerPolicy(r -> r.policy(
-                            org.springframework.security.web.header.writers.ReferrerPolicyHeaderWriter.ReferrerPolicy.STRICT_ORIGIN_WHEN_CROSS_ORIGIN))
-                    .permissionsPolicyHeader(p -> p.policy(
-                            "geolocation=(), camera=(), microphone=(), payment=(), usb=()")))
-            .authorizeHttpRequests(auth -> auth
-                    // ---- public static pages & assets ----
-                    .requestMatchers("/", "/index.html", "/css/**", "/js/**", "/img/**",
-                            "/assets/**", "/favicon.ico", "/*.html", "/error").permitAll()
-                    // ---- public read-only API ----
-                    .requestMatchers(org.springframework.http.HttpMethod.GET,
-                            "/api/companies/**", "/api/categories/**", "/api/locations/**",
-                            "/api/feedback/location/**", "/api/feedback/company/**",
-                            "/api/site/updates/**", "/api/stats/public", "/api/users/*/avatar").permitAll()
-                    .requestMatchers("/api/auth/register", "/api/auth/login", "/api/auth/csrf",
-                            "/api/auth/me", "/api/auth/forgot-password", "/api/auth/reset-password",
-                            "/api/site/feedback").permitAll()
-                    .requestMatchers("/actuator/health", "/actuator/info").permitAll()
-                    // ---- admin / moderation ----
-                    .requestMatchers("/admin.html").hasAnyRole("ADMIN", "MODERATOR")
-                    .requestMatchers("/api/admin/**").hasRole("ADMIN")
-                    .requestMatchers("/api/mod/**").hasAnyRole("ADMIN", "MODERATOR")
-                    .requestMatchers("/actuator/**").hasRole("ADMIN")
-                    // ---- everything else requires login ----
-                    .anyRequest().authenticated())
-            .formLogin(form -> form
-                    .loginProcessingUrl("/api/auth/login")
-                    .usernameParameter("username")
-                    .passwordParameter("password")
-                    .successHandler((req, res, authentication) -> writeJson(res, HttpServletResponse.SC_OK,
-                            Map.of("status", 200, "message", "Logged in", "username", authentication.getName())))
-                    .failureHandler((req, res, ex) -> writeJson(res, HttpServletResponse.SC_UNAUTHORIZED,
-                            Map.of("status", 401, "error", "Unauthorized", "message", "Invalid credentials"))))
-            .logout(logout -> logout
-                    .logoutUrl("/api/auth/logout")
-                    .logoutSuccessHandler((req, res, authentication) -> writeJson(res, HttpServletResponse.SC_OK,
-                            Map.of("status", 200, "message", "Logged out")))
-                    .deleteCookies("JSESSIONID"))
-            .exceptionHandling(ex -> ex.authenticationEntryPoint(restAuthEntryPoint))
-            .httpBasic(AbstractHttpConfigurer::disable);
+                .csrf(csrf -> csrf
+                        .csrfTokenRepository(CookieCsrfTokenRepository.withHttpOnlyFalse())
+                        .csrfTokenRequestHandler(new SpaCsrfTokenRequestHandler()))
+                .addFilterBefore(rateLimitFilter, UsernamePasswordAuthenticationFilter.class)
+                .addFilterAfter(new CsrfCookieFilter(), UsernamePasswordAuthenticationFilter.class)
+                .sessionManagement(s -> s.sessionCreationPolicy(SessionCreationPolicy.IF_REQUIRED))
+                .headers(headers -> headers
+                        .contentSecurityPolicy(csp -> csp.policyDirectives(
+                                "default-src 'self'; " +
+                                        "script-src 'self' 'unsafe-inline'; " +
+                                        "style-src 'self' 'unsafe-inline'; " +
+                                        "img-src 'self' data:; " +
+                                        "connect-src 'self'; " +
+                                        "object-src 'none'; " +
+                                        "frame-ancestors 'none'; " +
+                                        "base-uri 'self'; " +
+                                        "form-action 'self'"))
+                        .referrerPolicy(r -> r.policy(
+                                org.springframework.security.web.header.writers.ReferrerPolicyHeaderWriter.ReferrerPolicy.STRICT_ORIGIN_WHEN_CROSS_ORIGIN))
+                        .permissionsPolicyHeader(p -> p.policy(
+                                "geolocation=(), camera=(), microphone=(), payment=(), usb=()")))
+                .authorizeHttpRequests(auth -> auth
+                        // ---- public static pages & assets ----
+                        .requestMatchers("/", "/index.html", "/css/**", "/js/**", "/img/**",
+                                "/assets/**", "/favicon/**", "/*.html", "/error").permitAll()
+                        // ---- public read-only API ----
+                        .requestMatchers(org.springframework.http.HttpMethod.GET,
+                                "/api/companies/**", "/api/categories/**", "/api/locations/**",
+                                "/api/feedback/location/**", "/api/feedback/company/**",
+                                "/api/site/updates/**", "/api/stats/public", "/api/users/*/avatar").permitAll()
+                        .requestMatchers("/api/auth/register", "/api/auth/login", "/api/auth/csrf",
+                                "/api/auth/me", "/api/auth/forgot-password", "/api/auth/reset-password",
+                                "/api/site/feedback").permitAll()
+                        .requestMatchers("/actuator/health", "/actuator/info").permitAll()
+                        // ---- admin / moderation ----
+                        .requestMatchers("/admin.html").hasAnyRole("ADMIN", "MODERATOR")
+                        .requestMatchers("/api/admin/**").hasRole("ADMIN")
+                        .requestMatchers("/api/mod/**").hasAnyRole("ADMIN", "MODERATOR")
+                        .requestMatchers("/actuator/**").hasRole("ADMIN")
+                        // ---- everything else requires login ----
+                        .anyRequest().authenticated())
+                .formLogin(form -> form
+                        .loginProcessingUrl("/api/auth/login")
+                        .usernameParameter("username")
+                        .passwordParameter("password")
+                        .successHandler((req, res, authentication) -> writeJson(res, HttpServletResponse.SC_OK,
+                                Map.of("status", 200, "message", "Logged in", "username", authentication.getName())))
+                        .failureHandler((req, res, ex) -> writeJson(res, HttpServletResponse.SC_UNAUTHORIZED,
+                                Map.of("status", 401, "error", "Unauthorized", "message", "Invalid credentials"))))
+                .logout(logout -> logout
+                        .logoutUrl("/api/auth/logout")
+                        .logoutSuccessHandler((req, res, authentication) -> writeJson(res, HttpServletResponse.SC_OK,
+                                Map.of("status", 200, "message", "Logged out")))
+                        .deleteCookies("JSESSIONID"))
+                .exceptionHandling(ex -> ex.authenticationEntryPoint(restAuthEntryPoint))
+                .httpBasic(AbstractHttpConfigurer::disable);
 
         return http.build();
     }

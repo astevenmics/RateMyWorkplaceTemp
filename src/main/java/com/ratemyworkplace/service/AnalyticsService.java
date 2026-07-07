@@ -18,10 +18,11 @@ import java.util.concurrent.atomic.AtomicLong;
 /**
  * Maintains the per-day traffic counters used by the admin statistics dashboard.
  *
- * <p>Increments are accumulated in memory (atomic, lock-free) so page-view / login /
- * signup recording adds no database work to the request path and avoids contending on
- * the single hot daily row. A scheduled task periodically drains the buffered deltas
- * into the {@code visit_stats} table; the final window is flushed on shutdown.
+ * <p>Increments are accumulated in memory (atomic, lock-free)
+ * so page-view / login / signup recording adds no database work to the request path and
+ * avoids contending on the single hot daily row.
+ * A scheduled task periodically drains the buffered deltas into the
+ * {@code visit_stats} table; the final window is flushed on shutdown.
  */
 @Service
 public class AnalyticsService {
@@ -48,7 +49,6 @@ public class AnalyticsService {
     public void recordSignup() {
         today().signups.incrementAndGet();
     }
-
     private DayDelta today() {
         return pending.computeIfAbsent(LocalDate.now(), d -> new DayDelta());
     }
@@ -62,8 +62,8 @@ public class AnalyticsService {
             if (delta == null) {
                 continue;
             }
-            // Atomically claim the accumulated counts; concurrent increments keep adding
-            // to the same object and will be picked up on the next flush.
+            // Atomically claim the accumulated counts;
+            // concurrent increments keep adding to the same object and will be picked up on the next flush.
             long pv = delta.pageViews.getAndSet(0);
             long lg = delta.logins.getAndSet(0);
             long su = delta.signups.getAndSet(0);

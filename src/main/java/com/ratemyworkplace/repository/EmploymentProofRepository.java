@@ -38,6 +38,7 @@ public interface EmploymentProofRepository extends JpaRepository<EmploymentProof
     /** A proof scoped to one specific location. */
     boolean existsByUserIdAndLocationIdAndStatus(Long userId, Long locationId, ApprovalStatus status);
 
+
     // ----- one-proof-per-location enforcement (any of the given statuses) -----
     boolean existsByUserIdAndLocationIdAndStatusIn(Long userId, Long locationId, Collection<ApprovalStatus> statuses);
 

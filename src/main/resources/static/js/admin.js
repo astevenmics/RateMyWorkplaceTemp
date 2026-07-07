@@ -36,7 +36,7 @@
       return;
     }
     document.getElementById('roleLine').textContent =
-      isAdmin ? 'Signed in as administrator.' : 'Signed in as moderator — ' + (me.moderatorPermissions || []).join(', ');
+        isAdmin ? 'Signed in as administrator.' : 'Signed in as moderator — ' + (me.moderatorPermissions || []).join(', ');
 
     buildNav();
   }
@@ -84,7 +84,7 @@
   }
 
   document.querySelectorAll('input[name="metric"]').forEach(r =>
-    r.addEventListener('change', () => drawChart(document.querySelector('input[name="metric"]:checked').value)));
+      r.addEventListener('change', () => drawChart(document.querySelector('input[name="metric"]:checked').value)));
 
   // ---------------- Workplaces ----------------
   async function loadWorkplaces() {
@@ -96,11 +96,11 @@
       if (!items.length) { box.innerHTML = '<p class="muted">No pending workplaces. 🎉</p>'; return; }
       box.innerHTML = items.map(c => {
         const website = c.website
-          ? `<a href="${E(c.website)}" target="_blank" rel="noopener nofollow">${E(c.website)}</a>` : '<span class="muted">—</span>';
+            ? `<a href="${E(c.website)}" target="_blank" rel="noopener nofollow">${E(c.website)}</a>` : '<span class="muted">—</span>';
         const locations = (c.locations || []).map(l => `
           <li>${E([l.label, l.addressLine, l.city, l.state, l.zipCode, l.country].filter(Boolean).join(', '))}</li>`).join('');
         const submitter = c.submittedByDisplayName
-          ? `${E(c.submittedByDisplayName)} (@${E(c.submittedByUsername)})` : 'unknown';
+            ? `${E(c.submittedByDisplayName)} (@${E(c.submittedByUsername)})` : 'unknown';
         return `
         <div class="card" style="margin-bottom:12px">
           <div style="cursor:pointer" data-toggle="${c.id}">
@@ -182,7 +182,7 @@
       const items = data.content || [];
       if (!items.length) { box.innerHTML = '<p class="muted">No feedback found.</p>'; return; }
       box.innerHTML = `<table class="data"><thead><tr><th>Author</th><th>Rating</th><th>Content</th><th>Status</th><th>Actions</th></tr></thead><tbody>${
-        items.map(f => `<tr>
+          items.map(f => `<tr>
           <td>${E(f.authorDisplayName)}<br><span class="muted" style="font-size:.78rem">${RMW.fmtDate(f.createdAt)}</span></td>
           <td>${RMW.stars(f.rating)}</td>
           <td style="white-space:normal;max-width:340px">${f.title ? '<strong>' + E(f.title) + '</strong><br>' : ''}${E(f.body)}</td>
@@ -223,7 +223,7 @@
       if (!items.length) { box.innerHTML = '<p class="muted">No users found.</p>'; return; }
       box.innerHTML = `<p class="muted" style="font-size:.82rem">Click a user to view their full profile.</p>
         <table class="data"><thead><tr><th>User</th><th>Email / phone</th><th>Status</th><th>Actions</th></tr></thead><tbody>${
-        items.map(u => `<tr class="user-row" data-uid="${u.id}" style="cursor:pointer">
+          items.map(u => `<tr class="user-row" data-uid="${u.id}" style="cursor:pointer">
           <td><strong>${E(u.displayName)}</strong><br><span class="muted">@${E(u.username)}</span> · ${E(u.role)}
             ${u.flaggedReason ? `<br><span class="badge rejected">FLAGGED</span>` : ''}</td>
           <td>${E(u.email)} ${u.emailVerified ? '✅' : '❌'}<br>${E(u.phoneNumber)} ${u.phoneVerified ? '✅' : '❌'}</td>
@@ -232,7 +232,7 @@
             <button class="btn small secondary" data-flag="${u.id}">${u.flaggedReason ? 'Unflag' : 'Flag'}</button>
             ${isAdmin ? `<button class="btn small secondary" data-enable="${u.id}" data-val="${!u.enabled}">${u.enabled ? 'Disable' : 'Enable'}</button>
             <button class="btn small danger" data-del="${u.id}">Delete</button>` : ''}
-          </td></tr>
+            </td></tr>
           <tr class="user-detail" id="udet-${u.id}" style="display:none"><td colspan="4" style="background:var(--surface-2)">
             <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:6px 18px;font-size:.86rem">
               <div><span class="muted">Full name</span><br><strong>${E(u.fullName || '—')}</strong></div>

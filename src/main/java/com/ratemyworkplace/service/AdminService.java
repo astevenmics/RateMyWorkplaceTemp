@@ -109,7 +109,6 @@ public class AdminService {
             throw ApiException.badRequest("You cannot disable an admin account");
         }
         boolean wasEnabled = user.isEnabled();
-        user.setEnabled(enabled);
         User saved = userRepository.save(user);
         if (wasEnabled != enabled) {
             if (enabled) {

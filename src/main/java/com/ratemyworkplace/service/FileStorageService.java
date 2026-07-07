@@ -60,10 +60,6 @@ public class FileStorageService {
         if (file == null || file.isEmpty()) {
             throw ApiException.badRequest(emptyMessage);
         }
-        // The browser-supplied Content-Type is just a request header the caller controls;
-        // trusting it alone would let someone upload an HTML/script file labelled
-        // "image/png" and have it served back with that (spoofed) content type later.
-        // Cross-checking the file's actual magic bytes closes that gap.
         String contentType = file.getContentType();
         if (contentType == null || !allowedContentTypes.contains(contentType)
                 || !matchesSignature(peekHeader(file), contentType)) {
@@ -129,6 +125,7 @@ public class FileStorageService {
         }
         return target;
     }
+
 
     /** Best-effort delete of a stored file (e.g. a cancelled proof or a replaced avatar). */
     public void delete(String storedFileName) {

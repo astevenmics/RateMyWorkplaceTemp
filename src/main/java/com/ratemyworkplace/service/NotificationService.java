@@ -23,7 +23,7 @@ public class NotificationService {
 
     private static final String SIGNOFF =
             "\n\nBest regards,\nThe RateMyWorkplace Team"
-            + "\n\n—\nThis is an automated message from RateMyWorkplace. Please do not reply to this email.";
+                    + "\n\n—\nThis is an automated message from RateMyWorkplace. Please do not reply to this email.";
 
     private final AppMailProperties mailProperties;
     private final JavaMailSender mailSender;

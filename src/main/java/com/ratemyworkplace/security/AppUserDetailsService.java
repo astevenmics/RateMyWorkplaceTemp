@@ -17,8 +17,8 @@ public class AppUserDetailsService implements UserDetailsService {
         this.userRepository = userRepository;
     }
 
-    // Transactional so AppUserDetails can snapshot the now-LAZY moderatorPermissions
-    // collection while the Hibernate session is still open.
+    // Transactional so AppUserDetails can snapshot the moderatorPermissions collection
+    // while the Hibernate session is still open.
     @Override
     @Transactional(readOnly = true)
     public UserDetails loadUserByUsername(String usernameOrEmail) throws UsernameNotFoundException {

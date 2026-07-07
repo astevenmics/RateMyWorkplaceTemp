@@ -14,11 +14,7 @@ public class RateLimitProperties {
     private long sensitiveRefillPeriodSeconds = 60;
 
     /**
-     * Whether to honour the client-supplied {@code X-Forwarded-For} header when
-     * bucketing by IP. Only enable this if the app sits behind a trusted reverse
-     * proxy/load balancer that overwrites the header itself: otherwise any client
-     * can set an arbitrary value and rotate it per request to bypass rate limiting
-     * entirely.
+     * To be turned true if a trusted reverse proxy/load balancer is used
      */
     private boolean trustForwardedFor = false;
 

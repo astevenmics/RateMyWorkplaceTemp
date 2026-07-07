@@ -27,7 +27,7 @@ public interface FeedbackRepository extends JpaRepository<Feedback, Long> {
 
     long countByStatus(ApprovalStatus status);
 
-    /** Average rating + review count in one aggregate query (used to keep denormalised rollups in sync). */
+    /** Average rating + review count in one aggregate query (used to keep denormalized roll ups in sync). */
     interface RatingStats {
         double getAverage();
         long getCount();

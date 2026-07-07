@@ -24,15 +24,21 @@ public class AdminController {
     private final CurrentUserService currentUserService;
     private final AuditService auditService;
 
-    public AdminController(AdminService adminService, UserService userService, CategoryService categoryService,
-                           SiteContentService siteContentService, CurrentUserService currentUserService,
-                           AuditService auditService) {
+    public AdminController(
+            AdminService adminService,
+            UserService userService,
+            CategoryService categoryService,
+            SiteContentService siteContentService,
+            CurrentUserService currentUserService,
+            AuditService auditService
+    ) {
         this.adminService = adminService;
         this.userService = userService;
         this.categoryService = categoryService;
         this.siteContentService = siteContentService;
         this.currentUserService = currentUserService;
         this.auditService = auditService;
+
     }
 
     // ---- statistics dashboard ----

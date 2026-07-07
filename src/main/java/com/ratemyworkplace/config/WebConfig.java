@@ -22,10 +22,8 @@ public class WebConfig implements WebMvcConfigurer {
     }
 
     /**
-     * CSS/JS/images are re-requested on every page navigation (this app has no
-     * asset fingerprinting), so a short cache window lets the browser skip the
-     * round-trip entirely within a session while still picking up deploys quickly.
-     */
+     * Reduces repetitive requests for resources
+    */
     @Override
     public void addResourceHandlers(ResourceHandlerRegistry registry) {
         registry.addResourceHandler("/css/**", "/js/**", "/img/**", "/assets/**")

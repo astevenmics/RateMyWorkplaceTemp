@@ -25,7 +25,7 @@ public class CompanyController {
     private final CurrentUserService currentUserService;
 
     public CompanyController(CompanyService companyService, CategoryService categoryService,
-                            CurrentUserService currentUserService) {
+                             CurrentUserService currentUserService) {
         this.companyService = companyService;
         this.categoryService = categoryService;
         this.currentUserService = currentUserService;

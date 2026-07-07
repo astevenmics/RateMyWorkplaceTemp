@@ -7,7 +7,7 @@ public class AdminBootstrapProperties {
 
     private String username = "admin";
     private String password = "Admin@12345";
-    private String email = "admin@ratemyworkplace.local";
+    private String email = "admin@ratemywork.local";
 
     public String getUsername() { return username; }
     public void setUsername(String username) { this.username = username; }

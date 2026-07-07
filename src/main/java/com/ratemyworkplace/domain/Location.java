@@ -4,8 +4,8 @@ import jakarta.persistence.*;
 import java.time.Instant;
 
 /**
- * A physical workplace location of a {@link Company}. Feedback and employment
- * proofs are scoped to a specific location.
+ * A physical workplace location of a {@link Company}.
+ * Feedback and employment proofs are scoped to a specific location.
  */
 @Entity
 @Table(name = "locations", indexes = {
@@ -22,7 +22,6 @@ public class Location {
     @JoinColumn(name = "company_id")
     private Company company;
 
-    /** Optional human label, e.g. "Downtown branch". */
     @Column(length = 140)
     private String label;
 

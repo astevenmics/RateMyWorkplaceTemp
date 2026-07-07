@@ -6,6 +6,7 @@ import org.springframework.security.core.GrantedAuthority;
 import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import org.springframework.security.core.userdetails.UserDetails;
 
+import java.io.Serial;
 import java.io.Serializable;
 import java.util.ArrayList;
 import java.util.Collection;
@@ -22,12 +23,18 @@ import java.util.List;
  */
 public class AppUserDetails implements UserDetails, Serializable {
 
+    @Serial
     private static final long serialVersionUID = 1L;
 
     private final Long id;
     private final String username;
     private final String passwordHash;
     private final boolean enabled;
+
+    /**
+     * Authorities are snapshotted at construction (while the loading transaction's session is still open)
+     * so authorization checks on later requests never touch the detached {@code moderatorPermissions} collection.
+     */
     private final List<GrantedAuthority> authorities;
 
     public AppUserDetails(User user) {

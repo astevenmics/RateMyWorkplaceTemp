@@ -6,149 +6,153 @@
   <title>Admin panel — RateMyWorkplace</title>
   <script>(function(){var t=localStorage.getItem("rmw-theme");if(t)document.documentElement.setAttribute("data-theme",t);})();</script>
   <link rel="stylesheet" href="/css/styles.css">
+  <link rel="apple-touch-icon" sizes="180x180" href="/favicon/apple-touch-icon.png">
+  <link rel="icon" type="image/png" sizes="32x32" href="/favicon/favicon-32x32.png">
+  <link rel="icon" type="image/png" sizes="16x16" href="/favicon/favicon-16x16.png">
+  <link rel="manifest" href="/favicon/site.webmanifest">
 </head>
 <body>
-  <header class="site-header" id="site-header"></header>
+<header class="site-header" id="site-header"></header>
 
-  <section class="section">
-    <div class="container">
-      <h2 style="margin-top:0">Admin &amp; moderation</h2>
-      <p class="subtitle" id="roleLine"></p>
-      <div id="globalAlert" class="alert"></div>
+<section class="section">
+  <div class="container">
+    <h2 style="margin-top:0">Admin &amp; moderation</h2>
+    <p class="subtitle" id="roleLine"></p>
+    <div id="globalAlert" class="alert"></div>
 
-      <div class="admin-layout">
-        <nav class="admin-nav" id="adminNav"></nav>
-        <div id="panels">
-          <!-- Stats -->
-          <div class="admin-panel" data-panel="stats">
-            <h3>Statistics</h3>
-            <div class="stat-row" id="statCards"></div>
-            <div class="card" style="margin-top:18px">
-              <h4 style="margin-top:0">Traffic — last 30 days</h4>
-              <div class="toolbar" style="margin-bottom:6px">
-                <label class="muted" style="font-size:.85rem"><input type="radio" name="metric" value="pageViews" checked> Page views</label>
-                <label class="muted" style="font-size:.85rem"><input type="radio" name="metric" value="logins"> Logins</label>
-                <label class="muted" style="font-size:.85rem"><input type="radio" name="metric" value="signups"> Signups</label>
-              </div>
-              <div class="bars" id="trafficChart"></div>
-              <div class="muted" id="chartCaption" style="font-size:.8rem;margin-top:6px"></div>
+    <div class="admin-layout">
+      <nav class="admin-nav" id="adminNav"></nav>
+      <div id="panels">
+        <!-- Stats -->
+        <div class="admin-panel" data-panel="stats">
+          <h3>Statistics</h3>
+          <div class="stat-row" id="statCards"></div>
+          <div class="card" style="margin-top:18px">
+            <h4 style="margin-top:0">Traffic — last 30 days</h4>
+            <div class="toolbar" style="margin-bottom:6px">
+              <label class="muted" style="font-size:.85rem"><input type="radio" name="metric" value="pageViews" checked> Page views</label>
+              <label class="muted" style="font-size:.85rem"><input type="radio" name="metric" value="logins"> Logins</label>
+              <label class="muted" style="font-size:.85rem"><input type="radio" name="metric" value="signups"> Signups</label>
             </div>
+            <div class="bars" id="trafficChart"></div>
+            <div class="muted" id="chartCaption" style="font-size:.8rem;margin-top:6px"></div>
           </div>
+        </div>
 
-          <!-- Workplaces -->
-          <div class="admin-panel" data-panel="workplaces">
-            <h3>Pending workplaces</h3>
-            <div id="workplacesList"><p class="muted">Loading…</p></div>
+        <!-- Workplaces -->
+        <div class="admin-panel" data-panel="workplaces">
+          <h3>Pending workplaces</h3>
+          <div id="workplacesList"><p class="muted">Loading…</p></div>
+        </div>
+
+        <!-- Proofs -->
+        <div class="admin-panel" data-panel="proofs">
+          <h3>Pending employment proofs</h3>
+          <div id="proofsList"><p class="muted">Loading…</p></div>
+        </div>
+
+        <!-- Feedback -->
+        <div class="admin-panel" data-panel="feedback">
+          <h3>Feedback moderation</h3>
+          <div class="toolbar">
+            <select id="feedbackStatus">
+              <option value="ALL">All</option>
+              <option value="APPROVED">Visible</option>
+              <option value="REJECTED">Hidden</option>
+            </select>
+            <button class="btn small" id="reloadFeedback">Reload</button>
           </div>
+          <div id="feedbackList"><p class="muted">Loading…</p></div>
+        </div>
 
-          <!-- Proofs -->
-          <div class="admin-panel" data-panel="proofs">
-            <h3>Pending employment proofs</h3>
-            <div id="proofsList"><p class="muted">Loading…</p></div>
+        <!-- Users -->
+        <div class="admin-panel" data-panel="users">
+          <h3>Users</h3>
+          <div class="toolbar">
+            <input type="text" id="userSearch" placeholder="Search username / name">
+            <button class="btn small" id="userSearchBtn">Search</button>
           </div>
+          <div id="usersList"><p class="muted">Loading…</p></div>
+        </div>
 
-          <!-- Feedback -->
-          <div class="admin-panel" data-panel="feedback">
-            <h3>Feedback moderation</h3>
-            <div class="toolbar">
-              <select id="feedbackStatus">
-                <option value="ALL">All</option>
-                <option value="APPROVED">Visible</option>
-                <option value="REJECTED">Hidden</option>
-              </select>
-              <button class="btn small" id="reloadFeedback">Reload</button>
+        <!-- Moderators -->
+        <div class="admin-panel" data-panel="moderators">
+          <h3>Moderator access</h3>
+          <p class="muted">Grant limited moderation rights to a user by username.</p>
+          <div id="modAlert" class="alert"></div>
+          <div class="card form-card" style="margin:0">
+            <div class="field"><label>Username</label><input type="text" id="modUsername" placeholder="e.g. jordan_a"></div>
+            <div class="field">
+              <label>Permissions</label>
+              <label style="display:block"><input type="checkbox" value="APPROVE_WORKPLACES"> Approve workplaces</label>
+              <label style="display:block"><input type="checkbox" value="APPROVE_PROOFS"> Approve employment proofs</label>
+              <label style="display:block"><input type="checkbox" value="MODERATE_FEEDBACK"> Moderate feedback</label>
+              <label style="display:block"><input type="checkbox" value="MANAGE_USERS"> Manage / flag users</label>
             </div>
-            <div id="feedbackList"><p class="muted">Loading…</p></div>
+            <button class="btn" id="saveModBtn">Save permissions</button>
+            <p class="hint">Setting no permissions removes moderator access (downgrades to a regular user).</p>
           </div>
+        </div>
 
-          <!-- Users -->
-          <div class="admin-panel" data-panel="users">
-            <h3>Users</h3>
-            <div class="toolbar">
-              <input type="text" id="userSearch" placeholder="Search username / name">
-              <button class="btn small" id="userSearchBtn">Search</button>
-            </div>
-            <div id="usersList"><p class="muted">Loading…</p></div>
+        <!-- Categories -->
+        <div class="admin-panel" data-panel="categories">
+          <h3>Categories</h3>
+          <div id="catAlert" class="alert"></div>
+          <div class="toolbar">
+            <input type="text" id="newCategory" placeholder="New category name">
+            <button class="btn small" id="addCategoryBtn">Add</button>
           </div>
+          <div id="categoriesList" class="tags"></div>
+        </div>
 
-          <!-- Moderators -->
-          <div class="admin-panel" data-panel="moderators">
-            <h3>Moderator access</h3>
-            <p class="muted">Grant limited moderation rights to a user by username.</p>
-            <div id="modAlert" class="alert"></div>
-            <div class="card form-card" style="margin:0">
-              <div class="field"><label>Username</label><input type="text" id="modUsername" placeholder="e.g. jordan_a"></div>
-              <div class="field">
-                <label>Permissions</label>
-                <label style="display:block"><input type="checkbox" value="APPROVE_WORKPLACES"> Approve workplaces</label>
-                <label style="display:block"><input type="checkbox" value="APPROVE_PROOFS"> Approve employment proofs</label>
-                <label style="display:block"><input type="checkbox" value="MODERATE_FEEDBACK"> Moderate feedback</label>
-                <label style="display:block"><input type="checkbox" value="MANAGE_USERS"> Manage / flag users</label>
-              </div>
-              <button class="btn" id="saveModBtn">Save permissions</button>
-              <p class="hint">Setting no permissions removes moderator access (downgrades to a regular user).</p>
-            </div>
+        <!-- Site feedback -->
+        <div class="admin-panel" data-panel="siteFeedback">
+          <h3>Website feedback inbox</h3>
+          <div class="toolbar">
+            <select id="siteFbFilter"><option value="false">Open</option><option value="true">Resolved</option></select>
+            <button class="btn small" id="reloadSiteFb">Reload</button>
           </div>
+          <div id="siteFeedbackList"><p class="muted">Loading…</p></div>
+        </div>
 
-          <!-- Categories -->
-          <div class="admin-panel" data-panel="categories">
-            <h3>Categories</h3>
-            <div id="catAlert" class="alert"></div>
-            <div class="toolbar">
-              <input type="text" id="newCategory" placeholder="New category name">
-              <button class="btn small" id="addCategoryBtn">Add</button>
-            </div>
-            <div id="categoriesList" class="tags"></div>
+        <!-- Updates -->
+        <div class="admin-panel" data-panel="updates">
+          <h3>Post a "What's new" update</h3>
+          <div id="updateAlert" class="alert"></div>
+          <div class="card form-card" style="margin:0 0 20px">
+            <div class="field"><label>Title</label><input type="text" id="updateTitle" maxlength="160"></div>
+            <div class="field"><label>Tag (optional)</label><input type="text" id="updateTag" maxlength="40" placeholder="feature / fix / launch"></div>
+            <div class="field"><label>Body</label><textarea id="updateBody" rows="6" maxlength="8000" placeholder="Supports Markdown: # heading, **bold**, *italic*, [links](https://…), - lists, `code`, &gt; quotes"></textarea><div class="hint">Markdown is supported and rendered on the post page.</div></div>
+            <button class="btn" id="postUpdateBtn">Publish update</button>
           </div>
+          <div id="updatesList"></div>
+        </div>
 
-          <!-- Site feedback -->
-          <div class="admin-panel" data-panel="siteFeedback">
-            <h3>Website feedback inbox</h3>
-            <div class="toolbar">
-              <select id="siteFbFilter"><option value="false">Open</option><option value="true">Resolved</option></select>
-              <button class="btn small" id="reloadSiteFb">Reload</button>
-            </div>
-            <div id="siteFeedbackList"><p class="muted">Loading…</p></div>
+        <!-- Records (audit log) -->
+        <div class="admin-panel" data-panel="audit">
+          <h3>Records</h3>
+          <p class="muted">A history of approved &amp; rejected workplaces and reviews, employment-proof decisions, and deleted users.</p>
+          <div class="toolbar">
+            <select id="auditCategory">
+              <option value="ALL">All records</option>
+              <option value="WORKPLACE">Workplaces</option>
+              <option value="FEEDBACK">Reviews</option>
+              <option value="PROOF">Employment proofs</option>
+              <option value="USER">Deleted users</option>
+            </select>
+            <button class="btn small" id="reloadAudit">Reload</button>
           </div>
-
-          <!-- Updates -->
-          <div class="admin-panel" data-panel="updates">
-            <h3>Post a "What's new" update</h3>
-            <div id="updateAlert" class="alert"></div>
-            <div class="card form-card" style="margin:0 0 20px">
-              <div class="field"><label>Title</label><input type="text" id="updateTitle" maxlength="160"></div>
-              <div class="field"><label>Tag (optional)</label><input type="text" id="updateTag" maxlength="40" placeholder="feature / fix / launch"></div>
-              <div class="field"><label>Body</label><textarea id="updateBody" rows="6" maxlength="8000" placeholder="Supports Markdown: # heading, **bold**, *italic*, [links](https://…), - lists, `code`, &gt; quotes"></textarea><div class="hint">Markdown is supported and rendered on the post page.</div></div>
-              <button class="btn" id="postUpdateBtn">Publish update</button>
-            </div>
-            <div id="updatesList"></div>
-          </div>
-
-          <!-- Records (audit log) -->
-          <div class="admin-panel" data-panel="audit">
-            <h3>Records</h3>
-            <p class="muted">A history of approved &amp; rejected workplaces and reviews, employment-proof decisions, and deleted users.</p>
-            <div class="toolbar">
-              <select id="auditCategory">
-                <option value="ALL">All records</option>
-                <option value="WORKPLACE">Workplaces</option>
-                <option value="FEEDBACK">Reviews</option>
-                <option value="PROOF">Employment proofs</option>
-                <option value="USER">Deleted users</option>
-              </select>
-              <button class="btn small" id="reloadAudit">Reload</button>
-            </div>
-            <div id="auditList"><p class="muted">Loading…</p></div>
-            <div class="pagination" id="auditPagination"></div>
-          </div>
+          <div id="auditList"><p class="muted">Loading…</p></div>
+          <div class="pagination" id="auditPagination"></div>
         </div>
       </div>
     </div>
-  </section>
+  </div>
+</section>
 
-  <footer class="site-footer" id="site-footer"></footer>
+<footer class="site-footer" id="site-footer"></footer>
 
-  <script src="/js/app.js"></script>
-  <script src="/js/admin.js"></script>
+<script src="/js/app.js"></script>
+<script src="/js/admin.js"></script>
 </body>
 </html>

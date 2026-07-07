@@ -28,9 +28,14 @@ public class ProofService {
     private final NotificationService notificationService;
     private final AuditService auditService;
 
-    public ProofService(EmploymentProofRepository proofRepository, CompanyRepository companyRepository,
-                        LocationRepository locationRepository, FileStorageService fileStorageService,
-                        NotificationService notificationService, AuditService auditService) {
+    public ProofService(
+            EmploymentProofRepository proofRepository,
+            CompanyRepository companyRepository,
+            LocationRepository locationRepository,
+            FileStorageService fileStorageService,
+            NotificationService notificationService,
+            AuditService auditService
+    ) {
         this.proofRepository = proofRepository;
         this.companyRepository = companyRepository;
         this.locationRepository = locationRepository;
@@ -57,7 +62,7 @@ public class ProofService {
         boolean duplicate = (location != null)
                 ? proofRepository.existsByUserIdAndLocationIdAndStatusIn(user.getId(), location.getId(), ACTIVE_STATUSES)
                 : proofRepository.existsByUserIdAndCompanyIdAndLocationIsNullAndStatusIn(
-                        user.getId(), companyId, ACTIVE_STATUSES);
+                user.getId(), companyId, ACTIVE_STATUSES);
         if (duplicate) {
             throw ApiException.conflict("You already have a pending or approved proof for this "
                     + (location != null ? "location" : "company") + ". Cancel it first to submit a new one.");
@@ -130,8 +135,8 @@ public class ProofService {
     }
 
     /**
-     * Whether the user is cleared to leave feedback for a specific location: an approved
-     * proof scoped exactly to that location, or a company-wide approved proof.
+     * Whether the user is cleared to leave feedback for a specific location:
+     * an approved proof scoped exactly to that location, or a company-wide approved proof.
      */
     public boolean canReviewLocation(User user, Location location) {
         boolean companyWide = proofRepository.existsByUserIdAndCompanyIdAndLocationIsNullAndStatus(

@@ -4,9 +4,8 @@ import jakarta.persistence.*;
 import java.time.Instant;
 
 /**
- * An uploaded proof of employment/offer (PDF/PNG/JPG) tying a user to a specific
- * company &amp; location. Once {@link ApprovalStatus#APPROVED} it unlocks the right
- * to leave feedback for that location only.
+ * An uploaded proof of employment/offer (PDF/PNG/JPG) tying a user to a specific company & location.
+ * Once {@link ApprovalStatus#APPROVED} it unlocks the right to leave feedback for that location only.
  */
 @Entity
 @Table(name = "employment_proofs", indexes = {
@@ -27,7 +26,6 @@ public class EmploymentProof {
     @JoinColumn(name = "company_id")
     private Company company;
 
-    /** Location the proof applies to. Optional: a company-wide proof leaves this null. */
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "location_id")
     private Location location;

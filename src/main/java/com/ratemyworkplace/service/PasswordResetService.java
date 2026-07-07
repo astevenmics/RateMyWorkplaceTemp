@@ -51,14 +51,11 @@ public class PasswordResetService {
         });
     }
 
-    // noRollbackFor is required: without it, the attempts/consumed write below would be
-    // undone by Spring's default rollback-on-RuntimeException before ApiException (itself
-    // a RuntimeException) leaves this method, silently defeating the attempt cap.
+    // noRollbackFor is required: without it, the attempts/consumed write below would be undone by Spring's default
+    // rollback-on-RuntimeException before ApiException leaves this method, silently defeating the attempt cap.
     @Transactional(noRollbackFor = ApiException.class)
     public void reset(String email, String code, String newPassword) {
-        // Every failure below throws the same message/status: distinguishing "no such
-        // account" from "wrong code" would let a caller enumerate registered emails
-        // through this endpoint alone (it's permitAll and needs no prior state).
+        // Every failure below throws the same message/status
         User user = userRepository.findByEmailIgnoreCase(email.trim())
                 .orElseThrow(() -> ApiException.badRequest(INVALID_MESSAGE));
         VerificationToken token = tokenRepository
@@ -69,9 +66,6 @@ public class PasswordResetService {
             throw ApiException.badRequest(INVALID_MESSAGE);
         }
         if (!token.getCode().equals(code.trim())) {
-            // Cap guesses against this specific code: a 6-digit code has only ~20 bits of
-            // entropy, and the global per-IP rate limit alone doesn't stop a distributed
-            // brute force across many IPs within the code's validity window.
             token.setAttempts(token.getAttempts() + 1);
             if (token.getAttempts() >= MAX_ATTEMPTS) {
                 token.setConsumed(true);

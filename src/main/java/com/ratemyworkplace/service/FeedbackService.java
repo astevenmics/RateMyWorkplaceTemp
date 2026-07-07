@@ -20,9 +20,14 @@ public class FeedbackService {
     private final NotificationService notificationService;
     private final AuditService auditService;
 
-    public FeedbackService(FeedbackRepository feedbackRepository, LocationRepository locationRepository,
-                           ProofService proofService, CompanyService companyService,
-                           NotificationService notificationService, AuditService auditService) {
+    public FeedbackService(
+            FeedbackRepository feedbackRepository,
+            LocationRepository locationRepository,
+            ProofService proofService,
+            CompanyService companyService,
+            NotificationService notificationService,
+            AuditService auditService
+    ) {
         this.feedbackRepository = feedbackRepository;
         this.locationRepository = locationRepository;
         this.proofService = proofService;
@@ -103,6 +108,7 @@ public class FeedbackService {
         Feedback feedback = feedbackRepository.findById(id)
                 .orElseThrow(() -> ApiException.notFound("Feedback not found"));
         Location location = feedback.getLocation();
+
         // Capture author + company details before the row is gone, to notify them.
         User author = feedback.getAuthor();
         String authorEmail = author != null ? author.getEmail() : null;

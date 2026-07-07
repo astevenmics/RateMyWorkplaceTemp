@@ -3,7 +3,7 @@ package com.ratemyworkplace.domain;
 import jakarta.persistence.*;
 import java.time.Instant;
 
-/** A 1–5 star rating with explanation left against a specific {@link Location}. */
+/** A 1 to 5-star rating with explanation left against a specific {@link Location}. */
 @Entity
 @Table(name = "feedback", indexes = {
         @Index(name = "idx_feedback_location", columnList = "location_id"),
@@ -40,7 +40,6 @@ public class Feedback {
     @Column(nullable = false, length = 20)
     private ApprovalStatus status = ApprovalStatus.APPROVED;
 
-    /** Set when a moderator hides the feedback for a T&amp;C violation. */
     @Column(length = 255)
     private String moderationNote;
 

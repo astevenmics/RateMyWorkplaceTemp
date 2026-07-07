@@ -36,10 +36,16 @@ public class GlobalExceptionHandler {
         return body(HttpStatus.BAD_REQUEST, "Validation failed", req, fieldErrors);
     }
 
+    @ExceptionHandler(Exception.class)
+    public ResponseEntity<Map<String, Object>> handleUnexpected(Exception ex, HttpServletRequest req) {
+        log.error("Unhandled exception on {} {}", req.getMethod(), req.getRequestURI(), ex);
+        return body(HttpStatus.INTERNAL_SERVER_ERROR, "An unexpected error occurred", req, null);
+    }
+
     @ExceptionHandler(MaxUploadSizeExceededException.class)
     public ResponseEntity<Map<String, Object>> handleUploadSize(MaxUploadSizeExceededException ex,
                                                                 HttpServletRequest req) {
-        return body(HttpStatus.PAYLOAD_TOO_LARGE, "Uploaded file is too large", req, null);
+        return body(HttpStatus.CONTENT_TOO_LARGE, "Uploaded file is too large", req, null);
     }
 
     @ExceptionHandler(AccessDeniedException.class)
@@ -50,19 +56,6 @@ public class GlobalExceptionHandler {
     @ExceptionHandler(IllegalArgumentException.class)
     public ResponseEntity<Map<String, Object>> handleIllegal(IllegalArgumentException ex, HttpServletRequest req) {
         return body(HttpStatus.BAD_REQUEST, ex.getMessage(), req, null);
-    }
-
-    /**
-     * Last-resort catch-all: without this, an unexpected exception (DB constraint
-     * violation, NPE, etc.) falls through to Spring Boot's default error page, which
-     * echoes {@code ex.getMessage()} back to the client and can leak internal details
-     * (SQL, class names, file paths). Log the real exception server-side and return a
-     * generic message instead.
-     */
-    @ExceptionHandler(Exception.class)
-    public ResponseEntity<Map<String, Object>> handleUnexpected(Exception ex, HttpServletRequest req) {
-        log.error("Unhandled exception on {} {}", req.getMethod(), req.getRequestURI(), ex);
-        return body(HttpStatus.INTERNAL_SERVER_ERROR, "An unexpected error occurred", req, null);
     }
 
     private ResponseEntity<Map<String, Object>> body(HttpStatus status, String message,

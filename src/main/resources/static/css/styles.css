@@ -75,6 +75,7 @@ img { max-width: 100%; }
     backdrop-filter: saturate(180%) blur(8px);
     border-bottom: 1px solid var(--border);
 }
+
 .theme-toggle {
     background: var(--surface-2);
     border: 1px solid var(--border);
@@ -84,6 +85,7 @@ img { max-width: 100%; }
     display: inline-flex; align-items: center; justify-content: center;
 }
 .theme-toggle:hover { background: var(--primary-soft); }
+
 .nav {
     display: flex;
     align-items: center;
@@ -169,7 +171,7 @@ img { max-width: 100%; }
 /* ---------------- Hero ---------------- */
 .hero {
     background: radial-gradient(1200px 400px at 70% -10%, #d9e3ff 0%, transparent 60%),
-                linear-gradient(180deg, #ffffff 0%, var(--bg) 100%);
+    linear-gradient(180deg, #ffffff 0%, var(--bg) 100%);
     padding: 56px 0 40px;
     border-bottom: 1px solid var(--border);
 }
@@ -293,6 +295,7 @@ img { max-width: 100%; }
 
 /* ---------------- Filters / toolbar ---------------- */
 .toolbar { display: flex; gap: 12px; flex-wrap: wrap; align-items: center; margin-bottom: 18px; }
+
 .toolbar .spacer { margin-left: auto; }
 
 /* Polished, theme-aware select control (custom caret, matches inputs/buttons) */

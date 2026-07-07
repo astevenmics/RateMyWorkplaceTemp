@@ -92,7 +92,7 @@ public class CompanyService {
         return companyRepository.save(company);
     }
 
-    /** Recomputes denormalised rating aggregates for a location and its parent company. */
+    /** Recomputes denormalized rating aggregates for a location and its parent company. */
     @Transactional
     public void recomputeAggregates(Location location) {
         FeedbackRepository.RatingStats locationStats = feedbackRepository.locationStats(location.getId());

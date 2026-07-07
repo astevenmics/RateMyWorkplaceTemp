@@ -21,9 +21,10 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 
 /**
- * Per-client-IP token-bucket rate limiter to blunt brute-force and DDoS-style
- * floods. Two buckets are kept per IP: a generous global budget and a much
- * stricter budget that applies to authentication and write endpoints.
+ * Per-client-IP token-bucket rate limiter to blunt brute-force and DDoS-style floods.
+ * Two buckets are kept per IP:
+ * - a generous global budget.
+ * - a much stricter budget that applies to authentication and write endpoints.
  *
  * <p>Runs very early in the chain (before Spring Security) so abusive traffic is
  * shed before it can touch the database.
@@ -103,9 +104,6 @@ public class RateLimitFilter extends OncePerRequestFilter {
     }
 
     private String clientIp(HttpServletRequest request) {
-        // X-Forwarded-For is attacker-controlled unless a trusted reverse proxy
-        // overwrites it, so it's ignored by default: honouring it blindly would let
-        // any client bypass rate limiting by sending a different value per request.
         if (props.isTrustForwardedFor()) {
             String forwarded = request.getHeader("X-Forwarded-For");
             if (StringUtils.hasText(forwarded)) {

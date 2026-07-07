@@ -6,8 +6,9 @@ import java.util.EnumSet;
 import java.util.Set;
 
 /**
- * A registered account. Email and phone must both be verified before a user may
- * submit workplaces or feedback (enforced in the service layer).
+ * A registered account.
+ * Email and phone must both be verified before a user may submit workplaces or feedback
+ * Verification enforced in the service layer.
  */
 @Entity
 @Table(name = "users", indexes = {
@@ -53,19 +54,32 @@ public class User {
     @Column(nullable = false, length = 20)
     private Role role = Role.USER;
 
-    // Loaded lazily; security authorities are snapshotted at load time in AppUserDetails,
-    // and DTO mapping happens within the open-in-view session, so no detached access occurs.
     @ElementCollection(fetch = FetchType.LAZY)
     @CollectionTable(name = "user_mod_permissions", joinColumns = @JoinColumn(name = "user_id"))
     @Column(name = "permission", length = 40)
     @Enumerated(EnumType.STRING)
     private Set<ModeratorPermission> moderatorPermissions = EnumSet.noneOf(ModeratorPermission.class);
 
+    /**
+     * Default set to false.
+     * Changed to true once user verifies their email
+     */
     @Column(nullable = false)
     private boolean emailVerified = false;
 
+    /**
+     * Default set to false.
+     * Changed to true once user verifies their phone number
+    */
     @Column(nullable = false)
     private boolean phoneVerified = false;
+
+    /** Full legal name (first + last), used by reviewers to match against employment proofs. */
+    public String getFullName() {
+        String f = firstName == null ? "" : firstName.trim();
+        String l = lastName == null ? "" : lastName.trim();
+        return (f + " " + l).trim();
+    }
 
     @Column(nullable = false)
     private boolean enabled = true;
@@ -83,14 +97,7 @@ public class User {
         return emailVerified && phoneVerified;
     }
 
-    /** Full legal name (first + last), used by reviewers to match against employment proofs. */
-    public String getFullName() {
-        String f = firstName == null ? "" : firstName.trim();
-        String l = lastName == null ? "" : lastName.trim();
-        return (f + " " + l).trim();
-    }
-
-    // ----- getters / setters -----
+    // Getters & Setters
     public Long getId() { return id; }
     public void setId(Long id) { this.id = id; }
     public String getFirstName() { return firstName; }

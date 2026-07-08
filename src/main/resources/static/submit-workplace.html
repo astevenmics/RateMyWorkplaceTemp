@@ -87,6 +87,10 @@
     } catch (e) { /* ignore */ }
   }
 
+  const DEPARTMENTS = ['IT', 'MEDICAL', 'ADMIN', 'SALES', 'MARKETING', 'HR', 'FINANCE',
+    'OPERATIONS', 'CUSTOMER_SERVICE', 'ENGINEERING', 'RETAIL', 'LOGISTICS', 'LEGAL', 'OTHER'];
+  function deptLabel(d) { return d.split('_').map(w => w[0] + w.slice(1).toLowerCase()).join(' '); }
+
   let locIndex = 0;
   function addLocation() {
     const id = locIndex++;
@@ -102,6 +106,13 @@
           <div class="field"><label>City</label><input type="text" data-f="city" required></div>
           <div class="field"><label>State</label><input type="text" data-f="state"></div>
           <div class="field"><label>ZIP</label><input type="text" data-f="zipCode" required></div>
+        </div>
+        <div class="field">
+          <label>Departments at this location (optional)</label>
+          <div class="tags" data-f="departments">
+            ${DEPARTMENTS.map(d => `<label class="tag muted" style="cursor:pointer;user-select:none">
+                <input type="checkbox" value="${d}" style="margin-right:4px;vertical-align:middle">${deptLabel(d)}</label>`).join('')}
+          </div>
         </div>
         <button type="button" class="btn ghost small removeLoc">Remove location</button>`;
     div.querySelector('.removeLoc').addEventListener('click', () => div.remove());
@@ -119,8 +130,9 @@
     const form = e.target;
     const locations = [...document.querySelectorAll('#locations .card')].map(card => {
       const get = f => card.querySelector(`[data-f="${f}"]`).value.trim();
+      const departments = [...card.querySelectorAll('[data-f="departments"] input:checked')].map(c => c.value);
       return { label: get('label'), addressLine: get('addressLine'), city: get('city'),
-        state: get('state'), zipCode: get('zipCode'), country: 'USA' };
+        state: get('state'), zipCode: get('zipCode'), country: 'USA', departments };
     });
     if (!locations.length) { RMW.toast(alertEl, 'error', 'Add at least one location.'); return; }
 

@@ -250,10 +250,7 @@ const RMW = (() => {
         if (user) {
             const adminLink = (user.role === 'ADMIN' || user.role === 'MODERATOR')
                 ? '<a href="/admin.html">Admin</a>' : '';
-            // "Verify Employment" is only relevant once you have an account, so show it to
-            // logged-in users only.
             authArea.innerHTML = `
-              <a href="/submit-proof.html">Verify Employment</a>
               ${adminLink}
               <a class="nav-user" href="/profile.html"><span id="headerAvatarSlot">${avatarHtml(user)}</span> ${escapeHtml(user.displayName)}</a>
               <a href="#" id="logoutLink">Logout</a>`;

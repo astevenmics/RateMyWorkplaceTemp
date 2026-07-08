@@ -75,6 +75,12 @@ img { max-width: 100%; }
     backdrop-filter: saturate(180%) blur(8px);
     border-bottom: 1px solid var(--border);
 }
+/* The header shared the same --maxw (1180px) as body content, but a logged-in admin/
+   moderator's nav (extra Verify Employment + Admin links, plus avatar + display name)
+   doesn't fit that budget — it overflows at ANY window size, since the cap never grows
+   past 1180px, and .nav-links then wraps its last item (the theme toggle) onto its own
+   line. Give the header more room than the reading-width body content needs. */
+.site-header .container { max-width: 1500px; }
 
 .theme-toggle {
     background: var(--surface-2);
@@ -485,7 +491,11 @@ table.data tr:hover td { background: var(--surface-2); }
     .admin-nav { position: static; flex-direction: row; flex-wrap: wrap; }
     .footer-grid { grid-template-columns: 1fr; }
 }
-@media (max-width: 680px) {
+/* A logged-in admin/moderator's nav (extra links + avatar + display name) no longer
+   fits inline below ~1180px even with the widened header container above, so switch
+   to the dropdown menu there instead of at the old, much narrower 680px — the wider
+   threshold only decides when the hamburger appears, the dropdown itself is unchanged. */
+@media (max-width: 1180px) {
     .nav-links {
         display: none;
         position: absolute; top: 64px; left: 0; right: 0;
@@ -496,6 +506,8 @@ table.data tr:hover td { background: var(--surface-2); }
     .nav-links.open { display: flex; }
     .nav-links a { padding: 12px; }
     .nav-toggle { display: inline-block; }
+}
+@media (max-width: 680px) {
     .search-bar { flex-direction: column; }
     .search-bar .btn { width: 100%; }
     table.data { display: block; overflow-x: auto; white-space: nowrap; }

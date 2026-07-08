@@ -249,11 +249,31 @@ const RMW = (() => {
         const authArea = document.getElementById('authArea');
         if (user) {
             const adminLink = (user.role === 'ADMIN' || user.role === 'MODERATOR')
-                ? '<a href="/admin.html">Admin</a>' : '';
+                ? '<a href="/admin.html" role="menuitem">Admin</a>' : '';
             authArea.innerHTML = `
-              ${adminLink}
-              <a class="nav-user" href="/profile.html"><span id="headerAvatarSlot">${avatarHtml(user)}</span> ${escapeHtml(user.displayName)}</a>
-              <a href="#" id="logoutLink">Logout</a>`;
+              <div class="user-menu" id="userMenu">
+                <button class="user-menu-trigger" id="userMenuTrigger" type="button" aria-haspopup="true" aria-expanded="false">
+                  <span id="headerAvatarSlot">${avatarHtml(user)}</span>
+                  <span class="name">${escapeHtml(user.displayName)}</span>
+                  <span class="caret" aria-hidden="true">▾</span>
+                </button>
+                <div class="user-menu-dropdown" id="userMenuDropdown" role="menu">
+                  <a href="/profile.html" role="menuitem">Profile</a>
+                  ${adminLink}
+                  <a href="#" id="logoutLink" role="menuitem">Logout</a>
+                </div>
+              </div>`;
+            const userMenu = document.getElementById('userMenu');
+            const trigger = document.getElementById('userMenuTrigger');
+            const closeMenu = () => { userMenu.classList.remove('open'); trigger.setAttribute('aria-expanded', 'false'); };
+            trigger.addEventListener('click', (e) => {
+                e.stopPropagation();
+                const opening = !userMenu.classList.contains('open');
+                userMenu.classList.toggle('open', opening);
+                trigger.setAttribute('aria-expanded', String(opening));
+            });
+            document.addEventListener('click', (e) => { if (!userMenu.contains(e.target)) closeMenu(); });
+            document.addEventListener('keydown', (e) => { if (e.key === 'Escape') closeMenu(); });
             document.getElementById('logoutLink').addEventListener('click', (e) => { e.preventDefault(); logout(); });
         } else {
             authArea.innerHTML = `<a href="/login.html">Log in</a> <a class="btn small" href="/register.html">Sign up</a>`;

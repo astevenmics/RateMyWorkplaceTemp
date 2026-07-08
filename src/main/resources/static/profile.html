@@ -122,7 +122,7 @@
       RMW.toast(avatarAlert, 'success', 'Profile picture updated.');
       renderAvatar(user);
       await RMW.currentUser(true);
-      RMW.mountHeader();
+      RMW.updateHeaderAvatar(user);
     } catch (err) {
       RMW.toast(avatarAlert, 'error', err.message);
     } finally {
@@ -140,7 +140,7 @@
       RMW.toast(avatarAlert, 'success', 'Profile picture removed.');
       renderAvatar(user);
       await RMW.currentUser(true);
-      RMW.mountHeader();
+      RMW.updateHeaderAvatar(user);
     } catch (err) {
       RMW.toast(avatarAlert, 'error', err.message);
     } finally {

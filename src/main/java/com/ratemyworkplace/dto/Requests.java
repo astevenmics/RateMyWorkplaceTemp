@@ -62,7 +62,8 @@ public final class Requests {
             @NotBlank @Size(max = 80) String city,
             @Size(max = 80) String state,
             @NotBlank @Size(max = 20) String zipCode,
-            @Size(max = 80) String country) {
+            @Size(max = 80) String country,
+            Set<String> departments) {
     }
 
     public record CompanySubmissionRequest(

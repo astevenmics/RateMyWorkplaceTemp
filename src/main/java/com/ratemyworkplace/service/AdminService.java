@@ -3,6 +3,7 @@ package com.ratemyworkplace.service;
 import com.ratemyworkplace.domain.*;
 import com.ratemyworkplace.dto.Responses;
 import com.ratemyworkplace.repository.*;
+import com.ratemyworkplace.security.SessionInvalidationService;
 import com.ratemyworkplace.web.ApiException;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
@@ -32,6 +33,7 @@ public class AdminService {
     private final VisitLogRepository visitLogRepository;
     private final NotificationService notificationService;
     private final AuditService auditService;
+    private final SessionInvalidationService sessionInvalidationService;
 
     public AdminService(CompanyRepository companyRepository, LocationRepository locationRepository,
                         FeedbackRepository feedbackRepository, EmploymentProofRepository proofRepository,
@@ -40,7 +42,8 @@ public class AdminService {
                         VerificationTokenRepository verificationTokenRepository,
                         VisitLogRepository visitLogRepository,
                         NotificationService notificationService,
-                        AuditService auditService) {
+                        AuditService auditService,
+                        SessionInvalidationService sessionInvalidationService) {
         this.companyRepository = companyRepository;
         this.locationRepository = locationRepository;
         this.feedbackRepository = feedbackRepository;
@@ -52,6 +55,7 @@ public class AdminService {
         this.visitLogRepository = visitLogRepository;
         this.notificationService = notificationService;
         this.auditService = auditService;
+        this.sessionInvalidationService = sessionInvalidationService;
     }
 
     // ---- workplace approval ----
@@ -109,12 +113,14 @@ public class AdminService {
             throw ApiException.badRequest("You cannot disable an admin account");
         }
         boolean wasEnabled = user.isEnabled();
+        user.setEnabled(enabled);
         User saved = userRepository.save(user);
         if (wasEnabled != enabled) {
             if (enabled) {
                 notificationService.notifyAccountEnabled(saved.getEmail(), saved.getDisplayName());
             } else {
                 notificationService.notifyAccountDisabled(saved.getEmail(), saved.getDisplayName());
+                sessionInvalidationService.invalidateSessionsFor(saved.getUsername());
             }
         }
         return saved;

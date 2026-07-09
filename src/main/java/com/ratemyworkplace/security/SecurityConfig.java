@@ -1,5 +1,8 @@
 package com.ratemyworkplace.security;
 
+import org.springframework.security.core.session.SessionRegistry;
+import org.springframework.security.core.session.SessionRegistryImpl;
+import org.springframework.security.web.session.HttpSessionEventPublisher;
 import tools.jackson.databind.ObjectMapper;
 import com.ratemyworkplace.config.RateLimitFilter;
 import jakarta.servlet.http.HttpServletResponse;
@@ -45,14 +48,32 @@ public class SecurityConfig {
     }
 
     @Bean
-    public SecurityFilterChain filterChain(HttpSecurity http) throws Exception {
+    public SessionRegistry sessionRegistry() {
+        return new SessionRegistryImpl();
+    }
+
+    /** Required so the session registry is told when a session is destroyed (browser logout, timeout, etc). */
+    @Bean
+    public HttpSessionEventPublisher httpSessionEventPublisher() {
+        return new HttpSessionEventPublisher();
+    }
+
+    @Bean
+    public SecurityFilterChain filterChain(HttpSecurity http, SessionRegistry sessionRegistry) throws Exception {
         http
                 .csrf(csrf -> csrf
                         .csrfTokenRepository(CookieCsrfTokenRepository.withHttpOnlyFalse())
                         .csrfTokenRequestHandler(new SpaCsrfTokenRequestHandler()))
                 .addFilterBefore(rateLimitFilter, UsernamePasswordAuthenticationFilter.class)
                 .addFilterAfter(new CsrfCookieFilter(), UsernamePasswordAuthenticationFilter.class)
-                .sessionManagement(s -> s.sessionCreationPolicy(SessionCreationPolicy.IF_REQUIRED))
+                .sessionManagement(s -> s
+                        .sessionCreationPolicy(SessionCreationPolicy.IF_REQUIRED)
+                        // A generous cap: this only exists to enable registry tracking for
+                        // forced invalidation, not to actually limit concurrent devices/browsers.
+                        .sessionConcurrency(concurrency -> concurrency
+                                .maximumSessions(20)
+                                .sessionRegistry(sessionRegistry)
+                                .expiredSessionStrategy(this::writeExpiredSession)))
                 .headers(headers -> headers
                         .contentSecurityPolicy(csp -> csp.policyDirectives(
                                 "default-src 'self'; " +
@@ -105,6 +126,13 @@ public class SecurityConfig {
                 .httpBasic(AbstractHttpConfigurer::disable);
 
         return http.build();
+    }
+
+    private void writeExpiredSession(
+            org.springframework.security.web.session.SessionInformationExpiredEvent event) throws java.io.IOException {
+        writeJson(event.getResponse(), HttpServletResponse.SC_UNAUTHORIZED, Map.of(
+                "status", 401, "error", "Unauthorized",
+                "message", "Your session has ended because your account access changed. Please log in again."));
     }
 
     private void writeJson(HttpServletResponse response, int status, Map<String, Object> body) {

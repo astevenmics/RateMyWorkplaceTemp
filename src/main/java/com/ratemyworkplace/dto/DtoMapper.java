@@ -42,7 +42,22 @@ public final class DtoMapper {
         return new Responses.LocationDto(
                 l.getId(), l.getCompany() != null ? l.getCompany().getId() : null, l.getLabel(),
                 l.getAddressLine(), l.getCity(), l.getState(), l.getZipCode(), l.getCountry(),
-                round(l.getAverageRating()), l.getRatingCount());
+                departmentLabels(l), round(l.getAverageRating()), l.getRatingCount());
+    }
+
+    /** One card per location: a company with 20 locations renders as 20 distinct browse-page cards. */
+    public static Responses.LocationCardDto locationCard(Location l) {
+        Company c = l.getCompany();
+        return new Responses.LocationCardDto(
+                l.getId(), c.getId(), c.getName(), c.getLogoUrl(),
+                c.getCategories().stream().map(Category::getName).collect(Collectors.toCollection(java.util.TreeSet::new)),
+                l.getLabel(), l.getAddressLine(), l.getCity(), l.getState(), l.getZipCode(), l.getCountry(),
+                departmentLabels(l), round(l.getAverageRating()), l.getRatingCount());
+    }
+
+    private static Set<String> departmentLabels(Location l) {
+        return l.getDepartments().stream().map(Department::label)
+                .collect(Collectors.toCollection(java.util.TreeSet::new));
     }
 
     public static Responses.CompanySummaryDto companySummary(Company c) {

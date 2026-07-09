@@ -23,7 +23,14 @@ public final class Responses {
 
     public record LocationDto(
             Long id, Long companyId, String label, String addressLine, String city, String state,
-            String zipCode, String country, double averageRating, long ratingCount) {
+            String zipCode, String country, Set<String> departments, double averageRating, long ratingCount) {
+    }
+
+    /** One workplace location shown as its own browse-page card (a company with N locations is N cards). */
+    public record LocationCardDto(
+            Long locationId, Long companyId, String companyName, String logoUrl, Set<String> categories,
+            String label, String addressLine, String city, String state, String zipCode, String country,
+            Set<String> departments, double averageRating, long ratingCount) {
     }
 
     public record CompanySummaryDto(

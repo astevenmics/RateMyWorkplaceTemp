@@ -109,8 +109,9 @@ const RMW = (() => {
     function avatarHtml(user, sizeClass = 'sm') {
         const name = (user && (user.displayName || user.username)) || '?';
         const initials = name.trim().charAt(0) || '?';
+        const px = sizeClass === 'lg' ? 96 : 30;
         if (user && user.avatarUrl) {
-            return `<img class="avatar ${sizeClass}" src="${escapeHtml(user.avatarUrl)}" alt="${escapeHtml(name)}">`;
+            return `<img class="avatar ${sizeClass}" width="${px}" height="${px}" src="${escapeHtml(user.avatarUrl)}" alt="${escapeHtml(name)}">`;
         }
         return `<span class="avatar ${sizeClass}" aria-hidden="true">${escapeHtml(initials)}</span>`;
     }
@@ -245,14 +246,31 @@ const RMW = (() => {
         const authArea = document.getElementById('authArea');
         if (user) {
             const adminLink = (user.role === 'ADMIN' || user.role === 'MODERATOR')
-                ? '<a href="/admin.html">Admin</a>' : '';
-            // "Verify Employment" is only relevant once you have an account, so show it to
-            // logged-in users only.
+                ? '<a href="/admin.html" role="menuitem">Admin</a>' : '';
             authArea.innerHTML = `
-              <a href="/submit-proof.html">Verify Employment</a>
-              ${adminLink}
-              <a class="nav-user" href="/profile.html">${avatarHtml(user)} ${escapeHtml(user.displayName)}</a>
-              <a href="#" id="logoutLink">Logout</a>`;
+              <div class="user-menu" id="userMenu">
+                <button class="user-menu-trigger" id="userMenuTrigger" type="button" aria-haspopup="true" aria-expanded="false">
+                  <span id="headerAvatarSlot">${avatarHtml(user)}</span>
+                  <span class="name">${escapeHtml(user.displayName)}</span>
+                  <span class="caret" aria-hidden="true">▾</span>
+                </button>
+                <div class="user-menu-dropdown" id="userMenuDropdown" role="menu">
+                  <a href="/profile.html" role="menuitem">Profile</a>
+                  ${adminLink}
+                  <a href="#" id="logoutLink" role="menuitem">Logout</a>
+                </div>
+              </div>`;
+            const userMenu = document.getElementById('userMenu');
+            const trigger = document.getElementById('userMenuTrigger');
+            const closeMenu = () => { userMenu.classList.remove('open'); trigger.setAttribute('aria-expanded', 'false'); };
+            trigger.addEventListener('click', (e) => {
+                e.stopPropagation();
+                const opening = !userMenu.classList.contains('open');
+                userMenu.classList.toggle('open', opening);
+                trigger.setAttribute('aria-expanded', String(opening));
+            });
+            document.addEventListener('click', (e) => { if (!userMenu.contains(e.target)) closeMenu(); });
+            document.addEventListener('keydown', (e) => { if (e.key === 'Escape') closeMenu(); });
             document.getElementById('logoutLink').addEventListener('click', (e) => { e.preventDefault(); logout(); });
         } else {
             authArea.innerHTML = `<a href="/login.html">Log in</a> <a class="btn small" href="/register.html">Sign up</a>`;
@@ -336,9 +354,14 @@ const RMW = (() => {
         await mountFooter();
     }
 
+    function updateHeaderAvatar(user) {
+        const slot = document.getElementById('headerAvatarSlot');
+        if (slot) slot.innerHTML = avatarHtml(user);
+    }
+
     return { api, currentUser, login, logout, stars, avatarHtml, escapeHtml, fmtDate, qs, toast, clearToast,
         setLoading, markdown, applyTheme, toggleTheme, currentTheme,
-        mountChrome, mountHeader, mountFooter, ensureCsrf };
+        mountChrome, mountHeader, mountFooter, updateHeaderAvatar, ensureCsrf };
 })();
 
 document.addEventListener('DOMContentLoaded', () => { RMW.mountChrome(); });

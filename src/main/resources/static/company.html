@@ -105,6 +105,10 @@
           <h3>Employee feedback</h3>
           <div id="feedbackList"><div class="spinner">Loading…</div></div>
           <div class="pagination" id="feedbackPagination"></div>
+
+          <div class="ad-slot ad-banner">
+            <div><strong>Advertisement</strong><br>Google AdSense slot<br><span style="font-size:.78rem">(728×90 / responsive)</span></div>
+          </div>
         </div>
 
         <aside class="detail-aside">
@@ -321,15 +325,16 @@
       const items = data.content || [];
       if (!items.length) { list.innerHTML = '<p class="muted">No feedback yet for this location.</p>'; document.getElementById('feedbackPagination').innerHTML=''; return; }
       list.innerHTML = items.map(f => {
-        const depts = (f.departments || []).map(d => `<span class="tag muted">${RMW.escapeHtml(d)}</span>`).join('');
+        const deptList = (f.departments || []).join(', ');
+        const depts = deptList
+          ? `<span class="author-depts" title="${RMW.escapeHtml(deptList)}">| ${RMW.escapeHtml(deptList)}</span>` : '';
         return `
           <div class="feedback-item">
             <div class="head">
-              <span class="author">${RMW.escapeHtml(f.authorDisplayName)}</span>
+              <span class="author">${RMW.escapeHtml(f.authorDisplayName)} ${depts}</span>
               <span class="date">${RMW.fmtDate(f.createdAt)}</span>
             </div>
             <div class="rating-line">${RMW.stars(f.rating)} ${f.title ? '<strong>' + RMW.escapeHtml(f.title) + '</strong>' : ''}</div>
-            ${depts ? `<div class="tags" style="margin:4px 0">${depts}</div>` : ''}
             <p>${RMW.escapeHtml(f.body)}</p>
           </div>`;
       }).join('');

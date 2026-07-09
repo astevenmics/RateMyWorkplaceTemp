@@ -193,7 +193,7 @@
           items.map(f => `<tr>
           <td>${E(f.authorDisplayName)}<br><span class="muted" style="font-size:.78rem">${RMW.fmtDate(f.createdAt)}</span></td>
           <td>${RMW.stars(f.rating)}</td>
-          <td style="white-space:normal;max-width:340px">${f.title ? '<strong>' + E(f.title) + '</strong><br>' : ''}${E(f.body)}</td>
+          <td style="white-space:normal;max-width:340px;overflow-wrap:anywhere;word-break:break-word">${f.title ? '<strong>' + E(f.title) + '</strong><br>' : ''}${E(f.body)}</td>
           <td><span class="badge ${f.status.toLowerCase()}">${f.status === 'REJECTED' ? 'HIDDEN' : 'VISIBLE'}</span></td>
           <td>
             ${f.status === 'REJECTED'
@@ -233,7 +233,8 @@
         <table class="data"><thead><tr><th>User</th><th>Email / phone</th><th>Status</th><th>Actions</th></tr></thead><tbody>${
           items.map(u => `<tr class="user-row" data-uid="${u.id}" style="cursor:pointer">
           <td><strong>${E(u.displayName)}</strong><br><span class="muted">@${E(u.username)}</span> · ${E(u.role)}
-            ${u.flaggedReason ? `<br><span class="badge rejected">FLAGGED</span>` : ''}</td>
+            ${u.flaggedReason ? `<br><span class="badge rejected" title="${E(u.flaggedReason)}">FLAGGED</span>
+              <span class="muted flag-reason" title="${E(u.flaggedReason)}">${E(u.flaggedReason)}</span>` : ''}</td>
           <td>${E(u.email)} ${u.emailVerified ? '✅' : '❌'}<br>${E(u.phoneNumber)} ${u.phoneVerified ? '✅' : '❌'}</td>
           <td>${u.enabled ? '<span class="badge approved">Active</span>' : '<span class="badge rejected">Disabled</span>'}</td>
           <td>
@@ -375,7 +376,7 @@
         <div class="card" style="margin-bottom:10px">
           <span class="tag">${E(f.category || 'General')}</span>
           <span class="muted" style="font-size:.8rem">${RMW.fmtDate(f.createdAt)} · ${E(f.authorUsername || 'anonymous')} ${f.contactEmail ? '· ' + E(f.contactEmail) : ''}</span>
-          <p style="margin:8px 0">${E(f.message)}</p>
+          <p style="margin:8px 0;overflow-wrap:anywhere;word-break:break-word">${E(f.message)}</p>
           <button class="btn small ${f.resolved ? 'secondary' : 'success'}" data-id="${f.id}" data-res="${!f.resolved}">${f.resolved ? 'Re-open' : 'Mark resolved'}</button>
         </div>`).join('');
       box.querySelectorAll('[data-id]').forEach(b => b.addEventListener('click', async () => {
@@ -482,7 +483,7 @@
           <span class="badge ${badgeClass(a.action)}">${E(a.action)}</span>
           <span class="muted" style="font-size:.8rem">${RMW.fmtDate(a.createdAt)} · by @${E(a.actor || 'system')}</span>
           <p style="margin:8px 0 4px"><strong>${E(a.summary)}</strong></p>
-          ${a.detail ? `<pre style="white-space:pre-wrap;font-family:inherit;margin:0;color:var(--muted);font-size:.85rem">${E(a.detail)}</pre>` : ''}
+          ${a.detail ? `<pre style="white-space:pre-wrap;overflow-wrap:anywhere;word-break:break-word;font-family:inherit;margin:0;color:var(--muted);font-size:.85rem">${E(a.detail)}</pre>` : ''}
         </div>`).join('');
       renderAuditPagination(data);
     } catch (e) { box.innerHTML = `<p class="muted">${E(e.message)}</p>`; }

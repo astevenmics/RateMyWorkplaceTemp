@@ -158,6 +158,25 @@ const RMW = (() => {
     }
     function clearToast(el) { if (el) el.className = 'alert'; }
 
+    /** A floating, self-dismissing toast — for notices that aren't tied to a specific form/page element. */
+    function showToast(message, type = 'info', duration = 6000) {
+        let stack = document.getElementById('rmwToastStack');
+        if (!stack) {
+            stack = document.createElement('div');
+            stack.id = 'rmwToastStack';
+            stack.className = 'toast-stack';
+            document.body.appendChild(stack);
+        }
+        const el = document.createElement('div');
+        el.className = `toast ${type}`;
+        el.textContent = message;
+        stack.appendChild(el);
+        setTimeout(() => {
+            el.classList.add('closing');
+            el.addEventListener('animationend', () => el.remove(), { once: true });
+        }, duration);
+    }
+
     /**
      * Toggle a button into a disabled, spinner "loading" state to prevent
      * double-submits / spam, and restore it afterwards.
@@ -373,18 +392,10 @@ const RMW = (() => {
         });
     }
 
-    /** Shows a one-off banner after the disabled-account/session-invalidated redirect lands here. */
+    /** Shows a one-off toast after the disabled-account/session-invalidated redirect lands here. */
     function showSessionExpiredNoticeIfNeeded() {
         if (qs('sessionExpired') !== '1') return;
-        const header = document.getElementById('site-header');
-        if (header) {
-            const banner = document.createElement('div');
-            banner.className = 'alert warn show';
-            banner.style.margin = '14px auto 0';
-            banner.style.maxWidth = 'var(--maxw, 1180px)';
-            banner.textContent = 'You were logged out because your account access changed. Please log in again if you\'d like to continue.';
-            header.after(banner);
-        }
+        showToast('Your session has ended because your account access changed. Please log in again.', 'warn', 8000);
         const url = new URL(window.location.href);
         url.searchParams.delete('sessionExpired');
         window.history.replaceState({}, '', url.pathname + url.search + url.hash);
@@ -407,7 +418,7 @@ const RMW = (() => {
         if (slot) slot.innerHTML = avatarHtml(user);
     }
 
-    return { api, currentUser, login, logout, stars, avatarHtml, escapeHtml, fmtDate, qs, toast, clearToast,
+    return { api, currentUser, login, logout, stars, avatarHtml, escapeHtml, fmtDate, qs, toast, clearToast, showToast,
         setLoading, markdown, applyTheme, toggleTheme, currentTheme,
         mountChrome, mountHeader, mountFooter, updateHeaderAvatar, ensureCsrf };
 })();

@@ -95,11 +95,15 @@
     return s;
   }
 
+  const NATIVE_AD_CARD = `<div class="card ad-slot ad-native">
+      <div><strong>Advertisement</strong><br>Google AdSense slot<br><span style="font-size:.78rem">(native / in-feed)</span></div>
+    </div>`;
+
   function renderResults(data) {
     const box = document.getElementById('results');
     const items = data.content || [];
     if (!items.length) { box.innerHTML = '<p class="muted">No workplaces match your filters.</p>'; return; }
-    box.innerHTML = items.map(l => {
+    const cards = items.map(l => {
       const cats = (l.categories || []).slice(0, 3).map(x => `<span class="tag">${RMW.escapeHtml(x)}</span>`).join('');
       const depts = (l.departments || []).slice(0, 3).map(x => `<span class="tag muted">${RMW.escapeHtml(x)}</span>`).join('');
       return `<a class="card company-card" href="/company.html?id=${l.companyId}&locationId=${l.locationId}">
@@ -110,7 +114,10 @@
           <div class="meta">${RMW.escapeHtml(locLine(l))}</div>
           <div class="tags">${cats || '<span class="tag muted">Unrated</span>'}${depts}</div>
         </a>`;
-    }).join('');
+    });
+    // A native-style ad card blends into the results grid every 4 cards.
+    for (let i = 4; i < cards.length; i += 5) cards.splice(i, 0, NATIVE_AD_CARD);
+    box.innerHTML = cards.join('');
   }
 
   function renderPagination(data) {

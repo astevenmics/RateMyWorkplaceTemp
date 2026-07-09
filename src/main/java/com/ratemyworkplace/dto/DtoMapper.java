@@ -56,7 +56,11 @@ public final class DtoMapper {
     }
 
     private static Set<String> departmentLabels(Location l) {
-        return l.getDepartments().stream().map(Department::label)
+        return departmentLabels(l.getDepartments());
+    }
+
+    private static Set<String> departmentLabels(Set<Department> departments) {
+        return departments.stream().map(Department::label)
                 .collect(Collectors.toCollection(java.util.TreeSet::new));
     }
 
@@ -85,7 +89,8 @@ public final class DtoMapper {
                 f.getId(), f.getCompany().getId(), f.getLocation().getId(),
                 locationLabel(f.getLocation()),
                 f.getAuthor() != null ? f.getAuthor().getDisplayName() : "Anonymous",
-                f.getRating(), f.getTitle(), f.getBody(), f.getStatus().name(), f.getCreatedAt());
+                f.getRating(), f.getTitle(), f.getBody(), departmentLabels(f.getDepartments()),
+                f.getStatus().name(), f.getCreatedAt());
     }
 
     public static Responses.ProofDto proof(EmploymentProof p) {

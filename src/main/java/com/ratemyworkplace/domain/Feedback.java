@@ -1,7 +1,12 @@
 package com.ratemyworkplace.domain;
 
 import jakarta.persistence.*;
+import org.hibernate.annotations.Fetch;
+import org.hibernate.annotations.FetchMode;
+
 import java.time.Instant;
+import java.util.EnumSet;
+import java.util.Set;
 
 /** A 1 to 5-star rating with explanation left against a specific {@link Location}. */
 @Entity
@@ -43,6 +48,14 @@ public class Feedback {
     @Column(length = 255)
     private String moderationNote;
 
+    /** Which of the location's own departments the reviewer says they worked in (optional). */
+    @ElementCollection(fetch = FetchType.LAZY)
+    @CollectionTable(name = "feedback_departments", joinColumns = @JoinColumn(name = "feedback_id"))
+    @Column(name = "department", length = 30)
+    @Enumerated(EnumType.STRING)
+    @Fetch(FetchMode.SUBSELECT)
+    private Set<Department> departments = EnumSet.noneOf(Department.class);
+
     @Column(nullable = false, updatable = false)
     private Instant createdAt = Instant.now();
 
@@ -64,6 +77,8 @@ public class Feedback {
     public void setStatus(ApprovalStatus status) { this.status = status; }
     public String getModerationNote() { return moderationNote; }
     public void setModerationNote(String moderationNote) { this.moderationNote = moderationNote; }
+    public Set<Department> getDepartments() { return departments; }
+    public void setDepartments(Set<Department> departments) { this.departments = departments; }
     public Instant getCreatedAt() { return createdAt; }
     public void setCreatedAt(Instant createdAt) { this.createdAt = createdAt; }
 }

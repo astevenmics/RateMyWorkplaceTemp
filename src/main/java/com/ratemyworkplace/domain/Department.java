@@ -1,5 +1,8 @@
 package com.ratemyworkplace.domain;
 
+import java.util.EnumSet;
+import java.util.Set;
+
 /** Functional departments a {@link Location} can be tagged with, for filtering and display. */
 public enum Department {
     IT,
@@ -28,5 +31,23 @@ public enum Department {
             sb.append(w.charAt(0)).append(w.substring(1).toLowerCase());
         }
         return sb.toString();
+    }
+
+    /**
+     * Parses free-form names (raw enum names like "IT", or display labels like "Customer
+     * Service" — both normalise to the same enum constant) into a department set.
+     * Throws {@link IllegalArgumentException} for anything unrecognised.
+     */
+    public static Set<Department> parseSet(Set<String> raw) {
+        if (raw == null || raw.isEmpty()) {
+            return EnumSet.noneOf(Department.class);
+        }
+        Set<Department> departments = EnumSet.noneOf(Department.class);
+        for (String name : raw) {
+            if (name != null && !name.isBlank()) {
+                departments.add(Department.valueOf(name.trim().toUpperCase().replace(' ', '_')));
+            }
+        }
+        return departments;
     }
 }

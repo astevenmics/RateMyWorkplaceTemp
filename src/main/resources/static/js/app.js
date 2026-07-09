@@ -42,6 +42,18 @@ const RMW = (() => {
         let data = null;
         if (text) { try { data = JSON.parse(text); } catch (e) { data = text; } }
 
+        // The account was disabled or its permissions changed mid-session: the server has
+        // already killed the session, so just follow — clear the stale cached user and send
+        // them home instead of surfacing a raw JSON error anywhere in the app.
+        if (res.status === 401 && data && data.code === 'SESSION_INVALIDATED') {
+            cachedUser = null;
+            const target = '/index.html?sessionExpired=1';
+            if (window.location.pathname + window.location.search !== target) {
+                window.location.href = target;
+            }
+            return new Promise(() => {}); // navigation is underway; don't resolve into stale UI
+        }
+
         if (!res.ok) {
             const message = (data && data.message) || (typeof data === 'string' && data) || res.statusText;
             const err = new Error(message || 'Request failed');
@@ -60,7 +72,16 @@ const RMW = (() => {
             const data = await api('/api/auth/me');
             cachedUser = (data && data.username) ? data : null;
         } catch (e) {
-            cachedUser = null;
+            // Only a genuine 401 means "not logged in". Anything else (rate limited,
+            // network blip, server error) is transient — treat this call as logged-out
+            // for now, but leave the cache unresolved so the next call retries instead of
+            // permanently pinning the user as logged out for the rest of this page's life
+            // (this is what made tabs disagree on login state after a 429).
+            if (e.status === 401) {
+                cachedUser = null;
+            } else {
+                return null;
+            }
         }
         return cachedUser;
     }
@@ -316,7 +337,7 @@ const RMW = (() => {
               </div>
             </div>
             <div class="footer-bottom">
-              © ${new Date().getFullYear()} RateMyWorkplace. Built as a complete Spring Boot demo. Ads shown on workplace pages are illustrative AdSense slots.
+              © ${new Date().getFullYear()} RateMyWorkplace. Built as a complete Spring Boot demo. Ads shown across the site are illustrative AdSense slots.
             </div>
           </div>`;
 
@@ -352,9 +373,27 @@ const RMW = (() => {
         });
     }
 
+    /** Shows a one-off banner after the disabled-account/session-invalidated redirect lands here. */
+    function showSessionExpiredNoticeIfNeeded() {
+        if (qs('sessionExpired') !== '1') return;
+        const header = document.getElementById('site-header');
+        if (header) {
+            const banner = document.createElement('div');
+            banner.className = 'alert warn show';
+            banner.style.margin = '14px auto 0';
+            banner.style.maxWidth = 'var(--maxw, 1180px)';
+            banner.textContent = 'You were logged out because your account access changed. Please log in again if you\'d like to continue.';
+            header.after(banner);
+        }
+        const url = new URL(window.location.href);
+        url.searchParams.delete('sessionExpired');
+        window.history.replaceState({}, '', url.pathname + url.search + url.hash);
+    }
+
     async function mountChrome() {
         await mountHeader();
         await mountFooter();
+        showSessionExpiredNoticeIfNeeded();
     }
 
     /**

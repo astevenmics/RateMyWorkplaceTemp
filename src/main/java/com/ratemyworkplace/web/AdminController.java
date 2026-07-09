@@ -23,6 +23,7 @@ public class AdminController {
     private final SiteContentService siteContentService;
     private final CurrentUserService currentUserService;
     private final AuditService auditService;
+    private final CompanyService companyService;
 
     public AdminController(
             AdminService adminService,
@@ -30,7 +31,8 @@ public class AdminController {
             CategoryService categoryService,
             SiteContentService siteContentService,
             CurrentUserService currentUserService,
-            AuditService auditService
+            AuditService auditService,
+            CompanyService companyService
     ) {
         this.adminService = adminService;
         this.userService = userService;
@@ -38,6 +40,7 @@ public class AdminController {
         this.siteContentService = siteContentService;
         this.currentUserService = currentUserService;
         this.auditService = auditService;
+        this.companyService = companyService;
 
     }
 
@@ -95,6 +98,13 @@ public class AdminController {
     public Responses.SimpleMessage deleteCompany(@PathVariable Long id) {
         adminService.deleteCompany(id);
         return Responses.SimpleMessage.ok("Workplace deleted");
+    }
+
+    // ---- workplace editing ----
+    @PutMapping("/companies/{id}")
+    public Responses.CompanyDetailDto updateCompany(@PathVariable Long id,
+                                                     @Valid @RequestBody Requests.CompanySubmissionRequest request) {
+        return DtoMapper.companyDetail(companyService.adminUpdate(id, request));
     }
 
     // ---- category management ----

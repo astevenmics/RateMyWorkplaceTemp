@@ -364,6 +364,14 @@ select option { background: var(--surface); color: var(--text); }
     display: flex; align-items: center; justify-content: center;
     color: var(--muted); font-size: .85rem; text-align: center; padding: 16px;
 }
+
+:root[data-theme="dark"] .ad-slot {
+    background: repeating-linear-gradient(45deg, var(--surface-2), var(--surface-2) 12px, var(--surface) 12px, var(--surface) 24px);
+}
+.ad-banner { min-height: 100px; margin: 18px 0; }
+.detail-aside { position: sticky; top: 84px; display: flex; flex-direction: column; gap: 18px; }
+@media (max-width: 900px) { .detail-aside { position: static; } }
+
 .feedback-item { border-bottom: 1px solid var(--border); padding: 16px 0; }
 .feedback-item:last-child { border-bottom: none; }
 .feedback-item .head { display: flex; justify-content: space-between; gap: 10px; flex-wrap: wrap; }

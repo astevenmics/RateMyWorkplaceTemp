@@ -14,7 +14,6 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.util.StringUtils;
 
-import java.util.EnumSet;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
@@ -101,21 +100,49 @@ public class CompanyService {
         return companyRepository.save(company);
     }
 
-    private Set<Department> parseDepartments(Set<String> raw) {
-        if (raw == null || raw.isEmpty()) {
-            return EnumSet.noneOf(Department.class);
-        }
-        Set<Department> departments = EnumSet.noneOf(Department.class);
-        for (String name : raw) {
-            if (StringUtils.hasText(name)) {
-                try {
-                    departments.add(Department.valueOf(name.trim().toUpperCase().replace(' ', '_')));
-                } catch (IllegalArgumentException e) {
-                    throw ApiException.badRequest("Unknown department: " + name);
+    @Transactional
+    public Company adminUpdate(Long id, Requests.CompanySubmissionRequest req) {
+        Company company = getAny(id);
+        company.setName(req.name().trim());
+        company.setDescription(req.description());
+        company.setWebsite(req.website());
+
+        Set<Category> categories = new HashSet<>();
+        if (req.categories() != null) {
+            for (String name : req.categories()) {
+                if (StringUtils.hasText(name)) {
+                    categories.add(categoryService.findOrCreate(name));
                 }
             }
         }
-        return departments;
+        company.setCategories(categories);
+
+        java.util.Map<Long, Location> existing = company.getLocations().stream()
+                .collect(java.util.stream.Collectors.toMap(Location::getId, l -> l));
+        for (Requests.LocationRequest lr : req.locations()) {
+            Location location = lr.id() != null ? existing.get(lr.id()) : null;
+            if (location == null) {
+                location = new Location();
+                location.setCompany(company);
+                company.getLocations().add(location);
+            }
+            location.setLabel(lr.label());
+            location.setAddressLine(lr.addressLine());
+            location.setCity(lr.city());
+            location.setState(lr.state());
+            location.setZipCode(lr.zipCode());
+            location.setCountry(StringUtils.hasText(lr.country()) ? lr.country() : "USA");
+            location.setDepartments(parseDepartments(lr.departments()));
+        }
+        return companyRepository.save(company);
+    }
+
+    private Set<Department> parseDepartments(Set<String> raw) {
+        try {
+            return Department.parseSet(raw);
+        } catch (IllegalArgumentException e) {
+            throw ApiException.badRequest("Unknown department in request");
+        }
     }
 
     /** Recomputes denormalized rating aggregates for a location and its parent company. */

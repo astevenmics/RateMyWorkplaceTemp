@@ -47,7 +47,7 @@ public final class Responses {
 
     public record FeedbackDto(
             Long id, Long companyId, Long locationId, String locationLabel, String authorDisplayName,
-            int rating, String title, String body, String status, Instant createdAt) {
+            int rating, String title, String body, Set<String> departments, String status, Instant createdAt) {
     }
 
     public record ProofDto(

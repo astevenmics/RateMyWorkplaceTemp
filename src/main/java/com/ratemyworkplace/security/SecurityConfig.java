@@ -130,9 +130,24 @@ public class SecurityConfig {
 
     private void writeExpiredSession(
             org.springframework.security.web.session.SessionInformationExpiredEvent event) throws java.io.IOException {
-        writeJson(event.getResponse(), HttpServletResponse.SC_UNAUTHORIZED, Map.of(
-                "status", 401, "error", "Unauthorized",
+        jakarta.servlet.http.HttpServletRequest request = event.getRequest();
+        HttpServletResponse response = event.getResponse();
+        if (isBrowserNavigation(request)) {
+            response.sendRedirect(request.getContextPath() + "/index.html?sessionExpired=1");
+            return;
+        }
+        writeJson(response, HttpServletResponse.SC_UNAUTHORIZED, Map.of(
+                "status", 401, "error", "Unauthorized", "code", "SESSION_INVALIDATED",
                 "message", "Your session has ended because your account access changed. Please log in again."));
+    }
+
+    private boolean isBrowserNavigation(jakarta.servlet.http.HttpServletRequest request) {
+        String fetchMode = request.getHeader("Sec-Fetch-Mode");
+        if (fetchMode != null) {
+            return "navigate".equals(fetchMode);
+        }
+        String accept = request.getHeader("Accept");
+        return accept != null && accept.contains("text/html");
     }
 
     private void writeJson(HttpServletResponse response, int status, Map<String, Object> body) {

@@ -34,7 +34,30 @@
           <div class="tags" id="companyTags" style="margin-bottom:12px"></div>
           <p id="companyDesc" class="muted"></p>
           <p id="companyWebsite"></p>
+          <button class="btn secondary small hidden" id="editWorkplaceBtn" type="button">✎ Edit workplace</button>
         </div>
+      </div>
+
+      <div class="card hidden" id="editWorkplaceCard" style="margin-top:18px">
+        <h3 style="margin-top:0">Edit workplace</h3>
+        <div id="editAlert" class="alert"></div>
+        <div class="field"><label>Company / workplace name</label><input type="text" id="editName" maxlength="140"></div>
+        <div class="field"><label>Website</label><input type="url" id="editWebsite" maxlength="200" placeholder="https://…"></div>
+        <div class="field"><label>Description</label><textarea id="editDescription" rows="3" maxlength="4000"></textarea></div>
+        <div class="field">
+          <label>Categories</label>
+          <div id="editCategoryChips" class="tags" style="margin-bottom:8px"></div>
+          <input type="text" id="editCategoryInput" placeholder="Type a category and press Enter">
+        </div>
+        <hr style="border:none;border-top:1px solid var(--border);margin:18px 0">
+        <div style="display:flex;justify-content:space-between;align-items:center">
+          <label style="font-weight:700">Locations</label>
+          <button type="button" class="btn secondary small" id="editAddLocationBtn">+ Add location</button>
+        </div>
+        <p class="hint">Existing locations can be edited in place. New locations can be added here; removing a location isn't supported yet (to protect its existing feedback history).</p>
+        <div id="editLocations"></div>
+        <button class="btn" type="button" id="saveWorkplaceBtn" style="margin-top:10px">Save changes</button>
+        <button class="btn ghost" type="button" id="cancelWorkplaceBtn" style="margin-top:10px">Cancel</button>
       </div>
 
       <div class="layout-2col" style="margin-top:24px">
@@ -66,6 +89,10 @@
                 </div>
                 <div class="field"><label>Title</label><input type="text" name="title" maxlength="140" placeholder="Summarise your experience"></div>
                 <div class="field"><label>Your feedback</label><textarea name="body" rows="5" required maxlength="4000" placeholder="What was it really like to work here?"></textarea></div>
+                <div class="field hidden" id="reviewDeptField">
+                  <label>Department(s) you worked in (optional)</label>
+                  <div class="tags" id="reviewDeptChips"></div>
+                </div>
                 <button class="btn" type="submit">Post feedback</button>
               </form>
             </div>
@@ -86,7 +113,7 @@
               <script>(adsbygoogle = window.adsbygoogle || []).push({});</script> -->
             </div>
           </div>
-          <div class="card" style="margin-top:18px">
+          <div class="card">
             <h3 style="margin-top:0">Work here?</h3>
             <p class="muted" style="font-size:.9rem">Verify your employment to share your own feedback for this company.</p>
             <a class="btn secondary small" id="proofLink" href="/submit-proof.html">Verify employment</a>
@@ -120,7 +147,108 @@
     document.getElementById('content').classList.remove('hidden');
     loadFeedback();
     refreshEligibility();
+
+    const me = await RMW.currentUser();
+    if (me && me.role === 'ADMIN') {
+      document.getElementById('editWorkplaceBtn').classList.remove('hidden');
+    }
   }
+
+  // ---- Admin: edit workplace ----
+  const DEPARTMENTS = ['IT', 'MEDICAL', 'ADMIN', 'SALES', 'MARKETING', 'HR', 'FINANCE',
+    'OPERATIONS', 'CUSTOMER_SERVICE', 'ENGINEERING', 'RETAIL', 'LOGISTICS', 'LEGAL', 'OTHER'];
+  function deptLabel(d) { return d.split('_').map(w => w[0] + w.slice(1).toLowerCase()).join(' '); }
+  const editSelectedCategories = new Set();
+
+  function renderEditCategoryChips() {
+    document.getElementById('editCategoryChips').innerHTML =
+            [...editSelectedCategories].map(c => `<span class="tag" data-c="${RMW.escapeHtml(c)}">${RMW.escapeHtml(c)} ✕</span>`).join('') ||
+            '<span class="muted" style="font-size:.85rem">No categories yet</span>';
+    document.querySelectorAll('#editCategoryChips .tag').forEach(t =>
+            t.addEventListener('click', () => { editSelectedCategories.delete(t.dataset.c); renderEditCategoryChips(); }));
+  }
+
+  /** A location's own label reversibly maps back to its Department enum name (title-case of the underscored name). */
+  function labelToDeptName(label) { return label.toUpperCase().replace(/ /g, '_'); }
+
+  function addEditLocation(loc) {
+    const div = document.createElement('div');
+    div.className = 'card';
+    div.style.marginBottom = '12px';
+    if (loc && loc.id) div.dataset.locId = loc.id;
+    const checked = new Set((loc && loc.departments || []).map(labelToDeptName));
+    div.innerHTML = `
+        <div class="field-row">
+          <div class="field"><label>Label (optional)</label><input type="text" data-f="label" value="${RMW.escapeHtml((loc && loc.label) || '')}"></div>
+          <div class="field"><label>Address</label><input type="text" data-f="addressLine" required value="${RMW.escapeHtml((loc && loc.addressLine) || '')}"></div>
+        </div>
+        <div class="field-row">
+          <div class="field"><label>City</label><input type="text" data-f="city" required value="${RMW.escapeHtml((loc && loc.city) || '')}"></div>
+          <div class="field"><label>State</label><input type="text" data-f="state" value="${RMW.escapeHtml((loc && loc.state) || '')}"></div>
+          <div class="field"><label>ZIP</label><input type="text" data-f="zipCode" required value="${RMW.escapeHtml((loc && loc.zipCode) || '')}"></div>
+        </div>
+        <div class="field">
+          <label>Departments at this location</label>
+          <div class="tags" data-f="departments">
+            ${DEPARTMENTS.map(d => `<label class="tag muted" style="cursor:pointer;user-select:none">
+                <input type="checkbox" value="${d}" ${checked.has(d) ? 'checked' : ''} style="margin-right:4px;vertical-align:middle">${deptLabel(d)}</label>`).join('')}
+          </div>
+        </div>`;
+    document.getElementById('editLocations').appendChild(div);
+  }
+
+  function openEditForm() {
+    document.getElementById('editName').value = company.name || '';
+    document.getElementById('editWebsite').value = company.website || '';
+    document.getElementById('editDescription').value = company.description || '';
+    editSelectedCategories.clear();
+    (company.categories || []).forEach(c => editSelectedCategories.add(c.name));
+    renderEditCategoryChips();
+    document.getElementById('editLocations').innerHTML = '';
+    company.locations.forEach(addEditLocation);
+    RMW.clearToast(document.getElementById('editAlert'));
+    document.getElementById('editWorkplaceCard').classList.remove('hidden');
+    document.getElementById('editWorkplaceCard').scrollIntoView({ behavior: 'smooth', block: 'start' });
+  }
+
+  document.getElementById('editWorkplaceBtn').addEventListener('click', openEditForm);
+  document.getElementById('cancelWorkplaceBtn').addEventListener('click', () => document.getElementById('editWorkplaceCard').classList.add('hidden'));
+  document.getElementById('editAddLocationBtn').addEventListener('click', () => addEditLocation(null));
+  document.getElementById('editCategoryInput').addEventListener('keydown', (e) => {
+    if (e.key === 'Enter') {
+      e.preventDefault();
+      const v = e.target.value.trim();
+      if (v) { editSelectedCategories.add(v); renderEditCategoryChips(); }
+      e.target.value = '';
+    }
+  });
+
+  document.getElementById('saveWorkplaceBtn').addEventListener('click', async () => {
+    const alertEl = document.getElementById('editAlert');
+    const locations = [...document.querySelectorAll('#editLocations .card')].map(card => {
+      const get = f => card.querySelector(`[data-f="${f}"]`).value.trim();
+      const departments = [...card.querySelectorAll('[data-f="departments"] input:checked')].map(c => c.value);
+      return { id: card.dataset.locId ? parseInt(card.dataset.locId, 10) : null, label: get('label'),
+        addressLine: get('addressLine'), city: get('city'), state: get('state'),
+        zipCode: get('zipCode'), country: 'USA', departments };
+    });
+    try {
+      company = await RMW.api('/api/admin/companies/' + companyId, { method: 'PUT', body: {
+          name: document.getElementById('editName').value.trim(),
+          website: document.getElementById('editWebsite').value.trim() || null,
+          description: document.getElementById('editDescription').value.trim() || null,
+          categories: [...editSelectedCategories],
+          locations
+        }});
+      RMW.toast(alertEl, 'success', 'Workplace updated.');
+      render();
+      document.getElementById('editWorkplaceCard').classList.add('hidden');
+    } catch (err) {
+      let msg = err.message;
+      if (err.data && err.data.fieldErrors) msg = Object.values(err.data.fieldErrors).join(' ');
+      RMW.toast(alertEl, 'error', msg);
+    }
+  });
 
   function render() {
     document.title = company.name + ' — RateMyWorkplace';
@@ -143,8 +271,21 @@
     if (preselectLocationId && company.locations.some(l => String(l.id) === preselectLocationId)) {
       sel.value = preselectLocationId;
     }
-    sel.addEventListener('change', () => { fbState.page = 0; loadFeedback(); refreshEligibility(); updateLocationMeta(); });
+    sel.addEventListener('change', () => { fbState.page = 0; loadFeedback(); refreshEligibility(); updateLocationMeta(); renderReviewDepartments(); });
     updateLocationMeta();
+    renderReviewDepartments();
+  }
+
+  /** Lets a reviewer flag which of *this location's own* departments they worked in. */
+  function renderReviewDepartments() {
+    const l = currentLocation();
+    const field = document.getElementById('reviewDeptField');
+    const chips = document.getElementById('reviewDeptChips');
+    const depts = (l && l.departments) || [];
+    if (!depts.length) { field.classList.add('hidden'); chips.innerHTML = ''; return; }
+    field.classList.remove('hidden');
+    chips.innerHTML = depts.map(d => `<label class="tag muted" style="cursor:pointer;user-select:none">
+        <input type="checkbox" name="reviewDept" value="${RMW.escapeHtml(d)}" style="margin-right:4px;vertical-align:middle">${RMW.escapeHtml(d)}</label>`).join('');
   }
 
   function locLabel(l) {
@@ -174,15 +315,19 @@
       const data = await RMW.api(`/api/feedback/location/${l.id}?page=${fbState.page}&size=${fbState.size}&sort=createdAt,desc`);
       const items = data.content || [];
       if (!items.length) { list.innerHTML = '<p class="muted">No feedback yet for this location.</p>'; document.getElementById('feedbackPagination').innerHTML=''; return; }
-      list.innerHTML = items.map(f => `
+      list.innerHTML = items.map(f => {
+        const depts = (f.departments || []).map(d => `<span class="tag muted">${RMW.escapeHtml(d)}</span>`).join('');
+        return `
           <div class="feedback-item">
             <div class="head">
               <span class="author">${RMW.escapeHtml(f.authorDisplayName)}</span>
               <span class="date">${RMW.fmtDate(f.createdAt)}</span>
             </div>
             <div class="rating-line">${RMW.stars(f.rating)} ${f.title ? '<strong>' + RMW.escapeHtml(f.title) + '</strong>' : ''}</div>
+            ${depts ? `<div class="tags" style="margin:4px 0">${depts}</div>` : ''}
             <p>${RMW.escapeHtml(f.body)}</p>
-          </div>`).join('');
+          </div>`;
+      }).join('');
       renderFbPagination(data);
     } catch (e) {
       list.innerHTML = '<p class="muted">Could not load feedback.</p>';
@@ -234,12 +379,14 @@
     const alertEl = document.getElementById('reviewAlert');
     const rating = fd.get('rating');
     if (!rating) { RMW.toast(alertEl, 'error', 'Please choose a star rating.'); return; }
+    const departments = [...form.querySelectorAll('input[name="reviewDept"]:checked')].map(c => c.value);
     try {
       await RMW.api('/api/feedback', { method: 'POST', body: {
           locationId: currentLocation().id,
           rating: parseInt(rating, 10),
           title: fd.get('title') || null,
-          body: fd.get('body')
+          body: fd.get('body'),
+          departments
         }});
       RMW.toast(alertEl, 'success', 'Thanks! Your feedback was posted.');
       form.reset();

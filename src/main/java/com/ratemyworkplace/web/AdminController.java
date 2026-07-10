@@ -41,6 +41,7 @@ public class AdminController {
         this.currentUserService = currentUserService;
         this.auditService = auditService;
         this.companyService = companyService;
+
     }
 
     // ---- statistics dashboard ----
@@ -99,9 +100,19 @@ public class AdminController {
         return Responses.SimpleMessage.ok("Workplace deleted");
     }
 
+    // ---- workplace creation (admin-added, skips the pending-review queue) ----
+    @PostMapping("/companies")
+    public org.springframework.http.ResponseEntity<Responses.CompanyDetailDto> createCompany(
+            @Valid @RequestBody Requests.CompanySubmissionRequest request) {
+        Responses.CompanyDetailDto dto = DtoMapper.companyDetail(
+                companyService.adminCreate(currentUserService.require(), request));
+        return org.springframework.http.ResponseEntity.status(org.springframework.http.HttpStatus.CREATED).body(dto);
+    }
+
+    // ---- workplace editing ----
     @PutMapping("/companies/{id}")
     public Responses.CompanyDetailDto updateCompany(@PathVariable Long id,
-                                                    @Valid @RequestBody Requests.CompanySubmissionRequest request) {
+                                                     @Valid @RequestBody Requests.CompanySubmissionRequest request) {
         return DtoMapper.companyDetail(companyService.adminUpdate(id, request));
     }
 

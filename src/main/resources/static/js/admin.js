@@ -134,6 +134,125 @@
     catch (e) { gAlert('error', e.message); }
   }
 
+  // ---------------- Add workplace directly (admin-only, skips the pending queue) ----------------
+  const AW_DEPARTMENTS = ['IT', 'MEDICAL', 'ADMIN', 'SALES', 'MARKETING', 'HR', 'FINANCE',
+    'OPERATIONS', 'CUSTOMER_SERVICE', 'ENGINEERING', 'RETAIL', 'LOGISTICS', 'LEGAL', 'OTHER'];
+  function awDeptLabel(d) { return d.split('_').map(w => w[0] + w.slice(1).toLowerCase()).join(' '); }
+  const awSelectedCategories = new Set();
+
+  function awRenderCategoryChips() {
+    document.getElementById('awCategoryChips').innerHTML =
+        [...awSelectedCategories].map(c => `<span class="tag" data-c="${E(c)}">${E(c)} ✕</span>`).join('') ||
+        '<span class="muted" style="font-size:.85rem">No categories yet</span>';
+    document.querySelectorAll('#awCategoryChips .tag').forEach(t =>
+        t.addEventListener('click', () => { awSelectedCategories.delete(t.dataset.c); awRenderCategoryChips(); }));
+  }
+
+  function awAddCustomDeptTag(scopeEl, name) {
+    const v = name.trim();
+    if (!v) return;
+    const container = scopeEl.querySelector('[data-f="departments"]');
+    if ([...container.querySelectorAll('input[type=checkbox]')].some(c => c.value.toLowerCase() === v.toLowerCase())) return;
+    const label = document.createElement('label');
+    label.className = 'tag muted';
+    label.style.cssText = 'cursor:pointer;user-select:none';
+    label.innerHTML = `<input type="checkbox" value="${E(v)}" checked style="margin-right:4px;vertical-align:middle">${E(v)}`;
+    label.title = 'Custom entry — uncheck to leave it out';
+    container.appendChild(label);
+  }
+
+  function awAddLocation() {
+    const div = document.createElement('div');
+    div.className = 'card';
+    div.style.marginBottom = '12px';
+    div.innerHTML = `
+        <div class="field-row">
+          <div class="field"><label>Label (optional)</label><input type="text" data-f="label" placeholder="Downtown branch"></div>
+          <div class="field"><label>Address</label><input type="text" data-f="addressLine" required></div>
+        </div>
+        <div class="field-row">
+          <div class="field"><label>City</label><input type="text" data-f="city" required></div>
+          <div class="field"><label>State</label><input type="text" data-f="state"></div>
+          <div class="field"><label>ZIP</label><input type="text" data-f="zipCode" required></div>
+        </div>
+        <div class="field">
+          <label>Departments at this location (optional)</label>
+          <div class="tags" data-f="departments">
+            ${AW_DEPARTMENTS.map(d => `<label class="tag muted" style="cursor:pointer;user-select:none">
+                <input type="checkbox" value="${d}" style="margin-right:4px;vertical-align:middle">${awDeptLabel(d)}</label>`).join('')}
+          </div>
+          <div style="display:flex;gap:8px;margin-top:8px">
+            <input type="text" class="customDeptInput" placeholder="Not listed? Add a custom department / position" maxlength="60" style="flex:1">
+            <button type="button" class="btn secondary small addCustomDept">+ Add</button>
+          </div>
+        </div>
+        <button type="button" class="btn ghost small removeLoc">Remove location</button>`;
+    div.querySelector('.removeLoc').addEventListener('click', () => div.remove());
+    const customInput = div.querySelector('.customDeptInput');
+    const addCustom = () => { awAddCustomDeptTag(div, customInput.value); customInput.value = ''; customInput.focus(); };
+    div.querySelector('.addCustomDept').addEventListener('click', addCustom);
+    customInput.addEventListener('keydown', (e) => { if (e.key === 'Enter') { e.preventDefault(); addCustom(); } });
+    document.getElementById('awLocations').appendChild(div);
+  }
+
+  function awResetForm() {
+    document.getElementById('awName').value = '';
+    document.getElementById('awWebsite').value = '';
+    document.getElementById('awDescription').value = '';
+    awSelectedCategories.clear();
+    awRenderCategoryChips();
+    document.getElementById('awLocations').innerHTML = '';
+    awAddLocation();
+    RMW.clearToast(document.getElementById('addWorkplaceAlert'));
+  }
+
+  document.getElementById('toggleAddWorkplaceBtn').addEventListener('click', () => {
+    const card = document.getElementById('addWorkplaceCard');
+    const opening = card.classList.contains('hidden');
+    if (opening && !document.getElementById('awLocations').children.length) awResetForm();
+    card.classList.toggle('hidden', !opening);
+    if (opening) card.scrollIntoView({ behavior: 'smooth', block: 'start' });
+  });
+  document.getElementById('awCancelBtn').addEventListener('click', () => document.getElementById('addWorkplaceCard').classList.add('hidden'));
+  document.getElementById('awAddLocationBtn').addEventListener('click', awAddLocation);
+  document.getElementById('awCategoryInput').addEventListener('keydown', (e) => {
+    if (e.key === 'Enter') {
+      e.preventDefault();
+      const v = e.target.value.trim();
+      if (v) { awSelectedCategories.add(v); awRenderCategoryChips(); }
+      e.target.value = '';
+    }
+  });
+  document.getElementById('awSubmitBtn').addEventListener('click', async () => {
+    const alertEl = document.getElementById('addWorkplaceAlert');
+    const locations = [...document.querySelectorAll('#awLocations .card')].map(card => {
+      const get = f => card.querySelector(`[data-f="${f}"]`).value.trim();
+      const departments = [...card.querySelectorAll('[data-f="departments"] input:checked')].map(c => c.value);
+      return { label: get('label'), addressLine: get('addressLine'), city: get('city'),
+        state: get('state'), zipCode: get('zipCode'), country: 'USA', departments };
+    });
+    const name = document.getElementById('awName').value.trim();
+    if (!name) { RMW.toast(alertEl, 'error', 'Enter a company / workplace name.'); return; }
+    if (!locations.length) { RMW.toast(alertEl, 'error', 'Add at least one location.'); return; }
+    try {
+      await RMW.api('/api/admin/companies', { method: 'POST', body: {
+          name,
+          website: document.getElementById('awWebsite').value.trim() || null,
+          description: document.getElementById('awDescription').value.trim() || null,
+          categories: [...awSelectedCategories],
+          locations
+        }});
+      gAlert('success', `"${name}" was published.`);
+      document.getElementById('addWorkplaceCard').classList.add('hidden');
+      awResetForm();
+      loadWorkplaces();
+    } catch (err) {
+      let msg = err.message;
+      if (err.data && err.data.fieldErrors) msg = Object.values(err.data.fieldErrors).join(' ');
+      RMW.toast(alertEl, 'error', msg);
+    }
+  });
+
   // ---------------- Proofs ----------------
   async function loadProofs() {
     const box = document.getElementById('proofsList');

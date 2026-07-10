@@ -41,7 +41,33 @@
 
         <!-- Workplaces -->
         <div class="admin-panel" data-panel="workplaces">
-          <h3>Pending workplaces</h3>
+          <div style="display:flex;justify-content:space-between;align-items:center">
+            <h3 style="margin:0">Pending workplaces</h3>
+            <button class="btn small" id="toggleAddWorkplaceBtn" type="button">+ Add workplace</button>
+          </div>
+
+          <div class="card hidden" id="addWorkplaceCard" style="margin:14px 0 24px">
+            <h4 style="margin-top:0">Add a workplace directly</h4>
+            <p class="hint">Published immediately as approved — no review queue, unlike the public submission form.</p>
+            <div id="addWorkplaceAlert" class="alert"></div>
+            <div class="field"><label>Company / workplace name</label><input type="text" id="awName" maxlength="140"></div>
+            <div class="field"><label>Website (optional)</label><input type="url" id="awWebsite" placeholder="https://…" maxlength="200"></div>
+            <div class="field"><label>Description</label><textarea id="awDescription" rows="3" maxlength="4000"></textarea></div>
+            <div class="field">
+              <label>Categories</label>
+              <div id="awCategoryChips" class="tags" style="margin-bottom:8px"></div>
+              <input type="text" id="awCategoryInput" placeholder="Type a category and press Enter">
+            </div>
+            <hr style="border:none;border-top:1px solid var(--border);margin:18px 0">
+            <div style="display:flex;justify-content:space-between;align-items:center">
+              <label style="font-weight:700">Locations</label>
+              <button type="button" class="btn secondary small" id="awAddLocationBtn">+ Add location</button>
+            </div>
+            <div id="awLocations"></div>
+            <button class="btn" id="awSubmitBtn" style="margin-top:10px">Publish workplace</button>
+            <button class="btn ghost" id="awCancelBtn" style="margin-top:10px">Cancel</button>
+          </div>
+
           <div id="workplacesList"><p class="muted">Loading…</p></div>
         </div>
 

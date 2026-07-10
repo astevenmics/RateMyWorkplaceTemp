@@ -56,12 +56,12 @@ public final class DtoMapper {
     }
 
     private static Set<String> departmentLabels(Location l) {
-        return departmentLabels(l.getDepartments());
+        return sortedCopy(l.getDepartments());
     }
 
-    private static Set<String> departmentLabels(Set<Department> departments) {
-        return departments.stream().map(Department::label)
-                .collect(Collectors.toCollection(java.util.TreeSet::new));
+    /** Departments are already stored in their final display form (see {@link Department#normalize}). */
+    private static Set<String> sortedCopy(Set<String> departments) {
+        return new java.util.TreeSet<>(departments);
     }
 
     public static Responses.CompanySummaryDto companySummary(Company c) {
@@ -89,7 +89,7 @@ public final class DtoMapper {
                 f.getId(), f.getCompany().getId(), f.getLocation().getId(),
                 locationLabel(f.getLocation()),
                 f.getAuthor() != null ? f.getAuthor().getDisplayName() : "Anonymous",
-                f.getRating(), f.getTitle(), f.getBody(), departmentLabels(f.getDepartments()),
+                f.getRating(), f.getTitle(), f.getBody(), sortedCopy(f.getDepartments()),
                 f.getStatus().name(), f.getCreatedAt());
     }
 

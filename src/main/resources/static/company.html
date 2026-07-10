@@ -93,9 +93,13 @@
                 </div>
                 <div class="field"><label>Title</label><input type="text" name="title" maxlength="140" placeholder="Summarise your experience"></div>
                 <div class="field"><label>Your feedback</label><textarea name="body" rows="5" required maxlength="4000" placeholder="What was it really like to work here?"></textarea></div>
-                <div class="field hidden" id="reviewDeptField">
-                  <label>Department(s) you worked in (optional)</label>
+                <div class="field" id="reviewDeptField">
+                  <label>Department(s) / position you worked in (optional)</label>
                   <div class="tags" id="reviewDeptChips"></div>
+                  <div style="display:flex;gap:8px;margin-top:8px">
+                    <input type="text" id="reviewDeptCustomInput" placeholder="Not listed? Add a custom department / position" maxlength="60" style="flex:1">
+                    <button type="button" class="btn secondary small" id="reviewDeptCustomAdd">+ Add</button>
+                  </div>
                 </div>
                 <button class="btn" type="submit">Post feedback</button>
               </form>
@@ -175,15 +179,30 @@
             t.addEventListener('click', () => { editSelectedCategories.delete(t.dataset.c); renderEditCategoryChips(); }));
   }
 
-  /** A location's own label reversibly maps back to its Department enum name (title-case of the underscored name). */
-  function labelToDeptName(label) { return label.toUpperCase().replace(/ /g, '_'); }
+  /** Appends a checked, removable custom department/position tag beside the predefined ones. */
+  function addCustomDeptTag(scopeEl, name) {
+    const v = name.trim();
+    if (!v) return;
+    const container = scopeEl.querySelector('[data-f="departments"]');
+    if ([...container.querySelectorAll('input[type=checkbox]')].some(c => c.value.toLowerCase() === v.toLowerCase())) return;
+    const label = document.createElement('label');
+    label.className = 'tag muted';
+    label.style.cssText = 'cursor:pointer;user-select:none';
+    label.innerHTML = `<input type="checkbox" value="${RMW.escapeHtml(v)}" checked style="margin-right:4px;vertical-align:middle">${RMW.escapeHtml(v)}`;
+    label.title = 'Custom entry — uncheck to leave it out';
+    container.appendChild(label);
+  }
 
   function addEditLocation(loc) {
     const div = document.createElement('div');
     div.className = 'card';
     div.style.marginBottom = '12px';
     if (loc && loc.id) div.dataset.locId = loc.id;
-    const checked = new Set((loc && loc.departments || []).map(labelToDeptName));
+    // Existing departments already come back as display labels; match against the predefined
+    // list case-insensitively, and anything left over is a pre-existing custom entry.
+    const existingLabels = new Set((loc && loc.departments || []).map(x => x.toLowerCase()));
+    const predefinedLabels = new Set(DEPARTMENTS.map(d => deptLabel(d).toLowerCase()));
+    const customExisting = (loc && loc.departments || []).filter(x => !predefinedLabels.has(x.toLowerCase()));
     div.innerHTML = `
         <div class="field-row">
           <div class="field"><label>Label (optional)</label><input type="text" data-f="label" value="${RMW.escapeHtml((loc && loc.label) || '')}"></div>
@@ -198,9 +217,18 @@
           <label>Departments at this location</label>
           <div class="tags" data-f="departments">
             ${DEPARTMENTS.map(d => `<label class="tag muted" style="cursor:pointer;user-select:none">
-                <input type="checkbox" value="${d}" ${checked.has(d) ? 'checked' : ''} style="margin-right:4px;vertical-align:middle">${deptLabel(d)}</label>`).join('')}
+                <input type="checkbox" value="${d}" ${existingLabels.has(deptLabel(d).toLowerCase()) ? 'checked' : ''} style="margin-right:4px;vertical-align:middle">${deptLabel(d)}</label>`).join('')}
+          </div>
+          <div style="display:flex;gap:8px;margin-top:8px">
+            <input type="text" class="customDeptInput" placeholder="Not listed? Add a custom department / position" maxlength="60" style="flex:1">
+            <button type="button" class="btn secondary small addCustomDept">+ Add</button>
           </div>
         </div>`;
+    customExisting.forEach(name => addCustomDeptTag(div, name));
+    const customInput = div.querySelector('.customDeptInput');
+    const addCustom = () => { addCustomDeptTag(div, customInput.value); customInput.value = ''; customInput.focus(); };
+    div.querySelector('.addCustomDept').addEventListener('click', addCustom);
+    customInput.addEventListener('keydown', (e) => { if (e.key === 'Enter') { e.preventDefault(); addCustom(); } });
     document.getElementById('editLocations').appendChild(div);
   }
 
@@ -283,16 +311,36 @@
     renderReviewDepartments();
   }
 
-  /** Lets a reviewer flag which of *this location's own* departments they worked in. */
+  /** Lets a reviewer flag which department(s)/position they worked in — this location's own
+   * declared list as quick picks, plus a custom entry if theirs isn't among them. */
   function renderReviewDepartments() {
     const l = currentLocation();
-    const field = document.getElementById('reviewDeptField');
     const chips = document.getElementById('reviewDeptChips');
     const depts = (l && l.departments) || [];
-    if (!depts.length) { field.classList.add('hidden'); chips.innerHTML = ''; return; }
-    field.classList.remove('hidden');
     chips.innerHTML = depts.map(d => `<label class="tag muted" style="cursor:pointer;user-select:none">
-        <input type="checkbox" name="reviewDept" value="${RMW.escapeHtml(d)}" style="margin-right:4px;vertical-align:middle">${RMW.escapeHtml(d)}</label>`).join('');
+        <input type="checkbox" name="reviewDept" value="${RMW.escapeHtml(d)}" style="margin-right:4px;vertical-align:middle">${RMW.escapeHtml(d)}</label>`).join('')
+        || '<span class="muted" style="font-size:.85rem">No departments listed for this location yet.</span>';
+  }
+
+  document.getElementById('reviewDeptCustomAdd').addEventListener('click', addReviewCustomDept);
+  document.getElementById('reviewDeptCustomInput').addEventListener('keydown', (e) => {
+    if (e.key === 'Enter') { e.preventDefault(); addReviewCustomDept(); }
+  });
+  function addReviewCustomDept() {
+    const input = document.getElementById('reviewDeptCustomInput');
+    const v = input.value.trim();
+    if (!v) return;
+    const chips = document.getElementById('reviewDeptChips');
+    if ([...chips.querySelectorAll('input[type=checkbox]')].some(c => c.value.toLowerCase() === v.toLowerCase())) { input.value = ''; return; }
+    const placeholder = chips.querySelector('.muted');
+    if (placeholder) placeholder.remove();
+    const label = document.createElement('label');
+    label.className = 'tag muted';
+    label.style.cssText = 'cursor:pointer;user-select:none';
+    label.innerHTML = `<input type="checkbox" name="reviewDept" value="${RMW.escapeHtml(v)}" checked style="margin-right:4px;vertical-align:middle">${RMW.escapeHtml(v)}`;
+    chips.appendChild(label);
+    input.value = '';
+    input.focus();
   }
 
   function locLabel(l) {

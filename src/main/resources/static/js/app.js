@@ -300,7 +300,7 @@ const RMW = (() => {
             document.addEventListener('keydown', (e) => { if (e.key === 'Escape') closeMenu(); });
             document.getElementById('logoutLink').addEventListener('click', (e) => { e.preventDefault(); logout(); });
         } else {
-            authArea.innerHTML = `<a href="/login.html">Log in</a> <a class="btn small" href="/register.html">Sign up</a>`;
+            authArea.innerHTML = `<a class="btn small" href="/login.html">Log in</a>`;
         }
     }
 

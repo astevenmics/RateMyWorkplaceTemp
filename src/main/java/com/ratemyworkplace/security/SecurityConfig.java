@@ -1,5 +1,8 @@
 package com.ratemyworkplace.security;
 
+import org.springframework.security.core.session.SessionRegistry;
+import org.springframework.security.core.session.SessionRegistryImpl;
+import org.springframework.security.web.session.HttpSessionEventPublisher;
 import tools.jackson.databind.ObjectMapper;
 import com.ratemyworkplace.config.RateLimitFilter;
 import jakarta.servlet.http.HttpServletResponse;
@@ -134,13 +137,6 @@ public class SecurityConfig {
         return http.build();
     }
 
-    /**
-     * A plain top-level page load (clicking a link, refreshing) using an already-expired
-     * session hits this same strategy — but there's no SPA JS around to handle a JSON body,
-     * so the browser would otherwise render the raw JSON as the page. Send those straight
-     * to the homepage instead. Fetch/XHR calls from the SPA still get JSON (tagged with a
-     * "code" the frontend recognises) so RMW.api() can clear its cached user and redirect too.
-     */
     private void writeExpiredSession(
             org.springframework.security.web.session.SessionInformationExpiredEvent event) throws java.io.IOException {
         jakarta.servlet.http.HttpServletRequest request = event.getRequest();

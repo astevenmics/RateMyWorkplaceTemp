@@ -120,7 +120,6 @@ public class AdminService {
                 notificationService.notifyAccountEnabled(saved.getEmail(), saved.getDisplayName());
             } else {
                 notificationService.notifyAccountDisabled(saved.getEmail(), saved.getDisplayName());
-                // Block them immediately rather than leaving an already-logged-in session usable.
                 sessionInvalidationService.invalidateSessionsFor(saved.getUsername());
             }
         }

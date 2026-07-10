@@ -42,9 +42,6 @@ const RMW = (() => {
         let data = null;
         if (text) { try { data = JSON.parse(text); } catch (e) { data = text; } }
 
-        // The account was disabled or its permissions changed mid-session: the server has
-        // already killed the session, so just follow — clear the stale cached user and send
-        // them home instead of surfacing a raw JSON error anywhere in the app.
         if (res.status === 401 && data && data.code === 'SESSION_INVALIDATED') {
             cachedUser = null;
             const target = '/index.html?sessionExpired=1';
@@ -72,11 +69,6 @@ const RMW = (() => {
             const data = await api('/api/auth/me');
             cachedUser = (data && data.username) ? data : null;
         } catch (e) {
-            // Only a genuine 401 means "not logged in". Anything else (rate limited,
-            // network blip, server error) is transient — treat this call as logged-out
-            // for now, but leave the cache unresolved so the next call retries instead of
-            // permanently pinning the user as logged out for the rest of this page's life
-            // (this is what made tabs disagree on login state after a 429).
             if (e.status === 401) {
                 cachedUser = null;
             } else {
@@ -130,9 +122,6 @@ const RMW = (() => {
     function avatarHtml(user, sizeClass = 'sm') {
         const name = (user && (user.displayName || user.username)) || '?';
         const initials = name.trim().charAt(0) || '?';
-        // Explicit width/height (not just the CSS class) so the box is reserved before the
-        // image itself has loaded, avoiding a reflow of whatever sits next to it (e.g. the
-        // header) once it does.
         const px = sizeClass === 'lg' ? 96 : 30;
         if (user && user.avatarUrl) {
             return `<img class="avatar ${sizeClass}" width="${px}" height="${px}" src="${escapeHtml(user.avatarUrl)}" alt="${escapeHtml(name)}">`;
@@ -158,7 +147,6 @@ const RMW = (() => {
     }
     function clearToast(el) { if (el) el.className = 'alert'; }
 
-    /** A floating, self-dismissing toast — for notices that aren't tied to a specific form/page element. */
     function showToast(message, type = 'info', duration = 6000) {
         let stack = document.getElementById('rmwToastStack');
         if (!stack) {
@@ -177,10 +165,6 @@ const RMW = (() => {
         }, duration);
     }
 
-    /**
-     * Toggle a button into a disabled, spinner "loading" state to prevent
-     * double-submits / spam, and restore it afterwards.
-     */
     function setLoading(btn, loading, label = 'Please wait…') {
         if (!btn) return;
         if (loading) {
@@ -392,7 +376,6 @@ const RMW = (() => {
         });
     }
 
-    /** Shows a one-off toast after the disabled-account/session-invalidated redirect lands here. */
     function showSessionExpiredNoticeIfNeeded() {
         if (qs('sessionExpired') !== '1') return;
         showToast('Your session has ended because your account access changed. Please log in again.', 'warn', 8000);
@@ -407,12 +390,6 @@ const RMW = (() => {
         showSessionExpiredNoticeIfNeeded();
     }
 
-    /**
-     * Swap just the header's avatar image in place, instead of calling mountHeader()
-     * (which tears down and rebuilds the entire nav — brand, links, theme toggle — and
-     * briefly leaves it blank while it re-fetches the current user). Used after an
-     * avatar upload/removal so only the picture itself changes, not the whole bar.
-     */
     function updateHeaderAvatar(user) {
         const slot = document.getElementById('headerAvatarSlot');
         if (slot) slot.innerHTML = avatarHtml(user);

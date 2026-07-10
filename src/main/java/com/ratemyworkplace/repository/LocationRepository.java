@@ -13,7 +13,6 @@ import java.util.List;
 public interface LocationRepository extends JpaRepository<Location, Long> {
     List<Location> findByCompanyId(Long companyId);
     long countByCompanyId(Long companyId);
-
     /**
      * One row per location (not per company) so a company with N locations surfaces as N
      * distinct browse-page cards, each with that specific location's own address and rating.

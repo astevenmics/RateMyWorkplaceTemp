@@ -75,7 +75,6 @@ public class FeedbackService {
         return feedback;
     }
 
-    /** Only lets a reviewer pick departments that are actually declared on that location. */
     private java.util.Set<Department> parseDepartments(java.util.Set<String> raw, Location location) {
         java.util.Set<Department> requested;
         try {

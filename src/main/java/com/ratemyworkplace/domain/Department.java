@@ -20,7 +20,6 @@ public enum Department {
     LEGAL,
     OTHER;
 
-    /** Title-cased label for display (e.g. CUSTOMER_SERVICE -> "Customer Service"). */
     public String label() {
         String[] words = name().split("_");
         StringBuilder sb = new StringBuilder();
@@ -33,11 +32,6 @@ public enum Department {
         return sb.toString();
     }
 
-    /**
-     * Parses free-form names (raw enum names like "IT", or display labels like "Customer
-     * Service" — both normalise to the same enum constant) into a department set.
-     * Throws {@link IllegalArgumentException} for anything unrecognised.
-     */
     public static Set<Department> parseSet(Set<String> raw) {
         if (raw == null || raw.isEmpty()) {
             return EnumSet.noneOf(Department.class);

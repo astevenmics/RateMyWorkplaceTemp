@@ -100,13 +100,6 @@ public class CompanyService {
         return companyRepository.save(company);
     }
 
-    /**
-     * Admin edit of an existing workplace's name/description/website/categories, plus its
-     * locations (existing locations are updated in place by id; entries without an id are
-     * added as new locations). Locations are never removed here — deleting one that already
-     * has feedback attached to it would orphan that feedback, so removal isn't supported
-     * through this endpoint.
-     */
     @Transactional
     public Company adminUpdate(Long id, Requests.CompanySubmissionRequest req) {
         Company company = getAny(id);

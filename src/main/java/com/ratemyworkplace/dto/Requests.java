@@ -57,7 +57,6 @@ public final class Requests {
     }
 
     public record LocationRequest(
-            /** Set only when editing an existing location (admin edit); null/absent when creating one. */
             Long id,
             @Size(max = 140) String label,
             @NotBlank @Size(max = 200) String addressLine,
@@ -81,7 +80,6 @@ public final class Requests {
             @Min(1) @Max(5) int rating,
             @Size(max = 140) String title,
             @NotBlank @Size(max = 4000) String body,
-            /** Which of the location's own departments the reviewer worked in (optional). */
             Set<String> departments) {
     }
 

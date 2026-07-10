@@ -82,6 +82,8 @@ img { max-width: 100%; }
    line. Give the header more room than the reading-width body content needs. */
 .site-header .container { max-width: 1500px; }
 
+.site-header .container { max-width: 1500px; }
+
 .theme-toggle {
     background: var(--surface-2);
     border: 1px solid var(--border);
@@ -399,15 +401,15 @@ select option { background: var(--surface); color: var(--text); }
     display: flex; align-items: center; justify-content: center;
     color: var(--muted); font-size: .85rem; text-align: center; padding: 16px;
 }
+
 :root[data-theme="dark"] .ad-slot {
     background: repeating-linear-gradient(45deg, var(--surface-2), var(--surface-2) 12px, var(--surface) 12px, var(--surface) 24px);
 }
-/* A wide, full-width banner slot for pages that don't have a sidebar/rail to hang an ad off. */
 .ad-banner { min-height: 100px; margin: 18px 0; }
-/* A native-style ad card that blends into a card grid (e.g. the browse-workplaces results). */
 .ad-native { min-height: 0; }
 .detail-aside { position: sticky; top: 84px; display: flex; flex-direction: column; gap: 18px; }
 @media (max-width: 900px) { .detail-aside { position: static; } }
+
 .feedback-item { border-bottom: 1px solid var(--border); padding: 16px 0; }
 .feedback-item:last-child { border-bottom: none; }
 .feedback-item .head { display: flex; justify-content: space-between; gap: 10px; flex-wrap: wrap; }
@@ -448,6 +450,7 @@ select option { background: var(--surface); color: var(--text); }
     vertical-align: bottom;
     font-size: .82rem;
 }
+
 table.data { width: 100%; border-collapse: collapse; font-size: .9rem; }
 table.data th, table.data td { text-align: left; padding: 10px 12px; border-bottom: 1px solid var(--border); vertical-align: top; }
 table.data th { color: var(--muted); font-weight: 700; font-size: .8rem; text-transform: uppercase; letter-spacing: .03em; }

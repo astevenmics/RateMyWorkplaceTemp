@@ -47,8 +47,7 @@ public class Feedback {
 
     @Column(length = 255)
     private String moderationNote;
-
-    /** Which of the location's own departments the reviewer says they worked in (optional). */
+  
     @ElementCollection(fetch = FetchType.LAZY)
     @CollectionTable(name = "feedback_departments", joinColumns = @JoinColumn(name = "feedback_id"))
     @Column(name = "department", length = 30)

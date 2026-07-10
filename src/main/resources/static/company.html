@@ -105,7 +105,6 @@
           <h3>Employee feedback</h3>
           <div id="feedbackList"><div class="spinner">Loading…</div></div>
           <div class="pagination" id="feedbackPagination"></div>
-
           <div class="ad-slot ad-banner">
             <div><strong>Advertisement</strong><br>Google AdSense slot<br><span style="font-size:.78rem">(728×90 / responsive)</span></div>
           </div>
@@ -170,10 +169,10 @@
 
   function renderEditCategoryChips() {
     document.getElementById('editCategoryChips').innerHTML =
-        [...editSelectedCategories].map(c => `<span class="tag" data-c="${RMW.escapeHtml(c)}">${RMW.escapeHtml(c)} ✕</span>`).join('') ||
-        '<span class="muted" style="font-size:.85rem">No categories yet</span>';
+            [...editSelectedCategories].map(c => `<span class="tag" data-c="${RMW.escapeHtml(c)}">${RMW.escapeHtml(c)} ✕</span>`).join('') ||
+            '<span class="muted" style="font-size:.85rem">No categories yet</span>';
     document.querySelectorAll('#editCategoryChips .tag').forEach(t =>
-        t.addEventListener('click', () => { editSelectedCategories.delete(t.dataset.c); renderEditCategoryChips(); }));
+            t.addEventListener('click', () => { editSelectedCategories.delete(t.dataset.c); renderEditCategoryChips(); }));
   }
 
   /** A location's own label reversibly maps back to its Department enum name (title-case of the underscored name). */
@@ -276,7 +275,6 @@
     const sel = document.getElementById('locationSelect');
     sel.innerHTML = company.locations.map(l =>
             `<option value="${l.id}">${RMW.escapeHtml(locLabel(l))} — ★ ${l.averageRating.toFixed(1)} (${l.ratingCount})</option>`).join('');
-    // Coming from a location card on the browse page: land straight on that one.
     if (preselectLocationId && company.locations.some(l => String(l.id) === preselectLocationId)) {
       sel.value = preselectLocationId;
     }
@@ -327,7 +325,7 @@
       list.innerHTML = items.map(f => {
         const deptList = (f.departments || []).join(', ');
         const depts = deptList
-          ? `<span class="author-depts" title="${RMW.escapeHtml(deptList)}">| ${RMW.escapeHtml(deptList)}</span>` : '';
+                ? `<span class="author-depts" title="${RMW.escapeHtml(deptList)}">| ${RMW.escapeHtml(deptList)}</span>` : '';
         return `
           <div class="feedback-item">
             <div class="head">

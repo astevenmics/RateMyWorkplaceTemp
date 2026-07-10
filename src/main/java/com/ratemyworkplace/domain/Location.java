@@ -45,7 +45,6 @@ public class Location {
     @Column(length = 80)
     private String country;
 
-    /** Functional departments present at this specific location (IT, medical, admin, ...). */
     @ElementCollection(fetch = FetchType.LAZY)
     @CollectionTable(name = "location_departments", joinColumns = @JoinColumn(name = "location_id"))
     @Column(name = "department", length = 30)

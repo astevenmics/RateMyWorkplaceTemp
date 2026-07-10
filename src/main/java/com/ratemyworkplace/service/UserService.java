@@ -136,9 +136,7 @@ public class UserService {
             user.setRole(permissions.isEmpty() ? Role.USER : Role.MODERATOR);
         }
         User saved = userRepository.save(user);
-        // Authorities are snapshotted into the session at login and never re-checked
-        // per request, so without this a user who's currently logged in would keep
-        // their old (pre-change) permissions until they happened to log out and back in.
+
         sessionInvalidationService.invalidateSessionsFor(saved.getUsername());
         return saved;
     }

@@ -10,7 +10,7 @@
   <link rel="icon" type="image/png" sizes="32x32" href="/favicon/favicon-32x32.png">
   <link rel="icon" type="image/png" sizes="16x16" href="/favicon/favicon-16x16.png">
   <link rel="manifest" href="/favicon/site.webmanifest">
-  <!-- Google AdSense: replace data-ad-client / data-ad-slot with your own IDs and uncomment.
+  <!-- Google AdSense: replace data-ad-client / data-ad-slot
   <script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-XXXXXXXXXXXXXXXX" crossorigin="anonymous"></script>
   -->
 </head>
@@ -77,8 +77,6 @@
     if (state.q) params.set('q', state.q);
     if (state.categoryId) params.set('categoryId', state.categoryId);
     try {
-      // One card per location (not per company) — a company with 20 locations lists as
-      // 20 distinct cards, each showing that specific location's own address and rating.
       const data = await RMW.api('/api/locations?' + params.toString());
       renderResults(data);
       renderPagination(data);

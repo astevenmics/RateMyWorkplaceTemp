@@ -15,11 +15,14 @@ import org.springframework.security.config.annotation.method.configuration.Enabl
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configurers.AbstractHttpConfigurer;
 import org.springframework.security.config.http.SessionCreationPolicy;
+import org.springframework.security.core.session.SessionRegistry;
+import org.springframework.security.core.session.SessionRegistryImpl;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.security.web.SecurityFilterChain;
 import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter;
 import org.springframework.security.web.csrf.CookieCsrfTokenRepository;
+import org.springframework.security.web.session.HttpSessionEventPublisher;
 
 import java.time.Instant;
 import java.util.Map;
@@ -47,6 +50,12 @@ public class SecurityConfig {
         return config.getAuthenticationManager();
     }
 
+    /**
+     * Tracks active sessions per principal so an admin action (disabling an account,
+     * changing moderator permissions) can force that user's already-logged-in sessions
+     * to re-authenticate, instead of the change being silently invisible until they
+     * happen to log out and back in on their own.
+     */
     @Bean
     public SessionRegistry sessionRegistry() {
         return new SessionRegistryImpl();

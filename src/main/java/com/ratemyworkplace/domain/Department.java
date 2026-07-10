@@ -20,7 +20,6 @@ public enum Department {
     LEGAL,
     OTHER;
 
-    /** Title-cased label for display (e.g. CUSTOMER_SERVICE -> "Customer Service"). */
     public String label() {
         String[] words = name().split("_");
         StringBuilder sb = new StringBuilder();

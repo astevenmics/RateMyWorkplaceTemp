@@ -4,6 +4,7 @@ target/
 !**/src/main/**/target/
 !**/src/test/**/target/
 
+### Runtime file storage (app.upload.dir default) ###
 /uploads/
 
 ### STS ###

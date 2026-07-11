@@ -45,6 +45,11 @@ public class Location {
     @Column(length = 80)
     private String country;
 
+    /**
+     * Functional departments/positions present at this specific location. Free text so a
+     * custom department/position (not in the predefined quick-pick list) can be recorded too —
+     * see {@link Department#normalize}.
+     */
     @ElementCollection(fetch = FetchType.LAZY)
     @CollectionTable(name = "location_departments", joinColumns = @JoinColumn(name = "location_id"))
     @Column(name = "department", length = 60)

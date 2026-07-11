@@ -75,6 +75,12 @@ img { max-width: 100%; }
     backdrop-filter: saturate(180%) blur(8px);
     border-bottom: 1px solid var(--border);
 }
+/* The header shared the same --maxw (1180px) as body content, but a logged-in admin/
+   moderator's nav (extra Verify Employment + Admin links, plus avatar + display name)
+   doesn't fit that budget — it overflows at ANY window size, since the cap never grows
+   past 1180px, and .nav-links then wraps its last item (the theme toggle) onto its own
+   line. Give the header more room than the reading-width body content needs. */
+.site-header .container { max-width: 1500px; }
 
 .site-header .container { max-width: 1500px; }
 

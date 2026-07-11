@@ -41,12 +41,6 @@ public enum Department {
 
     private static final int MAX_LENGTH = 60;
 
-    /**
-     * Normalises one department/position value for storage: matches against the
-     * predefined list (case/spacing-insensitive) to reuse its canonical label, or
-     * otherwise keeps the caller's own free text (trimmed, length-capped) as a custom
-     * department/position.
-     */
     public static String normalize(String raw) {
         if (raw == null) {
             return null;
@@ -64,7 +58,6 @@ public enum Department {
         return trimmed.length() > MAX_LENGTH ? trimmed.substring(0, MAX_LENGTH) : trimmed;
     }
 
-    /** Normalises a whole set, dropping blanks and case-insensitive duplicates, capped at {@code maxCount} entries. */
     public static Set<String> normalizeSet(Set<String> raw, int maxCount) {
         Set<String> result = new LinkedHashSet<>();
         Set<String> seen = new LinkedHashSet<>();

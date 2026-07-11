@@ -42,7 +42,7 @@ public final class DtoMapper {
         return new Responses.LocationDto(
                 l.getId(), l.getCompany() != null ? l.getCompany().getId() : null, l.getLabel(),
                 l.getAddressLine(), l.getCity(), l.getState(), l.getZipCode(), l.getCountry(),
-                departmentLabels(l), round(l.getAverageRating()), l.getRatingCount());
+                sortedCopy(l.getDepartments()), round(l.getAverageRating()), l.getRatingCount());
     }
 
     /** One card per location: a company with 20 locations renders as 20 distinct browse-page cards. */
@@ -52,14 +52,9 @@ public final class DtoMapper {
                 l.getId(), c.getId(), c.getName(), c.getLogoUrl(),
                 c.getCategories().stream().map(Category::getName).collect(Collectors.toCollection(java.util.TreeSet::new)),
                 l.getLabel(), l.getAddressLine(), l.getCity(), l.getState(), l.getZipCode(), l.getCountry(),
-                departmentLabels(l), round(l.getAverageRating()), l.getRatingCount());
+                sortedCopy(l.getDepartments()), round(l.getAverageRating()), l.getRatingCount());
     }
 
-    private static Set<String> departmentLabels(Location l) {
-        return sortedCopy(l.getDepartments());
-    }
-
-    /** Departments are already stored in their final display form (see {@link Department#normalize}). */
     private static Set<String> sortedCopy(Set<String> departments) {
         return new java.util.TreeSet<>(departments);
     }

@@ -179,7 +179,6 @@
             t.addEventListener('click', () => { editSelectedCategories.delete(t.dataset.c); renderEditCategoryChips(); }));
   }
 
-  /** Appends a checked, removable custom department/position tag beside the predefined ones. */
   function addCustomDeptTag(scopeEl, name) {
     const v = name.trim();
     if (!v) return;
@@ -198,8 +197,6 @@
     div.className = 'card';
     div.style.marginBottom = '12px';
     if (loc && loc.id) div.dataset.locId = loc.id;
-    // Existing departments already come back as display labels; match against the predefined
-    // list case-insensitively, and anything left over is a pre-existing custom entry.
     const existingLabels = new Set((loc && loc.departments || []).map(x => x.toLowerCase()));
     const predefinedLabels = new Set(DEPARTMENTS.map(d => deptLabel(d).toLowerCase()));
     const customExisting = (loc && loc.departments || []).filter(x => !predefinedLabels.has(x.toLowerCase()));
@@ -311,15 +308,13 @@
     renderReviewDepartments();
   }
 
-  /** Lets a reviewer flag which department(s)/position they worked in — this location's own
-   * declared list as quick picks, plus a custom entry if theirs isn't among them. */
   function renderReviewDepartments() {
     const l = currentLocation();
     const chips = document.getElementById('reviewDeptChips');
     const depts = (l && l.departments) || [];
     chips.innerHTML = depts.map(d => `<label class="tag muted" style="cursor:pointer;user-select:none">
         <input type="checkbox" name="reviewDept" value="${RMW.escapeHtml(d)}" style="margin-right:4px;vertical-align:middle">${RMW.escapeHtml(d)}</label>`).join('')
-        || '<span class="muted" style="font-size:.85rem">No departments listed for this location yet.</span>';
+            || '<span class="muted" style="font-size:.85rem">No departments listed for this location yet.</span>';
   }
 
   document.getElementById('reviewDeptCustomAdd').addEventListener('click', addReviewCustomDept);

@@ -134,7 +134,6 @@
     catch (e) { gAlert('error', e.message); }
   }
 
-  // ---------------- Add workplace directly (admin-only, skips the pending queue) ----------------
   const AW_DEPARTMENTS = ['IT', 'MEDICAL', 'ADMIN', 'SALES', 'MARKETING', 'HR', 'FINANCE',
     'OPERATIONS', 'CUSTOMER_SERVICE', 'ENGINEERING', 'RETAIL', 'LOGISTICS', 'LEGAL', 'OTHER'];
   function awDeptLabel(d) { return d.split('_').map(w => w[0] + w.slice(1).toLowerCase()).join(' '); }

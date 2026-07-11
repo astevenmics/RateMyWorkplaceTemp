@@ -147,6 +147,40 @@ public class CompanyService {
      * through this endpoint.
      */
     @Transactional
+    public Company adminCreate(User admin, Requests.CompanySubmissionRequest req) {
+        Company company = new Company();
+        company.setName(req.name().trim());
+        company.setDescription(req.description());
+        company.setWebsite(req.website());
+        company.setSubmittedBy(admin);
+        company.setStatus(ApprovalStatus.APPROVED);
+
+        if (req.categories() != null) {
+            Set<Category> categories = new HashSet<>();
+            for (String name : req.categories()) {
+                if (StringUtils.hasText(name)) {
+                    categories.add(categoryService.findOrCreate(name));
+                }
+            }
+            company.setCategories(categories);
+        }
+
+        for (Requests.LocationRequest lr : req.locations()) {
+            Location location = new Location();
+            location.setCompany(company);
+            location.setLabel(lr.label());
+            location.setAddressLine(lr.addressLine());
+            location.setCity(lr.city());
+            location.setState(lr.state());
+            location.setZipCode(lr.zipCode());
+            location.setCountry(StringUtils.hasText(lr.country()) ? lr.country() : "USA");
+            location.setDepartments(parseDepartments(lr.departments()));
+            company.getLocations().add(location);
+        }
+        return companyRepository.save(company);
+    }
+
+    @Transactional
     public Company adminUpdate(Long id, Requests.CompanySubmissionRequest req) {
         Company company = getAny(id);
         company.setName(req.name().trim());

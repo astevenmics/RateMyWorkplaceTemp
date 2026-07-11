@@ -55,7 +55,6 @@ public class Location {
     @Column(name = "department", length = 60)
     @Fetch(FetchMode.SUBSELECT)
     private Set<String> departments = new LinkedHashSet<>();
-
     @Column(nullable = false)
     private double averageRating = 0d;
 

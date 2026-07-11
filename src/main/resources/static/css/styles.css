@@ -112,7 +112,7 @@ img { max-width: 100%; }
     flex-wrap: wrap;
 }
 .nav-links a {
-    color: var(--muted);
+    color: var(--text);
     padding: 8px 12px;
     border-radius: 9px;
     font-weight: 600;

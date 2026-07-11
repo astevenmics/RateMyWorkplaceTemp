@@ -99,6 +99,14 @@ public class AdminController {
         return Responses.SimpleMessage.ok("Workplace deleted");
     }
 
+    @PostMapping("/companies")
+    public org.springframework.http.ResponseEntity<Responses.CompanyDetailDto> createCompany(
+            @Valid @RequestBody Requests.CompanySubmissionRequest request) {
+        Responses.CompanyDetailDto dto = DtoMapper.companyDetail(
+                companyService.adminCreate(currentUserService.require(), request));
+        return org.springframework.http.ResponseEntity.status(org.springframework.http.HttpStatus.CREATED).body(dto);
+    }
+
     @PutMapping("/companies/{id}")
     public Responses.CompanyDetailDto updateCompany(@PathVariable Long id,
                                                     @Valid @RequestBody Requests.CompanySubmissionRequest request) {

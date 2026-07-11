@@ -41,6 +41,7 @@ public class AdminController {
         this.currentUserService = currentUserService;
         this.auditService = auditService;
         this.companyService = companyService;
+
     }
 
     // ---- statistics dashboard ----
@@ -109,7 +110,7 @@ public class AdminController {
 
     @PutMapping("/companies/{id}")
     public Responses.CompanyDetailDto updateCompany(@PathVariable Long id,
-                                                    @Valid @RequestBody Requests.CompanySubmissionRequest request) {
+                                                     @Valid @RequestBody Requests.CompanySubmissionRequest request) {
         return DtoMapper.companyDetail(companyService.adminUpdate(id, request));
     }
 

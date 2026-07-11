@@ -3,7 +3,13 @@ package com.ratemyworkplace.domain;
 import java.util.LinkedHashSet;
 import java.util.Set;
 
-/** Functional departments a {@link Location} can be tagged with, for filtering and display. */
+/**
+ * The predefined, well-known departments offered as quick-pick options wherever a
+ * location's departments are chosen. Storage itself ({@link Location#getDepartments()},
+ * {@link Feedback#getDepartments()}) is free-text ({@code Set<String>}) so a custom
+ * department/position that isn't in this list can still be recorded — this enum only
+ * supplies the canonical label for anything that happens to match one of these.
+ */
 public enum Department {
     IT,
     MEDICAL,
@@ -20,6 +26,7 @@ public enum Department {
     LEGAL,
     OTHER;
 
+    /** Title-cased label for display (e.g. CUSTOMER_SERVICE -> "Customer Service"). */
     public String label() {
         String[] words = name().split("_");
         StringBuilder sb = new StringBuilder();

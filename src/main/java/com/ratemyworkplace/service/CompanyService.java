@@ -100,6 +100,52 @@ public class CompanyService {
         return companyRepository.save(company);
     }
 
+    /**
+     * Lets an admin add a workplace directly from the admin panel, already approved and
+     * publicly listed — skipping the public submission form and the pending-review queue
+     * that a regular user's submission goes through.
+     */
+    @Transactional
+    public Company adminCreate(User admin, Requests.CompanySubmissionRequest req) {
+        Company company = new Company();
+        company.setName(req.name().trim());
+        company.setDescription(req.description());
+        company.setWebsite(req.website());
+        company.setSubmittedBy(admin);
+        company.setStatus(ApprovalStatus.APPROVED);
+
+        if (req.categories() != null) {
+            Set<Category> categories = new HashSet<>();
+            for (String name : req.categories()) {
+                if (StringUtils.hasText(name)) {
+                    categories.add(categoryService.findOrCreate(name));
+                }
+            }
+            company.setCategories(categories);
+        }
+
+        for (Requests.LocationRequest lr : req.locations()) {
+            Location location = new Location();
+            location.setCompany(company);
+            location.setLabel(lr.label());
+            location.setAddressLine(lr.addressLine());
+            location.setCity(lr.city());
+            location.setState(lr.state());
+            location.setZipCode(lr.zipCode());
+            location.setCountry(StringUtils.hasText(lr.country()) ? lr.country() : "USA");
+            location.setDepartments(parseDepartments(lr.departments()));
+            company.getLocations().add(location);
+        }
+        return companyRepository.save(company);
+    }
+
+    /**
+     * Admin edit of an existing workplace's name/description/website/categories, plus its
+     * locations (existing locations are updated in place by id; entries without an id are
+     * added as new locations). Locations are never removed here — deleting one that already
+     * has feedback attached to it would orphan that feedback, so removal isn't supported
+     * through this endpoint.
+     */
     @Transactional
     public Company adminCreate(User admin, Requests.CompanySubmissionRequest req) {
         Company company = new Company();

@@ -5,7 +5,6 @@ import org.hibernate.annotations.Fetch;
 import org.hibernate.annotations.FetchMode;
 
 import java.time.Instant;
-import java.util.EnumSet;
 import java.util.LinkedHashSet;
 import java.util.Set;
 

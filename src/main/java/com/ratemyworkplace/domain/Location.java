@@ -5,7 +5,7 @@ import org.hibernate.annotations.Fetch;
 import org.hibernate.annotations.FetchMode;
 
 import java.time.Instant;
-import java.util.EnumSet;
+import java.util.LinkedHashSet;
 import java.util.Set;
 
 /**
@@ -47,11 +47,9 @@ public class Location {
 
     @ElementCollection(fetch = FetchType.LAZY)
     @CollectionTable(name = "location_departments", joinColumns = @JoinColumn(name = "location_id"))
-    @Column(name = "department", length = 30)
-    @Enumerated(EnumType.STRING)
+    @Column(name = "department", length = 60)
     @Fetch(FetchMode.SUBSELECT)
-    private Set<Department> departments = EnumSet.noneOf(Department.class);
-
+    private Set<String> departments = new LinkedHashSet<>();
     @Column(nullable = false)
     private double averageRating = 0d;
 
@@ -77,8 +75,8 @@ public class Location {
     public void setZipCode(String zipCode) { this.zipCode = zipCode; }
     public String getCountry() { return country; }
     public void setCountry(String country) { this.country = country; }
-    public Set<Department> getDepartments() { return departments; }
-    public void setDepartments(Set<Department> departments) { this.departments = departments; }
+    public Set<String> getDepartments() { return departments; }
+    public void setDepartments(Set<String> departments) { this.departments = departments; }
     public double getAverageRating() { return averageRating; }
     public void setAverageRating(double averageRating) { this.averageRating = averageRating; }
     public long getRatingCount() { return ratingCount; }

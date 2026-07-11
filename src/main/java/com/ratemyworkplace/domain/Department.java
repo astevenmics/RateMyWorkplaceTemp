@@ -1,6 +1,6 @@
 package com.ratemyworkplace.domain;
 
-import java.util.EnumSet;
+import java.util.LinkedHashSet;
 import java.util.Set;
 
 /** Functional departments a {@link Location} can be tagged with, for filtering and display. */
@@ -32,16 +32,41 @@ public enum Department {
         return sb.toString();
     }
 
-    public static Set<Department> parseSet(Set<String> raw) {
-        if (raw == null || raw.isEmpty()) {
-            return EnumSet.noneOf(Department.class);
+    private static final int MAX_LENGTH = 60;
+
+    public static String normalize(String raw) {
+        if (raw == null) {
+            return null;
         }
-        Set<Department> departments = EnumSet.noneOf(Department.class);
-        for (String name : raw) {
-            if (name != null && !name.isBlank()) {
-                departments.add(Department.valueOf(name.trim().toUpperCase().replace(' ', '_')));
+        String trimmed = raw.trim();
+        if (trimmed.isEmpty()) {
+            return null;
+        }
+        String key = trimmed.toUpperCase().replace(' ', '_');
+        for (Department d : values()) {
+            if (d.name().equals(key)) {
+                return d.label();
             }
         }
-        return departments;
+        return trimmed.length() > MAX_LENGTH ? trimmed.substring(0, MAX_LENGTH) : trimmed;
+    }
+
+    public static Set<String> normalizeSet(Set<String> raw, int maxCount) {
+        Set<String> result = new LinkedHashSet<>();
+        Set<String> seen = new LinkedHashSet<>();
+        if (raw == null) {
+            return result;
+        }
+        for (String s : raw) {
+            String normalized = normalize(s);
+            if (normalized == null || result.size() >= maxCount) {
+                continue;
+            }
+            String dedupeKey = normalized.toLowerCase();
+            if (seen.add(dedupeKey)) {
+                result.add(normalized);
+            }
+        }
+        return result;
     }
 }

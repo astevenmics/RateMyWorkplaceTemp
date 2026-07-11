@@ -101,6 +101,40 @@ public class CompanyService {
     }
 
     @Transactional
+    public Company adminCreate(User admin, Requests.CompanySubmissionRequest req) {
+        Company company = new Company();
+        company.setName(req.name().trim());
+        company.setDescription(req.description());
+        company.setWebsite(req.website());
+        company.setSubmittedBy(admin);
+        company.setStatus(ApprovalStatus.APPROVED);
+
+        if (req.categories() != null) {
+            Set<Category> categories = new HashSet<>();
+            for (String name : req.categories()) {
+                if (StringUtils.hasText(name)) {
+                    categories.add(categoryService.findOrCreate(name));
+                }
+            }
+            company.setCategories(categories);
+        }
+
+        for (Requests.LocationRequest lr : req.locations()) {
+            Location location = new Location();
+            location.setCompany(company);
+            location.setLabel(lr.label());
+            location.setAddressLine(lr.addressLine());
+            location.setCity(lr.city());
+            location.setState(lr.state());
+            location.setZipCode(lr.zipCode());
+            location.setCountry(StringUtils.hasText(lr.country()) ? lr.country() : "USA");
+            location.setDepartments(parseDepartments(lr.departments()));
+            company.getLocations().add(location);
+        }
+        return companyRepository.save(company);
+    }
+
+    @Transactional
     public Company adminUpdate(Long id, Requests.CompanySubmissionRequest req) {
         Company company = getAny(id);
         company.setName(req.name().trim());
@@ -137,12 +171,10 @@ public class CompanyService {
         return companyRepository.save(company);
     }
 
-    private Set<Department> parseDepartments(Set<String> raw) {
-        try {
-            return Department.parseSet(raw);
-        } catch (IllegalArgumentException e) {
-            throw ApiException.badRequest("Unknown department in request");
-        }
+    private static final int MAX_DEPARTMENTS_PER_LOCATION = 20;
+
+    private Set<String> parseDepartments(Set<String> raw) {
+        return Department.normalizeSet(raw, MAX_DEPARTMENTS_PER_LOCATION);
     }
 
     /** Recomputes denormalized rating aggregates for a location and its parent company. */

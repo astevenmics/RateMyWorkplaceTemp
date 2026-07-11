@@ -13,6 +13,8 @@ import org.springframework.transaction.annotation.Transactional;
 @Service
 public class FeedbackService {
 
+    private static final int MAX_DEPARTMENTS_PER_FEEDBACK = 10;
+
     private final FeedbackRepository feedbackRepository;
     private final LocationRepository locationRepository;
     private final ProofService proofService;
@@ -68,24 +70,11 @@ public class FeedbackService {
         feedback.setTitle(req.title());
         feedback.setBody(req.body());
         feedback.setStatus(ApprovalStatus.APPROVED);
-        feedback.setDepartments(parseDepartments(req.departments(), location));
+        feedback.setDepartments(Department.normalizeSet(req.departments(), MAX_DEPARTMENTS_PER_FEEDBACK));
         feedback = feedbackRepository.save(feedback);
 
         companyService.recomputeAggregates(location);
         return feedback;
-    }
-
-    private java.util.Set<Department> parseDepartments(java.util.Set<String> raw, Location location) {
-        java.util.Set<Department> requested;
-        try {
-            requested = Department.parseSet(raw);
-        } catch (IllegalArgumentException e) {
-            throw ApiException.badRequest("Unknown department in request");
-        }
-        if (!location.getDepartments().containsAll(requested)) {
-            throw ApiException.badRequest("Selected department is not available at this location");
-        }
-        return requested;
     }
 
     // ---- moderation ----

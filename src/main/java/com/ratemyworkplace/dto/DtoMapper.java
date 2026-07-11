@@ -42,7 +42,7 @@ public final class DtoMapper {
         return new Responses.LocationDto(
                 l.getId(), l.getCompany() != null ? l.getCompany().getId() : null, l.getLabel(),
                 l.getAddressLine(), l.getCity(), l.getState(), l.getZipCode(), l.getCountry(),
-                departmentLabels(l), round(l.getAverageRating()), l.getRatingCount());
+                sortedCopy(l.getDepartments()), round(l.getAverageRating()), l.getRatingCount());
     }
 
     /** One card per location: a company with 20 locations renders as 20 distinct browse-page cards. */
@@ -52,16 +52,11 @@ public final class DtoMapper {
                 l.getId(), c.getId(), c.getName(), c.getLogoUrl(),
                 c.getCategories().stream().map(Category::getName).collect(Collectors.toCollection(java.util.TreeSet::new)),
                 l.getLabel(), l.getAddressLine(), l.getCity(), l.getState(), l.getZipCode(), l.getCountry(),
-                departmentLabels(l), round(l.getAverageRating()), l.getRatingCount());
+                sortedCopy(l.getDepartments()), round(l.getAverageRating()), l.getRatingCount());
     }
 
-    private static Set<String> departmentLabels(Location l) {
-        return departmentLabels(l.getDepartments());
-    }
-
-    private static Set<String> departmentLabels(Set<Department> departments) {
-        return departments.stream().map(Department::label)
-                .collect(Collectors.toCollection(java.util.TreeSet::new));
+    private static Set<String> sortedCopy(Set<String> departments) {
+        return new java.util.TreeSet<>(departments);
     }
 
     public static Responses.CompanySummaryDto companySummary(Company c) {
@@ -89,7 +84,7 @@ public final class DtoMapper {
                 f.getId(), f.getCompany().getId(), f.getLocation().getId(),
                 locationLabel(f.getLocation()),
                 f.getAuthor() != null ? f.getAuthor().getDisplayName() : "Anonymous",
-                f.getRating(), f.getTitle(), f.getBody(), departmentLabels(f.getDepartments()),
+                f.getRating(), f.getTitle(), f.getBody(), sortedCopy(f.getDepartments()),
                 f.getStatus().name(), f.getCreatedAt());
     }
 

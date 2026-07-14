@@ -348,12 +348,12 @@
       const items = data.content || [];
       if (!items.length) { box.innerHTML = '<p class="muted">No users found.</p>'; return; }
       box.innerHTML = `<p class="muted" style="font-size:.82rem">Click a user to view their full profile.</p>
-        <table class="data"><thead><tr><th>User</th><th>Email / phone</th><th>Status</th><th>Actions</th></tr></thead><tbody>${
+        <table class="data"><thead><tr><th>User</th><th>Email </th><th>Status</th><th>Actions</th></tr></thead><tbody>${
           items.map(u => `<tr class="user-row" data-uid="${u.id}" style="cursor:pointer">
           <td><strong>${E(u.displayName)}</strong><br><span class="muted">@${E(u.username)}</span> · ${E(u.role)}
             ${u.flaggedReason ? `<br><span class="badge rejected" title="${E(u.flaggedReason)}">FLAGGED</span>
               <span class="muted flag-reason" title="${E(u.flaggedReason)}">${E(u.flaggedReason)}</span>` : ''}</td>
-          <td>${E(u.email)} ${u.emailVerified ? '✅' : '❌'}<br>${E(u.phoneNumber)} ${u.phoneVerified ? '✅' : '❌'}</td>
+          <td>${E(u.email)} ${u.emailVerified ? '✅' : '❌'}</td>
           <td>${u.enabled ? '<span class="badge approved">Active</span>' : '<span class="badge rejected">Disabled</span>'}</td>
           <td>
             <button class="btn small secondary" data-flag="${u.id}">${u.flaggedReason ? 'Unflag' : 'Flag'}</button>
@@ -367,7 +367,6 @@
               <div><span class="muted">Username</span><br>@${E(u.username)}</div>
               <div><span class="muted">Role</span><br>${E(u.role)}${(u.moderatorPermissions||[]).length ? ' — ' + u.moderatorPermissions.map(E).join(', ') : ''}</div>
               <div><span class="muted">Email</span><br>${E(u.email)} ${u.emailVerified ? '✅ verified' : '❌ unverified'}</div>
-              <div><span class="muted">Phone</span><br>${E(u.phoneNumber)} ${u.phoneVerified ? '✅ verified' : '❌ unverified'}</div>
               <div><span class="muted">Account</span><br>${u.enabled ? 'Active' : 'Disabled'}</div>
               <div><span class="muted">Joined</span><br>${RMW.fmtDate(u.createdAt)}</div>
               <div><span class="muted">Last login</span><br>${u.lastLoginAt ? RMW.fmtDate(u.lastLoginAt) : 'never'}</div>

@@ -61,7 +61,7 @@
     const user = await RMW.currentUser();
     if (!user) { window.location.href = '/login.html?next=/submit-proof.html'; return false; }
     if (!user.fullyVerified) {
-      RMW.toast(alertEl, 'warn', 'Verify your email and phone on your profile before submitting proof.');
+      RMW.toast(alertEl, 'warn', 'Verify your email on your profile before submitting proof.');
     }
     return true;
   }

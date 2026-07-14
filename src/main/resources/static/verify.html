@@ -18,7 +18,7 @@
   <div class="container">
     <div class="card form-card">
       <h2 style="margin-top:0">Verify your account</h2>
-      <p class="subtitle">Enter the codes sent to your email and phone. (In dev mode, codes are printed to the server log.)</p>
+      <p class="subtitle">Enter the code sent to your email.</p>
       <div id="alert" class="alert"></div>
 
       <div id="emailBlock" class="field">
@@ -27,15 +27,6 @@
           <div class="field" style="margin:0"><input type="text" id="emailCode" placeholder="6-digit code"></div>
           <button class="btn secondary" id="verifyEmailBtn" type="button">Verify</button>
           <button class="btn ghost" id="resendEmailBtn" type="button">Resend</button>
-        </div>
-      </div>
-
-      <div id="phoneBlock" class="field" style="margin-top:18px">
-        <label>Phone verification <span id="phoneStatus" class="badge pending">Pending</span></label>
-        <div class="field-row">
-          <div class="field" style="margin:0"><input type="text" id="phoneCode" placeholder="6-digit code"></div>
-          <button class="btn secondary" id="verifyPhoneBtn" type="button">Verify</button>
-          <button class="btn ghost" id="resendPhoneBtn" type="button">Resend</button>
         </div>
       </div>
 
@@ -55,48 +46,46 @@
   async function refresh() {
     const user = await RMW.currentUser(true);
     if (!user) { window.location.href = '/login.html?next=/verify.html'; return; }
-    setStatus('email', user.emailVerified);
-    setStatus('phone', user.phoneVerified);
+    setStatus(user.emailVerified);
     document.getElementById('done').className = user.fullyVerified ? 'alert success show' : 'alert success';
   }
 
   const COOLDOWN_MS = 5 * 60 * 1000; // resend allowed every 5 minutes
-  const verifiedState = { email: false, phone: false };
-  const timers = {};
+  let verified = false;
+  let timer = null;
 
-  function setStatus(channel, ok) {
-    verifiedState[channel] = ok;
-    const el = document.getElementById(channel + 'Status');
+  function setStatus(ok) {
+    verified = ok;
+    const el = document.getElementById('emailStatus');
     el.textContent = ok ? 'Verified' : 'Pending';
     el.className = 'badge ' + (ok ? 'approved' : 'pending');
-    document.getElementById(channel + 'Block').style.opacity = ok ? '0.6' : '1';
+    document.getElementById('emailBlock').style.opacity = ok ? '0.6' : '1';
 
-    const verifyBtn = document.getElementById('verify' + cap(channel) + 'Btn');
-    const codeInput = document.getElementById(channel + 'Code');
+    const verifyBtn = document.getElementById('verifyEmailBtn');
+    const codeInput = document.getElementById('emailCode');
     if (ok) {
       // Once verified, lock the section so no more codes/attempts can be sent.
       verifyBtn.disabled = true;
       codeInput.disabled = true;
-      clearInterval(timers[channel]);
-      const resendBtn = document.getElementById('resend' + cap(channel) + 'Btn');
+      clearInterval(timer);
+      const resendBtn = document.getElementById('resendEmailBtn');
       resendBtn.disabled = true;
       resendBtn.textContent = 'Verified';
     } else {
       verifyBtn.disabled = false;
       codeInput.disabled = false;
-      refreshCooldown(channel);
+      refreshCooldown();
     }
   }
 
-  function cap(s) { return s.charAt(0).toUpperCase() + s.slice(1); }
-  function cooldownKey(channel) { return 'rmw-resend-' + channel; }
+  const COOLDOWN_KEY = 'rmw-resend-email';
 
-  function refreshCooldown(channel) {
-    if (verifiedState[channel]) return;
-    const resendBtn = document.getElementById('resend' + cap(channel) + 'Btn');
-    clearInterval(timers[channel]);
+  function refreshCooldown() {
+    if (verified) return;
+    const resendBtn = document.getElementById('resendEmailBtn');
+    clearInterval(timer);
     const tick = () => {
-      const started = parseInt(localStorage.getItem(cooldownKey(channel)) || '0', 10);
+      const started = parseInt(localStorage.getItem(COOLDOWN_KEY) || '0', 10);
       const remaining = started + COOLDOWN_MS - Date.now();
       if (remaining > 0) {
         const m = Math.floor(remaining / 60000), s = Math.floor((remaining % 60000) / 1000);
@@ -105,36 +94,33 @@
       } else {
         resendBtn.disabled = false;
         resendBtn.textContent = 'Resend';
-        clearInterval(timers[channel]);
+        clearInterval(timer);
       }
     };
     tick();
-    timers[channel] = setInterval(tick, 1000);
+    timer = setInterval(tick, 1000);
   }
 
-  async function verify(channel, code) {
+  async function verify(code) {
     if (!code.trim()) { RMW.toast(alertEl, 'error', 'Enter the code first.'); return; }
     try {
-      await RMW.api('/api/auth/verify', { method: 'POST', body: { channel, code: code.trim() } });
-      RMW.toast(alertEl, 'success', cap(channel.toLowerCase()) + ' verified!');
+      await RMW.api('/api/auth/verify', { method: 'POST', body: { code: code.trim() } });
+      RMW.toast(alertEl, 'success', 'Email verified!');
       await refresh();
     } catch (err) { RMW.toast(alertEl, 'error', err.message); }
   }
 
-  async function resend(channel) {
-    const key = channel.toLowerCase();
+  async function resend() {
     try {
-      await RMW.api('/api/auth/verify/resend', { method: 'POST', body: { channel } });
-      localStorage.setItem(cooldownKey(key), String(Date.now()));
-      refreshCooldown(key);
+      await RMW.api('/api/auth/verify/resend', { method: 'POST' });
+      localStorage.setItem(COOLDOWN_KEY, String(Date.now()));
+      refreshCooldown();
       RMW.toast(alertEl, 'info', 'A new code was sent (check the server log in dev mode). You can resend again in 5 minutes.');
     } catch (err) { RMW.toast(alertEl, 'error', err.message); }
   }
 
-  document.getElementById('verifyEmailBtn').addEventListener('click', () => verify('EMAIL', document.getElementById('emailCode').value));
-  document.getElementById('verifyPhoneBtn').addEventListener('click', () => verify('PHONE', document.getElementById('phoneCode').value));
-  document.getElementById('resendEmailBtn').addEventListener('click', () => resend('EMAIL'));
-  document.getElementById('resendPhoneBtn').addEventListener('click', () => resend('PHONE'));
+  document.getElementById('verifyEmailBtn').addEventListener('click', () => verify(document.getElementById('emailCode').value));
+  document.getElementById('resendEmailBtn').addEventListener('click', resend);
 
   refresh();
 </script>

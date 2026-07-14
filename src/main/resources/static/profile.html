@@ -28,11 +28,8 @@
             </div>
             <div class="field"><label>Display name</label><input type="text" name="displayName" required maxlength="80"><div class="hint">Public handle on your reviews. Your real name stays private.</div></div>
             <div class="field"><label>Username</label><input type="text" id="usernameField" disabled><div class="hint">Usernames can't be changed.</div></div>
-            <div class="field-row">
-              <div class="field"><label>Email</label><input type="email" name="email" required></div>
-              <div class="field"><label>Phone</label><input type="tel" name="phoneNumber" required></div>
-            </div>
-            <div class="hint" style="margin-bottom:14px">Changing your email or phone will require re-verifying it.</div>
+            <div class="field"><label>Email</label><input type="email" name="email" required></div>
+            <div class="hint" style="margin-bottom:14px">Changing your email will require re-verifying it.</div>
             <hr style="border:none;border-top:1px solid var(--border);margin:18px 0">
             <p class="muted" style="font-size:.9rem">Change password (optional)</p>
             <div class="field"><label>Current password</label><input type="password" name="currentPassword" autocomplete="current-password"></div>
@@ -67,7 +64,6 @@
         <div class="card" style="margin-top:20px">
           <h3 style="margin-top:0">Verification</h3>
           <p>Email: <span id="emailBadge" class="badge">—</span></p>
-          <p>Phone: <span id="phoneBadge" class="badge">—</span></p>
           <p>Account: <span id="roleBadge" class="badge approved">—</span></p>
           <a class="btn secondary small" href="/verify.html">Manage verification</a>
         </div>
@@ -91,10 +87,8 @@
     form.lastName.value = user.lastName || '';
     form.displayName.value = user.displayName;
     form.email.value = user.email;
-    form.phoneNumber.value = user.phoneNumber;
     document.getElementById('usernameField').value = user.username;
     badge('emailBadge', user.emailVerified);
-    badge('phoneBadge', user.phoneVerified);
     document.getElementById('roleBadge').textContent = user.role;
     renderAvatar(user);
     loadProofs();
@@ -190,7 +184,6 @@
       lastName: form.lastName.value.trim(),
       displayName: form.displayName.value.trim(),
       email: form.email.value.trim(),
-      phoneNumber: form.phoneNumber.value.trim(),
       currentPassword: form.currentPassword.value || null,
       newPassword: form.newPassword.value || null
     };

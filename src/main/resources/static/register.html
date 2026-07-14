@@ -18,7 +18,7 @@
   <div class="container">
     <div class="card form-card">
       <h2 style="margin-top:0">Create your account</h2>
-      <p class="subtitle">You'll verify your email and phone next. Both are required before posting.</p>
+      <p class="subtitle">You'll verify your email next. It's required before posting.</p>
       <div id="alert" class="alert"></div>
       <form id="registerForm">
         <div class="field-row">
@@ -44,10 +44,6 @@
         <div class="field">
           <label for="email">Email</label>
           <input type="email" id="email" name="email" required>
-        </div>
-        <div class="field">
-          <label for="phoneNumber">Phone number</label>
-          <input type="tel" id="phoneNumber" name="phoneNumber" required placeholder="+1 555 123 4567">
         </div>
         <div class="field">
           <label for="password">Password</label>
@@ -77,7 +73,6 @@
       displayName: document.getElementById('displayName').value.trim(),
       username: document.getElementById('username').value.trim(),
       email: document.getElementById('email').value.trim(),
-      phoneNumber: document.getElementById('phoneNumber').value.trim(),
       password: document.getElementById('password').value
     };
     try {

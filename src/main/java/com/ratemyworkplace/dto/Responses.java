@@ -12,8 +12,8 @@ public final class Responses {
 
     public record UserDto(
             Long id, String firstName, String lastName, String fullName,
-            String displayName, String username, String email, String phoneNumber,
-            String role, Set<String> moderatorPermissions, boolean emailVerified, boolean phoneVerified,
+            String displayName, String username, String email,
+            String role, Set<String> moderatorPermissions, boolean emailVerified,
             boolean fullyVerified, boolean enabled, String flaggedReason, String avatarUrl,
             Instant createdAt, Instant lastLoginAt) {
     }

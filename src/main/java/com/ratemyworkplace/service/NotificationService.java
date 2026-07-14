@@ -45,12 +45,6 @@ public class NotificationService {
     }
 
     @Async
-    public void sendPhoneCode(String phoneNumber, String code) {
-        // No SMS gateway configured by default; log so codes are usable in dev.
-        log.info("[SMS->{}] Your RateMyWorkplace verification code is {} (expires in 30 minutes).", phoneNumber, code);
-    }
-
-    @Async
     public void notifyPasswordReset(String email, String displayName, String code) {
         String body = "We received a request to reset the password for your RateMyWorkplace account.\n\n"
                 + "Please enter the following code to choose a new password:\n\n"

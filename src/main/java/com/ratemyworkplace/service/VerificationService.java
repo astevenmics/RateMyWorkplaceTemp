@@ -12,12 +12,13 @@ import java.security.SecureRandom;
 import java.time.Instant;
 import java.time.temporal.ChronoUnit;
 
-/** Issues and validates email/phone verification codes. */
+/** Issues and validates email verification codes. */
 @Service
 public class VerificationService {
 
     private static final SecureRandom RANDOM = new SecureRandom();
     private static final long EXPIRY_MINUTES = 30;
+    private static final VerificationToken.Channel CHANNEL = VerificationToken.Channel.EMAIL;
 
     private final VerificationTokenRepository tokenRepository;
     private final UserRepository userRepository;
@@ -31,40 +32,34 @@ public class VerificationService {
         this.notificationService = notificationService;
     }
 
-    /** Minimum interval between resend requests for the same channel. */
+    /** Minimum interval between resend requests. */
     private static final long RESEND_COOLDOWN_MINUTES = 5;
 
     @Transactional
-    public void issue(User user, VerificationToken.Channel channel) {
+    public void issue(User user) {
         String code = String.format("%06d", RANDOM.nextInt(1_000_000));
         VerificationToken token = new VerificationToken();
         token.setUser(user);
-        token.setChannel(channel);
+        token.setChannel(CHANNEL);
         token.setCode(code);
         token.setExpiresAt(Instant.now().plus(EXPIRY_MINUTES, ChronoUnit.MINUTES));
         tokenRepository.save(token);
 
-        if (channel == VerificationToken.Channel.EMAIL) {
-            notificationService.sendEmailCode(user.getEmail(), code);
-        } else {
-            notificationService.sendPhoneCode(user.getPhoneNumber(), code);
-        }
+        notificationService.sendEmailCode(user.getEmail(), code);
     }
 
     /**
-     * Re-issues a verification code, but only if the channel isn't already verified and the
+     * Re-issues a verification code, but only if the account isn't already verified and the
      * last code was sent more than {@value #RESEND_COOLDOWN_MINUTES} minutes ago.
      */
     @Transactional
-    public void resend(User user, VerificationToken.Channel channel) {
-        boolean alreadyVerified = channel == VerificationToken.Channel.EMAIL
-                ? user.isEmailVerified() : user.isPhoneVerified();
-        if (alreadyVerified) {
+    public void resend(User user) {
+        if (user.isEmailVerified()) {
             throw ApiException.badRequest("That contact is already verified.");
         }
         // A token has a 30-minute lifetime; if the latest one still has > 25 minutes left,
         // it was issued within the last 5 minutes, so enforce the cooldown.
-        tokenRepository.findFirstByUserIdAndChannelAndConsumedFalseOrderByIdDesc(user.getId(), channel)
+        tokenRepository.findFirstByUserIdAndChannelAndConsumedFalseOrderByIdDesc(user.getId(), CHANNEL)
                 .ifPresent(latest -> {
                     Instant issuedFloor = Instant.now()
                             .plus(EXPIRY_MINUTES - RESEND_COOLDOWN_MINUTES, ChronoUnit.MINUTES);
@@ -75,13 +70,13 @@ public class VerificationService {
                                         + " more minute(s) before requesting another code.");
                     }
                 });
-        issue(user, channel);
+        issue(user);
     }
 
     @Transactional
-    public void verify(User user, VerificationToken.Channel channel, String code) {
+    public void verify(User user, String code) {
         VerificationToken token = tokenRepository
-                .findFirstByUserIdAndChannelAndConsumedFalseOrderByIdDesc(user.getId(), channel)
+                .findFirstByUserIdAndChannelAndConsumedFalseOrderByIdDesc(user.getId(), CHANNEL)
                 .orElseThrow(() -> ApiException.badRequest("No active code. Request a new one."));
 
         if (token.isExpired()) {
@@ -92,11 +87,7 @@ public class VerificationService {
         }
 
         token.setConsumed(true);
-        if (channel == VerificationToken.Channel.EMAIL) {
-            user.setEmailVerified(true);
-        } else {
-            user.setPhoneVerified(true);
-        }
+        user.setEmailVerified(true);
         userRepository.save(user);
     }
 }

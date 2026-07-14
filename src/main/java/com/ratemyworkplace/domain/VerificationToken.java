@@ -3,12 +3,12 @@ package com.ratemyworkplace.domain;
 import jakarta.persistence.*;
 import java.time.Instant;
 
-/** A short-lived code used to verify a user's email or phone number. */
+/** A short-lived code used to verify a user's email (or reset their password). */
 @Entity
 @Table(name = "verification_tokens", indexes = @Index(name = "idx_token_user", columnList = "user_id"))
 public class VerificationToken {
 
-    public enum Channel { EMAIL, PHONE, PASSWORD_RESET }
+    public enum Channel { EMAIL, PASSWORD_RESET }
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
@@ -19,7 +19,7 @@ public class VerificationToken {
     private User user;
 
     @Enumerated(EnumType.STRING)
-    @Column(nullable = false, length = 10)
+    @Column(nullable = false, length = 20)
     private Channel channel;
 
     @Column(nullable = false, length = 12)

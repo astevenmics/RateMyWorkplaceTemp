@@ -340,7 +340,7 @@ const RMW = (() => {
               </div>
             </div>
             <div class="footer-bottom">
-              © ${new Date().getFullYear()} RateMyWorkplace. Built as a complete Spring Boot demo. Ads shown across the site are illustrative AdSense slots.
+              © ${new Date().getFullYear()} RateMyWorkplace.
             </div>
           </div>`;
 

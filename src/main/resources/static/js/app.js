@@ -186,23 +186,24 @@ const RMW = (() => {
         }
     }
 
-    // ---- theme (light / dark) ----
+    // ---- theme (light / dark, defaults to dark) ----
     function currentTheme() {
         return document.documentElement.getAttribute('data-theme')
-            || localStorage.getItem('rmw-theme') || 'light';
+            || localStorage.getItem('rmw-theme') || 'dark';
     }
     function applyTheme(theme) {
         document.documentElement.setAttribute('data-theme', theme);
         try { localStorage.setItem('rmw-theme', theme); } catch (e) { /* ignore */ }
+        const icon = document.getElementById('themeIcon');
+        const label = document.getElementById('themeLabel');
         const btn = document.getElementById('themeToggle');
-        if (btn) {
-            btn.textContent = theme === 'dark' ? '☀️' : '🌙';
-            btn.title = theme === 'dark' ? 'Switch to light mode' : 'Switch to dark mode';
-        }
+        if (icon) icon.textContent = theme === 'dark' ? '☀️' : '🌙';
+        if (label) label.textContent = theme === 'dark' ? 'Light mode' : 'Dark mode';
+        if (btn) btn.title = theme === 'dark' ? 'Switch to light mode' : 'Switch to dark mode';
     }
     function toggleTheme() { applyTheme(currentTheme() === 'dark' ? 'light' : 'dark'); }
     // Apply the stored preference as early as possible (a head snippet also does this to avoid flash).
-    applyTheme(localStorage.getItem('rmw-theme') || 'light');
+    applyTheme(localStorage.getItem('rmw-theme') || 'dark');
 
     // ---- minimal, safe markdown renderer (admin-authored update bodies) ----
     function markdown(src) {
@@ -259,7 +260,10 @@ const RMW = (() => {
               <a href="/updates.html">Updates</a>
               <a href="/submit-workplace.html">Add Workplace</a>
               <span id="authArea"></span>
-              <button class="theme-toggle" id="themeToggle" type="button" aria-label="Toggle dark mode">🌙</button>
+              <button class="theme-toggle" id="themeToggle" type="button" aria-label="Toggle dark mode">
+                <span class="tt-icon" id="themeIcon" aria-hidden="true">🌙</span>
+                <span class="tt-label" id="themeLabel">Dark mode</span>
+              </button>
             </nav>
           </div>`;
         document.getElementById('navToggle').addEventListener('click', () => {
@@ -340,6 +344,9 @@ const RMW = (() => {
               </div>
             </div>
             <div class="footer-bottom">
+              <div class="footer-legal">
+                <a href="/privacy-policy.html">Privacy Policy</a><span class="sep" aria-hidden="true">·</span><a href="/terms.html">Terms of Service</a>
+              </div>
               © ${new Date().getFullYear()} RateMyWorkplace.
             </div>
           </div>`;

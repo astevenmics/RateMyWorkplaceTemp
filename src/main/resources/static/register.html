@@ -4,7 +4,7 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Sign up — RateMyWorkplace</title>
-  <script>(function(){var t=localStorage.getItem("rmw-theme");if(t)document.documentElement.setAttribute("data-theme",t);})();</script>
+  <script>(function(){var t=localStorage.getItem("rmw-theme")||'dark';document.documentElement.setAttribute("data-theme",t);})();</script>
   <link rel="stylesheet" href="/css/styles.css">
   <link rel="apple-touch-icon" sizes="180x180" href="/favicon/apple-touch-icon.png">
   <link rel="icon" type="image/png" sizes="32x32" href="/favicon/favicon-32x32.png">
@@ -50,6 +50,13 @@
           <input type="password" id="password" name="password" required minlength="8" pattern="(?=.*[A-Za-z])(?=.*\d).*" autocomplete="new-password">
           <div class="hint">At least 8 characters, including a letter and a number.</div>
         </div>
+        <div class="field">
+          <label class="field-check" for="agreeTerms">
+            <input type="checkbox" id="agreeTerms" name="agreeTerms" required>
+            <span>I agree to the <a href="/terms.html" target="_blank" rel="noopener">Terms of Service</a>
+              and <a href="/privacy-policy.html" target="_blank" rel="noopener">Privacy Policy</a>.</span>
+          </label>
+        </div>
         <button class="btn" type="submit" style="width:100%">Create account</button>
       </form>
       <p class="center muted" style="margin-top:16px">Already have an account? <a href="/login.html">Log in</a></p>
@@ -66,6 +73,10 @@
     const alertEl = document.getElementById('alert');
     const submitBtn = e.target.querySelector('button[type="submit"]');
     RMW.clearToast(alertEl);
+    if (!document.getElementById('agreeTerms').checked) {
+      RMW.toast(alertEl, 'error', 'Please agree to the Terms of Service and Privacy Policy to continue.');
+      return;
+    }
     RMW.setLoading(submitBtn, true, 'Creating account…');
     const payload = {
       firstName: document.getElementById('firstName').value.trim(),

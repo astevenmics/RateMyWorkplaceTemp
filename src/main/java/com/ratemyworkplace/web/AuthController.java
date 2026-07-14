@@ -1,7 +1,6 @@
 package com.ratemyworkplace.web;
 
 import com.ratemyworkplace.domain.User;
-import com.ratemyworkplace.domain.VerificationToken;
 import com.ratemyworkplace.dto.DtoMapper;
 import com.ratemyworkplace.dto.Requests;
 import com.ratemyworkplace.dto.Responses;
@@ -60,16 +59,14 @@ public class AuthController {
     @PostMapping("/verify")
     public Responses.UserDto verify(@Valid @RequestBody Requests.VerifyRequest request) {
         User user = currentUserService.require();
-        VerificationToken.Channel channel = VerificationToken.Channel.valueOf(request.channel());
-        verificationService.verify(user, channel, request.code());
+        verificationService.verify(user, request.code());
         return DtoMapper.user(currentUserService.require());
     }
 
     @PostMapping("/verify/resend")
-    public Responses.SimpleMessage resend(@Valid @RequestBody Requests.ResendVerificationRequest request) {
+    public Responses.SimpleMessage resend() {
         User user = currentUserService.require();
-        VerificationToken.Channel channel = VerificationToken.Channel.valueOf(request.channel());
-        verificationService.resend(user, channel);
+        verificationService.resend(user);
         return Responses.SimpleMessage.ok("A new code has been sent");
     }
 

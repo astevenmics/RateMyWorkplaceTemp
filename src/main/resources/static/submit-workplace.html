@@ -59,7 +59,7 @@
     const user = await RMW.currentUser();
     if (!user) { window.location.href = '/login.html?next=/submit-workplace.html'; return false; }
     if (!user.fullyVerified) {
-      RMW.toast(alertEl, 'warn', 'Verify your email and phone before adding a workplace.');
+      RMW.toast(alertEl, 'warn', 'Verify your email before adding a workplace.');
     }
     return true;
   }

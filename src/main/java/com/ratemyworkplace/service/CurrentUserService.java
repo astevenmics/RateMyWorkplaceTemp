@@ -37,7 +37,7 @@ public class CurrentUserService {
     public User requireVerified() {
         User user = require();
         if (!user.isFullyVerified()) {
-            throw ApiException.forbidden("Verify your email and phone number before continuing");
+            throw ApiException.forbidden("Verify your email before continuing");
         }
         return user;
     }

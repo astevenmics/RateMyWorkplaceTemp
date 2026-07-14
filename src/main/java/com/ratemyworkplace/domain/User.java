@@ -7,7 +7,7 @@ import java.util.Set;
 
 /**
  * A registered account.
- * Email and phone must both be verified before a user may submit workplaces or feedback
+ * Email must be verified before a user may submit workplaces or feedback
  * Verification enforced in the service layer.
  */
 @Entity
@@ -35,9 +35,6 @@ public class User {
 
     @Column(nullable = false, unique = true, length = 160)
     private String email;
-
-    @Column(nullable = false, length = 30)
-    private String phoneNumber;
 
     @Column(nullable = false, length = 100)
     private String passwordHash;
@@ -67,13 +64,6 @@ public class User {
     @Column(nullable = false)
     private boolean emailVerified = false;
 
-    /**
-     * Default set to false.
-     * Changed to true once user verifies their phone number
-    */
-    @Column(nullable = false)
-    private boolean phoneVerified = false;
-
     /** Full legal name (first + last), used by reviewers to match against employment proofs. */
     public String getFullName() {
         String f = firstName == null ? "" : firstName.trim();
@@ -94,7 +84,7 @@ public class User {
     private Instant lastLoginAt;
 
     public boolean isFullyVerified() {
-        return emailVerified && phoneVerified;
+        return emailVerified;
     }
 
     // Getters & Setters
@@ -110,8 +100,6 @@ public class User {
     public void setUsername(String username) { this.username = username; }
     public String getEmail() { return email; }
     public void setEmail(String email) { this.email = email; }
-    public String getPhoneNumber() { return phoneNumber; }
-    public void setPhoneNumber(String phoneNumber) { this.phoneNumber = phoneNumber; }
     public String getPasswordHash() { return passwordHash; }
     public void setPasswordHash(String passwordHash) { this.passwordHash = passwordHash; }
     public String getAvatarFileName() { return avatarFileName; }
@@ -124,8 +112,6 @@ public class User {
     public void setModeratorPermissions(Set<ModeratorPermission> p) { this.moderatorPermissions = p; }
     public boolean isEmailVerified() { return emailVerified; }
     public void setEmailVerified(boolean emailVerified) { this.emailVerified = emailVerified; }
-    public boolean isPhoneVerified() { return phoneVerified; }
-    public void setPhoneVerified(boolean phoneVerified) { this.phoneVerified = phoneVerified; }
     public boolean isEnabled() { return enabled; }
     public void setEnabled(boolean enabled) { this.enabled = enabled; }
     public String getFlaggedReason() { return flaggedReason; }

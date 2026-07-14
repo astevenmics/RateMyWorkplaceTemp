@@ -21,7 +21,7 @@ public interface UserRepository extends JpaRepository<User, Long> {
 
     Page<User> findByUsernameContainingIgnoreCaseOrDisplayNameContainingIgnoreCase(String username, String displayName, Pageable pageable);
 
-    long countByEmailVerifiedTrueAndPhoneVerifiedTrue();
+    long countByEmailVerifiedTrue();
 
     long countByRole(Role role);
 

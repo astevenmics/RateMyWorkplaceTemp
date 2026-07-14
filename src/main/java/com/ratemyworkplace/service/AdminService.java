@@ -148,9 +148,8 @@ public class AdminService {
                 + "\nDisplay name: " + displayName
                 + "\nUsername: @" + user.getUsername()
                 + "\nEmail: " + email
-                + "\nPhone: " + user.getPhoneNumber()
                 + "\nRole: " + user.getRole()
-                + "\nVerified: email=" + user.isEmailVerified() + ", phone=" + user.isPhoneVerified()
+                + "\nVerified: email=" + user.isEmailVerified()
                 + (user.getFlaggedReason() != null ? "\nFlagged: " + user.getFlaggedReason() : "")
                 + "\nJoined: " + user.getCreatedAt();
         // Clear or remove everything that references the user before deleting it.
@@ -173,7 +172,7 @@ public class AdminService {
         Instant thirtyDaysAgo = Instant.now().minus(30, ChronoUnit.DAYS);
 
         long totalUsers = userRepository.count();
-        long verifiedUsers = userRepository.countByEmailVerifiedTrueAndPhoneVerifiedTrue();
+        long verifiedUsers = userRepository.countByEmailVerifiedTrue();
         long admins = userRepository.countByRole(Role.ADMIN);
         long moderators = userRepository.countByRole(Role.MODERATOR);
         long newUsers = userRepository.countByCreatedAtAfter(thirtyDaysAgo);
@@ -210,6 +209,6 @@ public class AdminService {
         return new Responses.PublicStatsDto(
                 companyRepository.countByStatus(ApprovalStatus.APPROVED),
                 feedbackRepository.count(),
-                userRepository.countByEmailVerifiedTrueAndPhoneVerifiedTrue());
+                userRepository.countByEmailVerifiedTrue());
     }
 }

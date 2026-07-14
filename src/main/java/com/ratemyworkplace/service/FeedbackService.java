@@ -49,7 +49,7 @@ public class FeedbackService {
     @Transactional
     public Feedback submit(User author, Requests.FeedbackRequest req) {
         if (!author.isFullyVerified()) {
-            throw ApiException.forbidden("Verify your email and phone number before posting feedback");
+            throw ApiException.forbidden("Verify your email before posting feedback");
         }
         Location location = locationRepository.findById(req.locationId())
                 .orElseThrow(() -> ApiException.notFound("Location not found"));

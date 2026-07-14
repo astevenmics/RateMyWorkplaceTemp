@@ -3,7 +3,6 @@ package com.ratemyworkplace.service;
 import com.ratemyworkplace.domain.ModeratorPermission;
 import com.ratemyworkplace.domain.Role;
 import com.ratemyworkplace.domain.User;
-import com.ratemyworkplace.domain.VerificationToken;
 import com.ratemyworkplace.dto.Requests;
 import com.ratemyworkplace.repository.UserRepository;
 import com.ratemyworkplace.security.SessionInvalidationService;
@@ -53,13 +52,11 @@ public class UserService {
         user.setDisplayName(req.displayName().trim());
         user.setUsername(req.username().trim());
         user.setEmail(req.email().trim().toLowerCase());
-        user.setPhoneNumber(req.phoneNumber().trim());
         user.setPasswordHash(passwordEncoder.encode(req.password()));
         user.setRole(Role.USER);
         user = userRepository.save(user);
 
-        verificationService.issue(user, VerificationToken.Channel.EMAIL);
-        verificationService.issue(user, VerificationToken.Channel.PHONE);
+        verificationService.issue(user);
         analyticsService.recordSignup();
         return user;
     }
@@ -73,12 +70,7 @@ public class UserService {
             }
             user.setEmail(newEmail);
             user.setEmailVerified(false);
-            verificationService.issue(user, VerificationToken.Channel.EMAIL);
-        }
-        if (!req.phoneNumber().trim().equals(user.getPhoneNumber())) {
-            user.setPhoneNumber(req.phoneNumber().trim());
-            user.setPhoneVerified(false);
-            verificationService.issue(user, VerificationToken.Channel.PHONE);
+            verificationService.issue(user);
         }
         user.setFirstName(req.firstName().trim());
         user.setLastName(req.lastName().trim());

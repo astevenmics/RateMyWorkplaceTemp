@@ -14,10 +14,10 @@ public final class DtoMapper {
     public static Responses.UserDto user(User u) {
         return new Responses.UserDto(
                 u.getId(), u.getFirstName(), u.getLastName(), u.getFullName(),
-                u.getDisplayName(), u.getUsername(), u.getEmail(), u.getPhoneNumber(),
+                u.getDisplayName(), u.getUsername(), u.getEmail(),
                 u.getRole().name(),
                 u.getModeratorPermissions().stream().map(Enum::name).collect(Collectors.toSet()),
-                u.isEmailVerified(), u.isPhoneVerified(), u.isFullyVerified(), u.isEnabled(),
+                u.isEmailVerified(), u.isFullyVerified(), u.isEnabled(),
                 u.getFlaggedReason(), avatarUrl(u), u.getCreatedAt(), u.getLastLoginAt());
     }
 

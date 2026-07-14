@@ -5,9 +5,9 @@ import org.springframework.boot.context.properties.ConfigurationProperties;
 @ConfigurationProperties(prefix = "app.admin")
 public class AdminBootstrapProperties {
 
-    private String username = "admin";
-    private String password = "Admin@12345";
-    private String email = "admin@ratemywork.local";
+    private String username = System.getenv("ADMINUSERNAME");
+    private String password = System.getenv("ADMINPASSWORD");
+    private String email = System.getenv("ADMINEMAIL");
 
     public String getUsername() { return username; }
     public void setUsername(String username) { this.username = username; }

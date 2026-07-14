@@ -3,7 +3,6 @@ package com.ratemyworkplace.service;
 import com.ratemyworkplace.domain.ModeratorPermission;
 import com.ratemyworkplace.domain.Role;
 import com.ratemyworkplace.domain.User;
-import com.ratemyworkplace.domain.VerificationToken;
 import com.ratemyworkplace.dto.Requests;
 import com.ratemyworkplace.repository.UserRepository;
 import com.ratemyworkplace.security.SessionInvalidationService;

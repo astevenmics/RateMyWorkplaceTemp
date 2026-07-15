@@ -37,6 +37,10 @@ public final class Requests {
     public record ForgotPasswordRequest(@NotBlank @Email String email) {
     }
 
+    /** Reverses a self-service disable/pending-deletion without needing to already be logged in. */
+    public record ReactivateRequest(@NotBlank String usernameOrEmail, @NotBlank String password) {
+    }
+
     public record ResetPasswordRequest(
             @NotBlank @Email String email,
             @NotBlank String code,

@@ -100,6 +100,9 @@ public class NotificationService {
                 This confirms that you've disabled your MyWorkTea account. You won't be able to sign \
                 in while it's disabled, but your existing feedback and posts remain visible to others.
 
+                Changed your mind? You can reactivate it any time from the Reactivate Account page — \
+                just enter your username or email and your password.
+
                 If this wasn't you, please contact our support team right away.""";
         send(to, "Your MyWorkTea account has been disabled", greeting(displayName) + body + SIGNOFF);
     }
@@ -113,8 +116,22 @@ public class NotificationService {
                 employment proofs — will be permanently deleted. Workplaces you submitted will stay \
                 listed, no longer credited to your account.
 
+                Changed your mind? You can cancel this and reactivate your account any time before \
+                then from the Reactivate Account page — just enter your username or email and your \
+                password.
+
                 If this wasn't you, please contact our support team right away.""".formatted(purgeDate);
         send(to, "Your MyWorkTea account is scheduled for deletion", greeting(displayName) + body + SIGNOFF);
+    }
+
+    @Async
+    public void notifySelfReactivated(String to, String displayName) {
+        String body = """
+                This confirms that your MyWorkTea account has been reactivated and you can sign in \
+                again. If a deletion was scheduled, it has been cancelled.
+
+                If this wasn't you, please contact our support team right away.""";
+        send(to, "Your MyWorkTea account has been reactivated", greeting(displayName) + body + SIGNOFF);
     }
 
     // ----- feedback -----

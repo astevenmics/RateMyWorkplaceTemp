@@ -92,6 +92,14 @@ public class User {
 
     public static final int DELETION_GRACE_DAYS = 30;
 
+    /**
+     * True when the account is disabled (or pending deletion) because the user did it to
+     * themselves, rather than an admin disabling it for cause. Only a self-service disable can
+     * be reversed by the user themselves (via the reactivate flow) without admin involvement.
+     */
+    @Column(nullable = false)
+    private boolean selfServiceDisabled = false;
+
     public boolean isFullyVerified() {
         return emailVerified;
     }
@@ -131,4 +139,6 @@ public class User {
     public void setLastLoginAt(Instant lastLoginAt) { this.lastLoginAt = lastLoginAt; }
     public Instant getDeletionRequestedAt() { return deletionRequestedAt; }
     public void setDeletionRequestedAt(Instant deletionRequestedAt) { this.deletionRequestedAt = deletionRequestedAt; }
+    public boolean isSelfServiceDisabled() { return selfServiceDisabled; }
+    public void setSelfServiceDisabled(boolean selfServiceDisabled) { this.selfServiceDisabled = selfServiceDisabled; }
 }

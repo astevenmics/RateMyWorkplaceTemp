@@ -271,23 +271,6 @@ img { max-width: 100%; }
     border-radius: 999px;
 }
 .tag.muted { background: var(--surface-2); color: var(--muted); }
-/* Selectable department tags (submit-workplace.html / company.html) — a label wrapping a
-   checkbox. Plain inline layout let the native checkbox's baseline drift from the label
-   text's, which read as "crooked" — flex + centered items fixes that, and keeps the
-   checkbox pinned to the left, ahead of the text, regardless of its native rendering. */
-label.tag:has(input:checked) { background: var(--primary-soft); color: var(--primary-dark); }
-.tag-check {
-    display: inline-flex;
-    align-items: center;
-    gap: 6px;
-    cursor: pointer;
-    user-select: none;
-}
-.tag-check input[type="checkbox"] {
-    margin: 0;
-    accent-color: var(--primary);
-    flex: none;
-}
 
 /* ---------------- Stars ---------------- */
 .stars { color: var(--star); letter-spacing: 1px; font-size: 1rem; }

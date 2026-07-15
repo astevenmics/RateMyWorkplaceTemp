@@ -115,6 +115,13 @@ public class AdminService {
         }
         boolean wasEnabled = user.isEnabled();
         user.setEnabled(enabled);
+        // An admin's decision is authoritative either way: re-enabling clears any pending
+        // self-deletion so the scheduled sweep doesn't undo it, and either direction resets the
+        // self-service flag so a punitive admin disable can't be undone via self-reactivation.
+        user.setSelfServiceDisabled(false);
+        if (enabled) {
+            user.setDeletionRequestedAt(null);
+        }
         User saved = userRepository.save(user);
         if (wasEnabled != enabled) {
             if (enabled) {

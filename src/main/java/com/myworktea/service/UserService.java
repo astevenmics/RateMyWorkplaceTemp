@@ -153,6 +153,7 @@ public class UserService {
     public void disableAccount(User user, String password) {
         verifyPasswordForAccountAction(user, password);
         user.setEnabled(false);
+        user.setSelfServiceDisabled(true);
         userRepository.save(user);
         sessionInvalidationService.invalidateSessionsFor(user.getUsername());
         notificationService.notifySelfDisabled(user.getEmail(), user.getDisplayName());
@@ -167,11 +168,41 @@ public class UserService {
     public void requestAccountDeletion(User user, String password) {
         verifyPasswordForAccountAction(user, password);
         user.setEnabled(false);
+        user.setSelfServiceDisabled(true);
         user.setDeletionRequestedAt(Instant.now());
         User saved = userRepository.save(user);
         sessionInvalidationService.invalidateSessionsFor(saved.getUsername());
         Instant purgeAt = saved.getDeletionRequestedAt().plus(User.DELETION_GRACE_DAYS, ChronoUnit.DAYS);
         notificationService.notifyDeletionScheduled(saved.getEmail(), saved.getDisplayName(), purgeAt);
+    }
+
+    /**
+     * Lets a user reverse their own disable/delete-request without any admin involvement,
+     * by re-proving ownership of the account with its password (since they can't log in to
+     * do this the normal way while disabled). Cancels any pending deletion in the process.
+     * Accounts an admin disabled for cause are deliberately excluded — those still require
+     * an admin to re-enable.
+     */
+    @Transactional
+    public void reactivateAccount(String usernameOrEmail, String password) {
+        User user = userRepository.findByUsernameIgnoreCase(usernameOrEmail)
+                .or(() -> userRepository.findByEmailIgnoreCase(usernameOrEmail))
+                .orElseThrow(() -> ApiException.badRequest("Incorrect username/email or password"));
+        if (password == null || !passwordEncoder.matches(password, user.getPasswordHash())) {
+            throw ApiException.badRequest("Incorrect username/email or password");
+        }
+        if (user.isEnabled()) {
+            throw ApiException.badRequest("This account is already active — just log in.");
+        }
+        if (!user.isSelfServiceDisabled()) {
+            throw ApiException.badRequest(
+                    "This account was disabled by an admin and can't be reactivated here. Please contact support.");
+        }
+        user.setEnabled(true);
+        user.setSelfServiceDisabled(false);
+        user.setDeletionRequestedAt(null);
+        userRepository.save(user);
+        notificationService.notifySelfReactivated(user.getEmail(), user.getDisplayName());
     }
 
     private void verifyPasswordForAccountAction(User user, String password) {

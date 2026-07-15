@@ -3,9 +3,9 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>RateMyWorkplace — Honest, verified workplace feedback</title>
-  <meta name="description" content="Search workplaces and read verified employee feedback about work conditions, culture and more.">
-  <script>(function(){var t=localStorage.getItem("rmw-theme")||'dark';document.documentElement.setAttribute("data-theme",t);})();</script>
+  <title>MyWorkTea — Vent about work. Rate it if you want.</title>
+  <meta name="description" content="A place to vent about work, spill the tea, and rate specific workplaces if you want to back it up — from people who actually worked there.">
+  <script>(function(){var t=localStorage.getItem("rmw-theme")||(window.matchMedia&&window.matchMedia("(prefers-color-scheme: dark)").matches?"dark":"light");document.documentElement.setAttribute("data-theme",t);})();</script>
   <link rel="stylesheet" href="/css/styles.css">
   <link rel="apple-touch-icon" sizes="180x180" href="/favicon/apple-touch-icon.png">
   <link rel="icon" type="image/png" sizes="32x32" href="/favicon/favicon-32x32.png">
@@ -20,9 +20,9 @@
 
 <section class="hero">
   <div class="container">
-    <h1>Know before you work there.</h1>
-    <p class="lead">Search companies, locations and keywords to read honest feedback about
-      workplaces and working conditions — written by people who actually worked there.</p>
+    <h1>Vent about work. Rate it if you want.</h1>
+    <p class="lead">MyWorkTea is where people spill the tea on what it's really like to work somewhere —
+      get it off your chest, and rate specific workplaces if you want to back your story up with a score.</p>
 
     <form class="search-bar" id="searchForm">
       <input type="text" id="searchInput" placeholder="Search by company, city, ZIP code or keyword…" aria-label="Search">
@@ -50,7 +50,7 @@
 <section class="section">
   <div class="container">
     <h2>Top rated workplaces</h2>
-    <p class="subtitle">Highest-rated companies based on verified employee feedback.</p>
+    <p class="subtitle">The highest-rated companies based on verified employee feedback.</p>
     <div class="grid" id="topRated"><div class="spinner">Loading…</div></div>
   </div>
 </section>
@@ -59,9 +59,9 @@
   <div class="container">
     <h2>How it works</h2>
     <div class="grid" style="margin-top:18px">
-      <div class="card"><h3>1 · Find a workplace</h3><p class="muted">Search any company or location. Anyone can read feedback — no account needed.</p></div>
-      <div class="card"><h3>2 · Verify your employment</h3><p class="muted">Upload an offer letter or employment confirmation to unlock feedback for that company.</p></div>
-      <div class="card"><h3>3 · Share your experience</h3><p class="muted">Rate 1–5 stars and explain what it was really like to work there.</p></div>
+      <div class="card"><h3>1 · Get it off your chest</h3><p class="muted">Search any company or location and read what people are saying — no account needed.</p></div>
+      <div class="card"><h3>2 · Verify your employment</h3><p class="muted">Upload an offer letter or employment confirmation to unlock posting for that company.</p></div>
+      <div class="card"><h3>3 · Rate it if you want</h3><p class="muted">Vent freely, and add a 1–5 star rating if you want to back your story up with a score.</p></div>
     </div>
   </div>
 </section>

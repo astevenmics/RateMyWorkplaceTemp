@@ -1,0 +1,56 @@
+package com.myworktea.web;
+
+import com.myworktea.domain.EmploymentProof;
+import com.myworktea.domain.User;
+import com.myworktea.dto.DtoMapper;
+import com.myworktea.dto.Responses;
+import com.myworktea.service.CurrentUserService;
+import com.myworktea.service.ProofService;
+import org.springframework.http.HttpStatus;
+import org.springframework.http.ResponseEntity;
+import org.springframework.web.bind.annotation.*;
+import org.springframework.web.multipart.MultipartFile;
+
+import java.util.List;
+
+@RestController
+@RequestMapping("/api/proofs")
+public class ProofController {
+
+    private final ProofService proofService;
+    private final CurrentUserService currentUserService;
+
+    public ProofController(ProofService proofService, CurrentUserService currentUserService) {
+        this.proofService = proofService;
+        this.currentUserService = currentUserService;
+    }
+
+    /**
+     * Submit an employment proof (PDF/PNG/JPG) for a specific company &amp; (optional) location.
+     * Multipart so the document can be attached directly from the browser form.
+     */
+    @PostMapping(consumes = {"multipart/form-data"})
+    public ResponseEntity<Responses.ProofDto> submit(
+            @RequestParam Long companyId,
+            @RequestParam(required = false) Long locationId,
+            @RequestParam(required = false) String note,
+            @RequestParam("file") MultipartFile file) {
+        User user = currentUserService.requireVerified();
+        EmploymentProof proof = proofService.submit(user, companyId, locationId, note, file);
+        return ResponseEntity.status(HttpStatus.CREATED).body(DtoMapper.proof(proof));
+    }
+
+    @GetMapping("/mine")
+    public List<Responses.ProofDto> mine() {
+        User user = currentUserService.require();
+        return proofService.myProofs(user).stream().map(DtoMapper::proof).toList();
+    }
+
+    /** Cancel one of the current user's still-pending proof submissions. */
+    @DeleteMapping("/{id}")
+    public Responses.SimpleMessage cancel(@PathVariable Long id) {
+        User user = currentUserService.require();
+        proofService.cancel(user, id);
+        return Responses.SimpleMessage.ok("Submission cancelled");
+    }
+}

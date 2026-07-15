@@ -8,10 +8,10 @@
         <version>4.1.0</version>
         <relativePath/>
     </parent>
-    <groupId>com.ratemyworkplace</groupId>
-    <artifactId>ratemyworkplace</artifactId>
+    <groupId>com.myworktea</groupId>
+    <artifactId>myworktea</artifactId>
     <version>1.0.0</version>
-    <name>RateMyWorkplace</name>
+    <name>MyWorkTea</name>
     <description>Provide feedback to the workplace, work condition, everything!</description>
     <properties>
         <java.version>21</java.version>
@@ -108,7 +108,7 @@
     </dependencies>
 
     <build>
-        <finalName>ratemyworkplace</finalName>
+        <finalName>myworktea</finalName>
         <plugins>
             <plugin>
                 <groupId>org.springframework.boot</groupId>

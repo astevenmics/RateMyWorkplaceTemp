@@ -1,5 +1,5 @@
 /* ============================================================
-   RateMyWorkplace — shared frontend helpers
+   MyWorkTea — shared frontend helpers
    ============================================================ */
 const RMW = (() => {
 
@@ -187,13 +187,24 @@ const RMW = (() => {
     }
 
     // ---- theme (light / dark) ----
-    function currentTheme() {
-        return document.documentElement.getAttribute('data-theme')
-            || localStorage.getItem('rmw-theme') || 'dark';
+    // Explicit user choice (localStorage) always wins. Absent that, we follow the OS/
+    // browser color-scheme preference, and keep following it live if the user hasn't
+    // overridden it — only toggleTheme() ever writes to storage.
+    const darkMediaQuery = window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)');
+    function storedTheme() {
+        try { return localStorage.getItem('rmw-theme'); } catch (e) { return null; }
     }
-    function applyTheme(theme) {
+    function systemTheme() {
+        return darkMediaQuery && darkMediaQuery.matches ? 'dark' : 'light';
+    }
+    function currentTheme() {
+        return document.documentElement.getAttribute('data-theme') || storedTheme() || systemTheme();
+    }
+    function applyTheme(theme, persist = true) {
         document.documentElement.setAttribute('data-theme', theme);
-        try { localStorage.setItem('rmw-theme', theme); } catch (e) { /* ignore */ }
+        if (persist) {
+            try { localStorage.setItem('rmw-theme', theme); } catch (e) { /* ignore */ }
+        }
         const icon = document.getElementById('themeIcon');
         const label = document.getElementById('themeLabel');
         const btn = document.getElementById('themeToggle');
@@ -202,8 +213,15 @@ const RMW = (() => {
         if (btn) btn.title = theme === 'dark' ? 'Switch to light mode' : 'Switch to dark mode';
     }
     function toggleTheme() { applyTheme(currentTheme() === 'dark' ? 'light' : 'dark'); }
-    // Apply the stored preference as early as possible (a head snippet also does this to avoid flash).
-    applyTheme(localStorage.getItem('rmw-theme') || 'dark');
+    // Reflect the resolved theme now (a head snippet already did this before CSS loaded,
+    // to avoid a flash — this just syncs the toggle's icon/label); don't persist it, so a
+    // user who never explicitly chose a theme keeps following their OS setting.
+    applyTheme(storedTheme() || systemTheme(), false);
+    if (darkMediaQuery) {
+        darkMediaQuery.addEventListener('change', (e) => {
+            if (!storedTheme()) applyTheme(e.matches ? 'dark' : 'light', false);
+        });
+    }
 
     // ---- minimal, safe markdown renderer (admin-authored update bodies) ----
     function markdown(src) {
@@ -253,7 +271,7 @@ const RMW = (() => {
         if (!header) return;
         header.innerHTML = `
           <div class="container nav">
-            <a class="brand" href="/index.html">Rate<span class="dot">My</span>Workplace</a>
+            <a class="brand" href="/index.html">MyWork<span class="dot">Tea</span></a>
             <button class="nav-toggle" aria-label="Menu" id="navToggle">☰</button>
             <nav class="nav-links" id="navLinks">
               <a href="/workplaces.html">Browse</a>
@@ -315,9 +333,9 @@ const RMW = (() => {
           <div class="container">
             <div class="footer-grid">
               <div>
-                <h3>Rate<span style="color:var(--primary)">My</span>Workplace</h3>
-                <p>Honest, verified feedback about workplaces and working conditions — from people who were actually there.</p>
-                <p class="muted">Feedback is only accepted from members who verify their employment.</p>
+                <h3>MyWork<span style="color:var(--primary)">Tea</span></h3>
+                <p>Vent about work, spill the tea, and rate specific workplaces if you want to back it up — from people who were actually there.</p>
+                <p class="muted">Posting about a workplace requires verifying you worked there.</p>
               </div>
               <div>
                 <h3>Send us feedback</h3>
@@ -344,10 +362,10 @@ const RMW = (() => {
               </div>
             </div>
             <div class="footer-bottom">
-                <div class="footer-legal">
+              <div class="footer-legal">
                 <a href="/privacy-policy.html">Privacy Policy</a><span class="sep" aria-hidden="true">·</span><a href="/terms.html">Terms of Service</a>
-                </div>
-                © ${new Date().getFullYear()} RateMyWorkplace.
+              </div>
+              © ${new Date().getFullYear()} MyWorkTea.
             </div>
           </div>`;
 

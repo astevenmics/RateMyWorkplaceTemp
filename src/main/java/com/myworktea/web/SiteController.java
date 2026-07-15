@@ -3,7 +3,6 @@ package com.myworktea.web;
 import com.myworktea.dto.DtoMapper;
 import com.myworktea.dto.Requests;
 import com.myworktea.dto.Responses;
-import com.myworktea.service.AdminService;
 import com.myworktea.service.CurrentUserService;
 import com.myworktea.service.SiteContentService;
 import jakarta.validation.Valid;
@@ -23,13 +22,10 @@ public class SiteController {
 
     private final SiteContentService siteContentService;
     private final CurrentUserService currentUserService;
-    private final AdminService adminService;
 
-    public SiteController(SiteContentService siteContentService, CurrentUserService currentUserService,
-                          AdminService adminService) {
+    public SiteController(SiteContentService siteContentService, CurrentUserService currentUserService) {
         this.siteContentService = siteContentService;
         this.currentUserService = currentUserService;
-        this.adminService = adminService;
     }
 
     @PostMapping("/feedback")

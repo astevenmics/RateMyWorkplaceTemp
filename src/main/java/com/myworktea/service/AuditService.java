@@ -3,6 +3,7 @@ package com.myworktea.service;
 import com.myworktea.domain.AuditAction;
 import com.myworktea.domain.AuditCategory;
 import com.myworktea.domain.AuditLog;
+import com.myworktea.domain.User;
 import com.myworktea.repository.AuditLogRepository;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
@@ -23,7 +24,7 @@ public class AuditService {
 
     @Transactional
     public void record(AuditCategory category, AuditAction action, String summary, String detail, Long targetId) {
-        String actor = currentUserService.current().map(u -> u.getUsername()).orElse("system");
+        String actor = currentUserService.current().map(User::getUsername).orElse("system");
         record(category, action, summary, detail, targetId, actor);
     }
 

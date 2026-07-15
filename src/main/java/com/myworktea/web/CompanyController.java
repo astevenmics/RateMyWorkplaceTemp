@@ -5,7 +5,6 @@ import com.myworktea.domain.User;
 import com.myworktea.dto.DtoMapper;
 import com.myworktea.dto.Requests;
 import com.myworktea.dto.Responses;
-import com.myworktea.service.CategoryService;
 import com.myworktea.service.CompanyService;
 import com.myworktea.service.CurrentUserService;
 import jakarta.validation.Valid;
@@ -21,13 +20,10 @@ import java.util.List;
 public class CompanyController {
 
     private final CompanyService companyService;
-    private final CategoryService categoryService;
     private final CurrentUserService currentUserService;
 
-    public CompanyController(CompanyService companyService, CategoryService categoryService,
-                             CurrentUserService currentUserService) {
+    public CompanyController(CompanyService companyService, CurrentUserService currentUserService) {
         this.companyService = companyService;
-        this.categoryService = categoryService;
         this.currentUserService = currentUserService;
     }
 

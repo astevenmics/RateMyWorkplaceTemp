@@ -120,7 +120,7 @@ public class UserService {
                 .orElseThrow(() -> ApiException.notFound("No user with username '" + req.username() + "'"));
 
         Set<ModeratorPermission> permissions = req.permissions().stream()
-                .map(p -> parsePermission(p))
+                .map(this::parsePermission)
                 .collect(Collectors.toCollection(() -> EnumSet.noneOf(ModeratorPermission.class)));
 
         user.setModeratorPermissions(permissions);

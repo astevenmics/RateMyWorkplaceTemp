@@ -22,8 +22,14 @@ public class NotificationService {
     private static final Logger log = LoggerFactory.getLogger(NotificationService.class);
 
     private static final String SIGNOFF =
-            "\n\nBest regards,\nThe MyWorkTea Team"
-                    + "\n\n—\nThis is an automated message from MyWorkTea. Please do not reply to this email.";
+            """
+                    
+                    
+                    Best regards,
+                    The MyWorkTea Team
+                    
+                    —
+                    This is an automated message from MyWorkTea. Please do not reply to this email.""";
 
     private final AppMailProperties mailProperties;
     private final JavaMailSender mailSender;
@@ -57,24 +63,30 @@ public class NotificationService {
     // ----- account lifecycle -----
     @Async
     public void notifyAccountDisabled(String to, String displayName) {
-        String body = "We are writing to let you know that your MyWorkTea account has been disabled by our "
-                + "team, and you will not be able to sign in until it is reinstated.\n\n"
-                + "If you believe this was done in error, please contact our support team and we will be happy to help.";
+        String body = """
+                We are writing to let you know that your MyWorkTea account has been disabled by our \
+                team, and you will not be able to sign in until it is reinstated.
+                
+                If you believe this was done in error, please contact our support team and we will be happy to help.""";
         send(to, "Your MyWorkTea account has been disabled", greeting(displayName) + body + SIGNOFF);
     }
 
     @Async
     public void notifyAccountEnabled(String to, String displayName) {
-        String body = "Good news — your MyWorkTea account has been reinstated and you can now sign in again.\n\n"
-                + "Thank you for your patience.";
+        String body = """
+                Good news — your MyWorkTea account has been reinstated and you can now sign in again.
+                
+                Thank you for your patience.""";
         send(to, "Your MyWorkTea account has been reinstated", greeting(displayName) + body + SIGNOFF);
     }
 
     @Async
     public void notifyAccountDeleted(String to, String displayName) {
-        String body = "We are writing to confirm that your MyWorkTea account, along with its associated "
-                + "content, has been permanently removed.\n\n"
-                + "If you believe this was done in error, please contact our support team.";
+        String body = """
+                We are writing to confirm that your MyWorkTea account, along with its associated \
+                content, has been permanently removed.
+                
+                If you believe this was done in error, please contact our support team.""";
         send(to, "Your MyWorkTea account has been removed", greeting(displayName) + body + SIGNOFF);
     }
 

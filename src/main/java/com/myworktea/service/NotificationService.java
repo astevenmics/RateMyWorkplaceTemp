@@ -8,6 +8,10 @@ import org.springframework.mail.javamail.JavaMailSender;
 import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Service;
 
+import java.time.Instant;
+import java.time.ZoneOffset;
+import java.time.format.DateTimeFormatter;
+
 /**
  * Sends transactional emails (verification codes, account &amp; moderation notices).
  * When {@code app.mail.enabled=false} (the local-dev default) messages are logged
@@ -85,9 +89,32 @@ public class NotificationService {
         String body = """
                 We are writing to confirm that your MyWorkTea account, along with its associated \
                 content, has been permanently removed.
-                
+
                 If you believe this was done in error, please contact our support team.""";
         send(to, "Your MyWorkTea account has been removed", greeting(displayName) + body + SIGNOFF);
+    }
+
+    @Async
+    public void notifySelfDisabled(String to, String displayName) {
+        String body = """
+                This confirms that you've disabled your MyWorkTea account. You won't be able to sign \
+                in while it's disabled, but your existing feedback and posts remain visible to others.
+
+                If this wasn't you, please contact our support team right away.""";
+        send(to, "Your MyWorkTea account has been disabled", greeting(displayName) + body + SIGNOFF);
+    }
+
+    @Async
+    public void notifyDeletionScheduled(String to, String displayName, Instant purgeAt) {
+        String purgeDate = DateTimeFormatter.ofPattern("MMMM d, yyyy").withZone(ZoneOffset.UTC).format(purgeAt);
+        String body = """
+                This confirms that you've requested deletion of your MyWorkTea account. Your account \
+                has been disabled immediately, and on %s it — along with your feedback, reviews and \
+                employment proofs — will be permanently deleted. Workplaces you submitted will stay \
+                listed, no longer credited to your account.
+
+                If this wasn't you, please contact our support team right away.""".formatted(purgeDate);
+        send(to, "Your MyWorkTea account is scheduled for deletion", greeting(displayName) + body + SIGNOFF);
     }
 
     // ----- feedback -----

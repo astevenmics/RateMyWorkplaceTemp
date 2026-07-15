@@ -101,4 +101,8 @@ public final class Requests {
 
     public record FlagUserRequest(@Size(max = 255) String reason) {
     }
+
+    /** Confirms a self-service account action (disable/delete) by re-checking the caller's password. */
+    public record AccountActionRequest(@NotBlank String password) {
+    }
 }

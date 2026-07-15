@@ -110,8 +110,8 @@
         <div class="field">
           <label>Departments at this location (optional)</label>
           <div class="tags" data-f="departments">
-            ${DEPARTMENTS.map(d => `<label class="tag muted" style="cursor:pointer;user-select:none">
-                <input type="checkbox" value="${d}" style="margin-right:4px;vertical-align:middle">${deptLabel(d)}</label>`).join('')}
+            ${DEPARTMENTS.map(d => `<label class="tag muted tag-check">
+                <input type="checkbox" value="${d}">${deptLabel(d)}</label>`).join('')}
           </div>
           <div style="display:flex;gap:8px;margin-top:8px">
             <input type="text" class="customDeptInput" placeholder="Not listed? Add a custom department / position" maxlength="60" style="flex:1">
@@ -134,9 +134,8 @@
     const container = scopeEl.querySelector('[data-f="departments"]');
     if ([...container.querySelectorAll('input[type=checkbox]')].some(c => c.value.toLowerCase() === v.toLowerCase())) return;
     const label = document.createElement('label');
-    label.className = 'tag muted';
-    label.style.cssText = 'cursor:pointer;user-select:none';
-    label.innerHTML = `<input type="checkbox" value="${RMW.escapeHtml(v)}" checked style="margin-right:4px;vertical-align:middle">${RMW.escapeHtml(v)}`;
+    label.className = 'tag muted tag-check';
+    label.innerHTML = `<input type="checkbox" value="${RMW.escapeHtml(v)}" checked>${RMW.escapeHtml(v)}`;
     label.title = 'Custom entry — uncheck to leave it out';
     container.appendChild(label);
   }

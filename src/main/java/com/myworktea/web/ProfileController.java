@@ -46,4 +46,21 @@ public class ProfileController {
         User user = currentUserService.require();
         return DtoMapper.user(userService.removeAvatar(user));
     }
+
+    /** Deactivates the caller's own account. Feedback and posts stay visible; they just can't sign in. */
+    @PostMapping("/disable")
+    public Responses.SimpleMessage disable(@Valid @RequestBody Requests.AccountActionRequest request) {
+        User user = currentUserService.require();
+        userService.disableAccount(user, request.password());
+        return Responses.SimpleMessage.ok("Your account has been disabled.");
+    }
+
+    /** Schedules the caller's own account for permanent deletion after the grace period. */
+    @PostMapping("/delete")
+    public Responses.SimpleMessage delete(@Valid @RequestBody Requests.AccountActionRequest request) {
+        User user = currentUserService.require();
+        userService.requestAccountDeletion(user, request.password());
+        return Responses.SimpleMessage.ok(
+                "Your account has been disabled and will be permanently deleted in " + User.DELETION_GRACE_DAYS + " days.");
+    }
 }

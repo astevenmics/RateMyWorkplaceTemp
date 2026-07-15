@@ -7,6 +7,7 @@ import com.myworktea.security.SessionInvalidationService;
 import com.myworktea.web.ApiException;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
+import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -141,6 +142,29 @@ public class AdminService {
         if (user.getRole() == Role.ADMIN) {
             throw ApiException.badRequest("Admin accounts cannot be deleted from the panel");
         }
+        purgeUser(user, "deleted by an admin");
+    }
+
+    /**
+     * Nightly sweep: permanently purges self-service deletion requests whose
+     * {@link User#DELETION_GRACE_DAYS}-day grace period has elapsed.
+     */
+    @Scheduled(cron = "0 0 3 * * *")
+    @Transactional
+    public void purgeExpiredDeletions() {
+        Instant cutoff = Instant.now().minus(User.DELETION_GRACE_DAYS, ChronoUnit.DAYS);
+        for (User user : userRepository.findByDeletionRequestedAtNotNullAndDeletionRequestedAtBefore(cutoff)) {
+            purgeUser(user, "scheduled purge (self-requested account deletion)");
+        }
+    }
+
+    /**
+     * Deletes a user and everything that belongs only to them (feedback, employment proofs,
+     * verification tokens), while detaching them (rather than deleting) from records that should
+     * survive them — site feedback/updates they authored, and any workplace they submitted.
+     */
+    private void purgeUser(User user, String auditContext) {
+        Long userId = user.getId();
         // Capture details before the account is removed, to notify them and keep a record.
         String email = user.getEmail();
         String displayName = user.getDisplayName();
@@ -164,7 +188,7 @@ public class AdminService {
 
         notificationService.notifyAccountDeleted(email, displayName);
         auditService.record(AuditCategory.USER, AuditAction.DELETED,
-                "User @" + user.getUsername() + " (" + displayName + ") deleted", snapshot, userId);
+                "User @" + user.getUsername() + " (" + displayName + ") deleted", snapshot + "\n\n" + auditContext, userId);
     }
 
     // ---- statistics ----

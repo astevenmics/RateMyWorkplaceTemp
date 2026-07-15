@@ -185,9 +185,8 @@
     const container = scopeEl.querySelector('[data-f="departments"]');
     if ([...container.querySelectorAll('input[type=checkbox]')].some(c => c.value.toLowerCase() === v.toLowerCase())) return;
     const label = document.createElement('label');
-    label.className = 'tag muted';
-    label.style.cssText = 'cursor:pointer;user-select:none';
-    label.innerHTML = `<input type="checkbox" value="${RMW.escapeHtml(v)}" checked style="margin-right:4px;vertical-align:middle">${RMW.escapeHtml(v)}`;
+    label.className = 'tag muted tag-check';
+    label.innerHTML = `<input type="checkbox" value="${RMW.escapeHtml(v)}" checked>${RMW.escapeHtml(v)}`;
     label.title = 'Custom entry — uncheck to leave it out';
     container.appendChild(label);
   }
@@ -213,8 +212,8 @@
         <div class="field">
           <label>Departments at this location</label>
           <div class="tags" data-f="departments">
-            ${DEPARTMENTS.map(d => `<label class="tag muted" style="cursor:pointer;user-select:none">
-                <input type="checkbox" value="${d}" ${existingLabels.has(deptLabel(d).toLowerCase()) ? 'checked' : ''} style="margin-right:4px;vertical-align:middle">${deptLabel(d)}</label>`).join('')}
+            ${DEPARTMENTS.map(d => `<label class="tag muted tag-check">
+                <input type="checkbox" value="${d}" ${existingLabels.has(deptLabel(d).toLowerCase()) ? 'checked' : ''}>${deptLabel(d)}</label>`).join('')}
           </div>
           <div style="display:flex;gap:8px;margin-top:8px">
             <input type="text" class="customDeptInput" placeholder="Not listed? Add a custom department / position" maxlength="60" style="flex:1">
@@ -312,8 +311,8 @@
     const l = currentLocation();
     const chips = document.getElementById('reviewDeptChips');
     const depts = (l && l.departments) || [];
-    chips.innerHTML = depts.map(d => `<label class="tag muted" style="cursor:pointer;user-select:none">
-        <input type="checkbox" name="reviewDept" value="${RMW.escapeHtml(d)}" style="margin-right:4px;vertical-align:middle">${RMW.escapeHtml(d)}</label>`).join('')
+    chips.innerHTML = depts.map(d => `<label class="tag muted tag-check">
+        <input type="checkbox" name="reviewDept" value="${RMW.escapeHtml(d)}">${RMW.escapeHtml(d)}</label>`).join('')
             || '<span class="muted" style="font-size:.85rem">No departments listed for this location yet.</span>';
   }
 
@@ -330,9 +329,8 @@
     const placeholder = chips.querySelector('.muted');
     if (placeholder) placeholder.remove();
     const label = document.createElement('label');
-    label.className = 'tag muted';
-    label.style.cssText = 'cursor:pointer;user-select:none';
-    label.innerHTML = `<input type="checkbox" name="reviewDept" value="${RMW.escapeHtml(v)}" checked style="margin-right:4px;vertical-align:middle">${RMW.escapeHtml(v)}`;
+    label.className = 'tag muted tag-check';
+    label.innerHTML = `<input type="checkbox" name="reviewDept" value="${RMW.escapeHtml(v)}" checked>${RMW.escapeHtml(v)}`;
     chips.appendChild(label);
     input.value = '';
     input.focus();

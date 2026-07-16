@@ -95,11 +95,13 @@
                 <div class="field"><label>Your feedback</label><textarea name="body" rows="5" required maxlength="4000" placeholder="What was it really like to work here?"></textarea></div>
                 <div class="field" id="reviewDeptField">
                   <label>Department(s) / position you worked in (optional)</label>
-                  <div class="tags" id="reviewDeptChips"></div>
-                  <div style="display:flex;gap:8px;margin-top:8px">
+                  <div class="tags" id="reviewDeptChips" style="margin-bottom:8px"></div>
+                  <div style="display:flex;gap:8px">
                     <input type="text" id="reviewDeptCustomInput" placeholder="Not listed? Add a custom department / position" maxlength="60" style="flex:1">
                     <button type="button" class="btn secondary small" id="reviewDeptCustomAdd">+ Add</button>
                   </div>
+                  <div class="hint">Pick from suggestions below or add your own.</div>
+                  <div class="tags" id="reviewDeptSuggestions" style="margin-top:8px"></div>
                 </div>
                 <button class="btn" type="submit">Post feedback</button>
               </form>
@@ -179,17 +181,35 @@
             t.addEventListener('click', () => { editSelectedCategories.delete(t.dataset.c); renderEditCategoryChips(); }));
   }
 
-  function addCustomDeptTag(scopeEl, name) {
+  /** Selected-departments chips for one location card, mirroring the categories picker above. */
+  function renderDeptChips(field) {
+    const box = field.querySelector('.dept-chips');
+    box.innerHTML = [...field._selected].map(d => `<span class="tag" data-d="${RMW.escapeHtml(d)}">${RMW.escapeHtml(d)} ✕</span>`).join('') ||
+            '<span class="muted" style="font-size:.85rem">No departments selected</span>';
+    box.querySelectorAll('.tag').forEach(t => t.addEventListener('click', () => {
+      field._selected.delete(t.dataset.d);
+      renderDeptChips(field);
+      renderDeptSuggestions(field);
+    }));
+  }
+
+  function renderDeptSuggestions(field) {
+    const box = field.querySelector('.dept-suggestions');
+    box.innerHTML = DEPARTMENTS.map(deptLabel).filter(label => !field._selected.has(label))
+            .map(label => `<span class="tag muted" style="cursor:pointer" data-d="${RMW.escapeHtml(label)}">+ ${RMW.escapeHtml(label)}</span>`).join('');
+    box.querySelectorAll('.tag').forEach(t => t.addEventListener('click', () => {
+      field._selected.add(t.dataset.d);
+      renderDeptChips(field);
+      renderDeptSuggestions(field);
+    }));
+  }
+
+  function addCustomDept(field, name) {
     const v = name.trim();
     if (!v) return;
-    const container = scopeEl.querySelector('[data-f="departments"]');
-    if ([...container.querySelectorAll('input[type=checkbox]')].some(c => c.value.toLowerCase() === v.toLowerCase())) return;
-    const label = document.createElement('label');
-    label.className = 'tag muted';
-    label.style.cssText = 'cursor:pointer;user-select:none';
-    label.innerHTML = `<input type="checkbox" value="${RMW.escapeHtml(v)}" checked style="margin-right:4px;vertical-align:middle">${RMW.escapeHtml(v)}`;
-    label.title = 'Custom entry — uncheck to leave it out';
-    container.appendChild(label);
+    field._selected.add(v);
+    renderDeptChips(field);
+    renderDeptSuggestions(field);
   }
 
   function addEditLocation(loc) {
@@ -197,9 +217,6 @@
     div.className = 'card';
     div.style.marginBottom = '12px';
     if (loc && loc.id) div.dataset.locId = loc.id;
-    const existingLabels = new Set((loc && loc.departments || []).map(x => x.toLowerCase()));
-    const predefinedLabels = new Set(DEPARTMENTS.map(d => deptLabel(d).toLowerCase()));
-    const customExisting = (loc && loc.departments || []).filter(x => !predefinedLabels.has(x.toLowerCase()));
     div.innerHTML = `
         <div class="field-row">
           <div class="field"><label>Label (optional)</label><input type="text" data-f="label" value="${RMW.escapeHtml((loc && loc.label) || '')}"></div>
@@ -210,20 +227,22 @@
           <div class="field"><label>State</label><input type="text" data-f="state" value="${RMW.escapeHtml((loc && loc.state) || '')}"></div>
           <div class="field"><label>ZIP</label><input type="text" data-f="zipCode" required value="${RMW.escapeHtml((loc && loc.zipCode) || '')}"></div>
         </div>
-        <div class="field">
+        <div class="field" data-f="departments">
           <label>Departments at this location</label>
-          <div class="tags" data-f="departments">
-            ${DEPARTMENTS.map(d => `<label class="tag muted" style="cursor:pointer;user-select:none">
-                <input type="checkbox" value="${d}" ${existingLabels.has(deptLabel(d).toLowerCase()) ? 'checked' : ''} style="margin-right:4px;vertical-align:middle">${deptLabel(d)}</label>`).join('')}
-          </div>
-          <div style="display:flex;gap:8px;margin-top:8px">
+          <div class="dept-chips tags" style="margin-bottom:8px"></div>
+          <div style="display:flex;gap:8px">
             <input type="text" class="customDeptInput" placeholder="Not listed? Add a custom department / position" maxlength="60" style="flex:1">
             <button type="button" class="btn secondary small addCustomDept">+ Add</button>
           </div>
+          <div class="hint">Pick from suggestions below or add your own.</div>
+          <div class="dept-suggestions tags" style="margin-top:8px"></div>
         </div>`;
-    customExisting.forEach(name => addCustomDeptTag(div, name));
+    const deptField = div.querySelector('[data-f="departments"]');
+    deptField._selected = new Set((loc && loc.departments) || []);
+    renderDeptChips(deptField);
+    renderDeptSuggestions(deptField);
     const customInput = div.querySelector('.customDeptInput');
-    const addCustom = () => { addCustomDeptTag(div, customInput.value); customInput.value = ''; customInput.focus(); };
+    const addCustom = () => { addCustomDept(deptField, customInput.value); customInput.value = ''; customInput.focus(); };
     div.querySelector('.addCustomDept').addEventListener('click', addCustom);
     customInput.addEventListener('keydown', (e) => { if (e.key === 'Enter') { e.preventDefault(); addCustom(); } });
     document.getElementById('editLocations').appendChild(div);
@@ -259,7 +278,7 @@
     const alertEl = document.getElementById('editAlert');
     const locations = [...document.querySelectorAll('#editLocations .card')].map(card => {
       const get = f => card.querySelector(`[data-f="${f}"]`).value.trim();
-      const departments = [...card.querySelectorAll('[data-f="departments"] input:checked')].map(c => c.value);
+      const departments = [...card.querySelector('[data-f="departments"]')._selected];
       return { id: card.dataset.locId ? parseInt(card.dataset.locId, 10) : null, label: get('label'),
         addressLine: get('addressLine'), city: get('city'), state: get('state'),
         zipCode: get('zipCode'), country: 'USA', departments };
@@ -308,13 +327,38 @@
     renderReviewDepartments();
   }
 
+  let reviewSelectedDepts = new Set();
+
+  /** Resets the picker for the currently viewed location, offering its known departments as suggestions. */
   function renderReviewDepartments() {
+    reviewSelectedDepts = new Set();
+    renderReviewDeptChips();
+    renderReviewDeptSuggestions();
+  }
+
+  function renderReviewDeptChips() {
+    document.getElementById('reviewDeptChips').innerHTML =
+            [...reviewSelectedDepts].map(d => `<span class="tag" data-d="${RMW.escapeHtml(d)}">${RMW.escapeHtml(d)} ✕</span>`).join('') ||
+            '<span class="muted" style="font-size:.85rem">No departments selected</span>';
+    document.querySelectorAll('#reviewDeptChips .tag').forEach(t => t.addEventListener('click', () => {
+      reviewSelectedDepts.delete(t.dataset.d);
+      renderReviewDeptChips();
+      renderReviewDeptSuggestions();
+    }));
+  }
+
+  function renderReviewDeptSuggestions() {
     const l = currentLocation();
-    const chips = document.getElementById('reviewDeptChips');
     const depts = (l && l.departments) || [];
-    chips.innerHTML = depts.map(d => `<label class="tag muted" style="cursor:pointer;user-select:none">
-        <input type="checkbox" name="reviewDept" value="${RMW.escapeHtml(d)}" style="margin-right:4px;vertical-align:middle">${RMW.escapeHtml(d)}</label>`).join('')
-            || '<span class="muted" style="font-size:.85rem">No departments listed for this location yet.</span>';
+    const box = document.getElementById('reviewDeptSuggestions');
+    const remaining = depts.filter(d => !reviewSelectedDepts.has(d));
+    box.innerHTML = remaining.map(d => `<span class="tag muted" style="cursor:pointer" data-d="${RMW.escapeHtml(d)}">+ ${RMW.escapeHtml(d)}</span>`).join('') ||
+            (depts.length ? '' : '<span class="muted" style="font-size:.85rem">No departments listed for this location yet.</span>');
+    box.querySelectorAll('.tag').forEach(t => t.addEventListener('click', () => {
+      reviewSelectedDepts.add(t.dataset.d);
+      renderReviewDeptChips();
+      renderReviewDeptSuggestions();
+    }));
   }
 
   document.getElementById('reviewDeptCustomAdd').addEventListener('click', addReviewCustomDept);
@@ -325,15 +369,9 @@
     const input = document.getElementById('reviewDeptCustomInput');
     const v = input.value.trim();
     if (!v) return;
-    const chips = document.getElementById('reviewDeptChips');
-    if ([...chips.querySelectorAll('input[type=checkbox]')].some(c => c.value.toLowerCase() === v.toLowerCase())) { input.value = ''; return; }
-    const placeholder = chips.querySelector('.muted');
-    if (placeholder) placeholder.remove();
-    const label = document.createElement('label');
-    label.className = 'tag muted';
-    label.style.cssText = 'cursor:pointer;user-select:none';
-    label.innerHTML = `<input type="checkbox" name="reviewDept" value="${RMW.escapeHtml(v)}" checked style="margin-right:4px;vertical-align:middle">${RMW.escapeHtml(v)}`;
-    chips.appendChild(label);
+    reviewSelectedDepts.add(v);
+    renderReviewDeptChips();
+    renderReviewDeptSuggestions();
     input.value = '';
     input.focus();
   }
@@ -430,7 +468,7 @@
     const alertEl = document.getElementById('reviewAlert');
     const rating = fd.get('rating');
     if (!rating) { RMW.toast(alertEl, 'error', 'Please choose a star rating.'); return; }
-    const departments = [...form.querySelectorAll('input[name="reviewDept"]:checked')].map(c => c.value);
+    const departments = [...reviewSelectedDepts];
     try {
       await RMW.api('/api/feedback', { method: 'POST', body: {
           locationId: currentLocation().id,

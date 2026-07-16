@@ -1,0 +1,69 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Reactivate your account — MyWorkTea</title>
+    <script>(function(){var t=localStorage.getItem("rmw-theme")||(window.matchMedia&&window.matchMedia("(prefers-color-scheme: dark)").matches?"dark":"light");document.documentElement.setAttribute("data-theme",t);})();</script>
+    <link rel="stylesheet" href="/css/styles.css">
+    <link rel="apple-touch-icon" sizes="180x180" href="/favicon/apple-touch-icon.png">
+    <link rel="icon" type="image/png" sizes="32x32" href="/favicon/favicon-32x32.png">
+    <link rel="icon" type="image/png" sizes="16x16" href="/favicon/favicon-16x16.png">
+    <link rel="manifest" href="/favicon/site.webmanifest">
+</head>
+<body>
+<header class="site-header" id="site-header"></header>
+
+<section class="section">
+    <div class="container">
+        <div class="card form-card">
+            <h2 style="margin-top:0">Reactivate your account</h2>
+            <p class="subtitle">
+                Disabled your account, or scheduled it for deletion, and changed your mind? Confirm your
+                password below to reactivate it — this also cancels any pending deletion.
+            </p>
+            <div id="alert" class="alert"></div>
+            <form id="reactivateForm">
+                <div class="field">
+                    <label for="usernameOrEmail">Username or email</label>
+                    <input type="text" id="usernameOrEmail" name="usernameOrEmail" required autocomplete="username">
+                </div>
+                <div class="field">
+                    <label for="password">Password</label>
+                    <input type="password" id="password" name="password" required autocomplete="current-password">
+                </div>
+                <button class="btn" type="submit" style="width:100%">Reactivate account</button>
+            </form>
+            <p class="center muted" style="margin-top:16px">
+                Account disabled by an admin for a policy violation? This won't work — use the
+                "Send us feedback" form in the site footer to contact support instead.
+            </p>
+            <p class="center muted" style="margin-top:8px">Remembered your account is fine? <a href="/login.html">Back to log in</a></p>
+        </div>
+    </div>
+</section>
+
+<footer class="site-footer" id="site-footer"></footer>
+
+<script src="/js/app.js"></script>
+<script>
+    document.getElementById('reactivateForm').addEventListener('submit', async (e) => {
+        e.preventDefault();
+        const alertEl = document.getElementById('alert');
+        const btn = e.target.querySelector('button[type="submit"]');
+        const usernameOrEmail = document.getElementById('usernameOrEmail').value.trim();
+        const password = document.getElementById('password').value;
+        RMW.clearToast(alertEl);
+        RMW.setLoading(btn, true, 'Reactivating…');
+        try {
+            const res = await RMW.api('/api/auth/reactivate', { method: 'POST', body: { usernameOrEmail, password } });
+            RMW.toast(alertEl, 'success', res.message);
+            setTimeout(() => { window.location.href = '/login.html'; }, 1500);
+        } catch (err) {
+            RMW.toast(alertEl, 'error', err.message);
+            RMW.setLoading(btn, false);
+        }
+    });
+</script>
+</body>
+</html>

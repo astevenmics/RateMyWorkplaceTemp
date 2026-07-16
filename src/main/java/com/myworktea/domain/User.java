@@ -83,6 +83,19 @@ public class User {
 
     private Instant lastLoginAt;
 
+    /**
+     * Set when the user requests their own account deletion; null otherwise.
+     * The account is disabled immediately, then permanently purged
+     * (feedback, proofs, etc. — but not workplaces they submitted)
+     * once {@link #DELETION_GRACE_DAYS} have elapsed since this timestamp.
+     */
+    private Instant deletionRequestedAt;
+
+    public static final int DELETION_GRACE_DAYS = 30;
+
+    @Column(nullable = false)
+    private boolean selfServiceDisabled = false;
+
     public boolean isFullyVerified() {
         return emailVerified;
     }
@@ -120,4 +133,8 @@ public class User {
     public void setCreatedAt(Instant createdAt) { this.createdAt = createdAt; }
     public Instant getLastLoginAt() { return lastLoginAt; }
     public void setLastLoginAt(Instant lastLoginAt) { this.lastLoginAt = lastLoginAt; }
+    public Instant getDeletionRequestedAt() { return deletionRequestedAt; }
+    public void setDeletionRequestedAt(Instant deletionRequestedAt) { this.deletionRequestedAt = deletionRequestedAt; }
+    public boolean isSelfServiceDisabled() { return selfServiceDisabled; }
+    public void setSelfServiceDisabled(boolean selfServiceDisabled) { this.selfServiceDisabled = selfServiceDisabled; }
 }

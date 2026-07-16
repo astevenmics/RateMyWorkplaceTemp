@@ -83,4 +83,10 @@ public class AuthController {
         passwordResetService.reset(request.email(), request.code(), request.newPassword());
         return Responses.SimpleMessage.ok("Your password has been reset. You can now sign in.");
     }
+
+    @PostMapping("/reactivate")
+    public Responses.SimpleMessage reactivate(@Valid @RequestBody Requests.ReactivateRequest request) {
+        userService.reactivateAccount(request.usernameOrEmail(), request.password());
+        return Responses.SimpleMessage.ok("Your account has been reactivated. You can now sign in.");
+    }
 }

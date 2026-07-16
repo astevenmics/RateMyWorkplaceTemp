@@ -3,7 +3,6 @@ package com.myworktea.config;
 import io.github.bucket4j.Bandwidth;
 import io.github.bucket4j.Bucket;
 import io.github.bucket4j.ConsumptionProbe;
-import io.github.bucket4j.Refill;
 import jakarta.servlet.FilterChain;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServletRequest;
@@ -92,16 +91,20 @@ public class RateLimitFilter extends OncePerRequestFilter {
 
     private Bucket newGlobalBucket() {
         return Bucket.builder()
-                .addLimit(Bandwidth.classic(props.getCapacity(),
-                        Refill.greedy(props.getRefillTokens(), Duration.ofSeconds(props.getRefillPeriodSeconds()))))
+                .addLimit(Bandwidth.builder()
+                        .capacity(props.getCapacity())
+                        .refillGreedy(props.getRefillTokens(), Duration.ofSeconds(props.getRefillPeriodSeconds()))
+                        .build())
                 .build();
     }
 
     private Bucket newSensitiveBucket() {
         return Bucket.builder()
-                .addLimit(Bandwidth.classic(props.getSensitiveCapacity(),
-                        Refill.greedy(props.getSensitiveRefillTokens(),
-                                Duration.ofSeconds(props.getSensitiveRefillPeriodSeconds()))))
+                .addLimit(Bandwidth.builder()
+                        .capacity(props.getSensitiveCapacity())
+                        .refillGreedy(props.getSensitiveRefillTokens(),
+                                Duration.ofSeconds(props.getSensitiveRefillPeriodSeconds()))
+                        .build())
                 .build();
     }
 

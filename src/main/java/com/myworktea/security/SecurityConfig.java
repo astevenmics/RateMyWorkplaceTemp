@@ -109,7 +109,7 @@ public class SecurityConfig {
                                 "/api/site/updates/**", "/api/stats/public", "/api/users/*/avatar").permitAll()
                         .requestMatchers("/api/auth/register", "/api/auth/login", "/api/auth/csrf",
                                 "/api/auth/me", "/api/auth/forgot-password", "/api/auth/reset-password",
-                                "/api/site/feedback").permitAll()
+                                "/api/auth/reactivate","/api/site/feedback").permitAll()
                         .requestMatchers("/actuator/health", "/actuator/info").permitAll()
                         // ---- admin / moderation ----
                         .requestMatchers("/admin.html").hasAnyRole("ADMIN", "MODERATOR")

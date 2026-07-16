@@ -37,6 +37,9 @@ public final class Requests {
     public record ForgotPasswordRequest(@NotBlank @Email String email) {
     }
 
+    public record ReactivateRequest(@NotBlank String usernameOrEmail, @NotBlank String password) {
+    }
+
     public record ResetPasswordRequest(
             @NotBlank @Email String email,
             @NotBlank String code,
@@ -100,5 +103,9 @@ public final class Requests {
     }
 
     public record FlagUserRequest(@Size(max = 255) String reason) {
+    }
+
+    /** Confirms a self-service account action (disable/delete) by re-checking the caller's password. */
+    public record AccountActionRequest(@NotBlank String password) {
     }
 }

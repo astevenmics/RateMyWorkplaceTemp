@@ -1,5 +1,6 @@
 package com.myworktea.web;
 
+import com.myworktea.domain.AuditCategory;
 import com.myworktea.dto.DtoMapper;
 import com.myworktea.dto.Requests;
 import com.myworktea.dto.Responses;
@@ -56,9 +57,9 @@ public class AdminController {
             @RequestParam(required = false) String category,
             @PageableDefault(size = 30, sort = "createdAt",
                     direction = org.springframework.data.domain.Sort.Direction.DESC) Pageable pageable) {
-        com.myworktea.domain.AuditCategory cat = null;
+        AuditCategory cat = null;
         if (category != null && !category.isBlank() && !"ALL".equalsIgnoreCase(category)) {
-            cat = com.myworktea.domain.AuditCategory.valueOf(category.toUpperCase());
+            cat = AuditCategory.valueOf(category.toUpperCase());
         }
         return auditService.list(cat, pageable).map(DtoMapper::audit);
     }

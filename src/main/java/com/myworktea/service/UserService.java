@@ -12,6 +12,8 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.multipart.MultipartFile;
 
+import java.time.Instant;
+import java.time.temporal.ChronoUnit;
 import java.util.EnumSet;
 import java.util.Set;
 import java.util.stream.Collectors;
@@ -25,16 +27,19 @@ public class UserService {
     private final AnalyticsService analyticsService;
     private final FileStorageService fileStorageService;
     private final SessionInvalidationService sessionInvalidationService;
+    private final NotificationService notificationService;
 
     public UserService(UserRepository userRepository, PasswordEncoder passwordEncoder,
                        VerificationService verificationService, AnalyticsService analyticsService,
-                       FileStorageService fileStorageService, SessionInvalidationService sessionInvalidationService) {
+                       FileStorageService fileStorageService, SessionInvalidationService sessionInvalidationService,
+                       NotificationService notificationService) {
         this.userRepository = userRepository;
         this.passwordEncoder = passwordEncoder;
         this.verificationService = verificationService;
         this.analyticsService = analyticsService;
         this.fileStorageService = fileStorageService;
         this.sessionInvalidationService = sessionInvalidationService;
+        this.notificationService = notificationService;
     }
 
     @Transactional
@@ -138,6 +143,68 @@ public class UserService {
             return ModeratorPermission.valueOf(raw.trim().toUpperCase());
         } catch (IllegalArgumentException e) {
             throw ApiException.badRequest("Unknown moderator permission: " + raw);
+        }
+    }
+
+    // ---- self-service account disable / delete ----
+
+    /** Deactivates the caller's own account: they can no longer sign in, but their feedback and posts stay visible. */
+    @Transactional
+    public void disableAccount(User user, String password) {
+        verifyPasswordForAccountAction(user, password);
+        user.setEnabled(false);
+        user.setSelfServiceDisabled(true);
+        userRepository.save(user);
+        sessionInvalidationService.invalidateSessionsFor(user.getUsername());
+        notificationService.notifySelfDisabled(user.getEmail(), user.getDisplayName());
+    }
+
+    /**
+     * Marks the caller's own account for deletion: it's disabled immediately, and permanently
+     * purged (feedback, employment proofs, etc. — workplaces they submitted are kept, just
+     * unlinked from the account) once {@link User#DELETION_GRACE_DAYS} have elapsed.
+     */
+    @Transactional
+    public void requestAccountDeletion(User user, String password) {
+        verifyPasswordForAccountAction(user, password);
+        user.setEnabled(false);
+        user.setSelfServiceDisabled(true);
+        user.setDeletionRequestedAt(Instant.now());
+        User saved = userRepository.save(user);
+        sessionInvalidationService.invalidateSessionsFor(saved.getUsername());
+        Instant purgeAt = saved.getDeletionRequestedAt().plus(User.DELETION_GRACE_DAYS, ChronoUnit.DAYS);
+        notificationService.notifyDeletionScheduled(saved.getEmail(), saved.getDisplayName(), purgeAt);
+    }
+
+    @Transactional
+    public void reactivateAccount(String usernameOrEmail, String password) {
+        User user = userRepository.findByUsernameIgnoreCase(usernameOrEmail)
+                .or(() -> userRepository.findByEmailIgnoreCase(usernameOrEmail))
+                .orElseThrow(() -> ApiException.badRequest("Incorrect username/email or password"));
+        if (password == null || !passwordEncoder.matches(password, user.getPasswordHash())) {
+            throw ApiException.badRequest("Incorrect username/email or password");
+        }
+        if (user.isEnabled()) {
+            throw ApiException.badRequest("This account is already active — just log in.");
+        }
+        if (!user.isSelfServiceDisabled()) {
+            throw ApiException.badRequest(
+                    "This account was disabled by an admin and can't be reactivated here. Please contact support.");
+        }
+        user.setEnabled(true);
+        user.setSelfServiceDisabled(false);
+        user.setDeletionRequestedAt(null);
+        userRepository.save(user);
+        notificationService.notifySelfReactivated(user.getEmail(), user.getDisplayName());
+    }
+
+    private void verifyPasswordForAccountAction(User user, String password) {
+        if (user.getRole() == Role.ADMIN) {
+            throw ApiException.badRequest(
+                    "Admin accounts can't be disabled or deleted this way — transfer admin duties first");
+        }
+        if (password == null || !passwordEncoder.matches(password, user.getPasswordHash())) {
+            throw ApiException.badRequest("Incorrect password");
         }
     }
 }

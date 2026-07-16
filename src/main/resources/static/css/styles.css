@@ -265,8 +265,6 @@ img { max-width: 100%; }
     border-radius: 999px;
 }
 .tag.muted { background: var(--surface-2); color: var(--muted); }
-/* Selectable department tags (submit-workplace.html) — a label wrapping a checkbox. */
-label.tag:has(input:checked) { background: var(--primary-soft); color: var(--primary-dark); }
 
 /* ---------------- Stars ---------------- */
 .stars { color: var(--star); letter-spacing: 1px; font-size: 1rem; }

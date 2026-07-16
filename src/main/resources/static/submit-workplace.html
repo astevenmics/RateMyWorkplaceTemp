@@ -107,38 +107,58 @@
           <div class="field"><label>State</label><input type="text" data-f="state"></div>
           <div class="field"><label>ZIP</label><input type="text" data-f="zipCode" required></div>
         </div>
-        <div class="field">
+        <div class="field" data-f="departments">
           <label>Departments at this location (optional)</label>
-          <div class="tags" data-f="departments">
-            ${DEPARTMENTS.map(d => `<label class="tag muted" style="cursor:pointer;user-select:none">
-                <input type="checkbox" value="${d}" style="margin-right:4px;vertical-align:middle">${deptLabel(d)}</label>`).join('')}
-          </div>
-          <div style="display:flex;gap:8px;margin-top:8px">
+          <div class="dept-chips tags" style="margin-bottom:8px"></div>
+          <div style="display:flex;gap:8px">
             <input type="text" class="customDeptInput" placeholder="Not listed? Add a custom department / position" maxlength="60" style="flex:1">
             <button type="button" class="btn secondary small addCustomDept">+ Add</button>
           </div>
+          <div class="hint">Pick from suggestions below or add your own.</div>
+          <div class="dept-suggestions tags" style="margin-top:8px"></div>
         </div>
         <button type="button" class="btn ghost small removeLoc">Remove location</button>`;
+    const deptField = div.querySelector('[data-f="departments"]');
+    deptField._selected = new Set();
+    renderDeptChips(deptField);
+    renderDeptSuggestions(deptField);
     div.querySelector('.removeLoc').addEventListener('click', () => div.remove());
     const customInput = div.querySelector('.customDeptInput');
-    const addCustom = () => { addCustomDeptTag(div, customInput.value); customInput.value = ''; customInput.focus(); };
+    const addCustom = () => { addCustomDept(deptField, customInput.value); customInput.value = ''; customInput.focus(); };
     div.querySelector('.addCustomDept').addEventListener('click', addCustom);
     customInput.addEventListener('keydown', (e) => { if (e.key === 'Enter') { e.preventDefault(); addCustom(); } });
     document.getElementById('locations').appendChild(div);
   }
 
-  /** Appends a checked, removable custom department/position tag beside the predefined ones. */
-  function addCustomDeptTag(scopeEl, name) {
+  /** Selected-departments chips for one location, mirroring the company categories picker above. */
+  function renderDeptChips(field) {
+    const box = field.querySelector('.dept-chips');
+    box.innerHTML = [...field._selected].map(d => `<span class="tag" data-d="${RMW.escapeHtml(d)}">${RMW.escapeHtml(d)} ✕</span>`).join('') ||
+            '<span class="muted" style="font-size:.85rem">No departments selected</span>';
+    box.querySelectorAll('.tag').forEach(t => t.addEventListener('click', () => {
+      field._selected.delete(t.dataset.d);
+      renderDeptChips(field);
+      renderDeptSuggestions(field);
+    }));
+  }
+
+  function renderDeptSuggestions(field) {
+    const box = field.querySelector('.dept-suggestions');
+    box.innerHTML = DEPARTMENTS.map(deptLabel).filter(label => !field._selected.has(label))
+            .map(label => `<span class="tag muted" style="cursor:pointer" data-d="${RMW.escapeHtml(label)}">+ ${RMW.escapeHtml(label)}</span>`).join('');
+    box.querySelectorAll('.tag').forEach(t => t.addEventListener('click', () => {
+      field._selected.add(t.dataset.d);
+      renderDeptChips(field);
+      renderDeptSuggestions(field);
+    }));
+  }
+
+  function addCustomDept(field, name) {
     const v = name.trim();
     if (!v) return;
-    const container = scopeEl.querySelector('[data-f="departments"]');
-    if ([...container.querySelectorAll('input[type=checkbox]')].some(c => c.value.toLowerCase() === v.toLowerCase())) return;
-    const label = document.createElement('label');
-    label.className = 'tag muted';
-    label.style.cssText = 'cursor:pointer;user-select:none';
-    label.innerHTML = `<input type="checkbox" value="${RMW.escapeHtml(v)}" checked style="margin-right:4px;vertical-align:middle">${RMW.escapeHtml(v)}`;
-    label.title = 'Custom entry — uncheck to leave it out';
-    container.appendChild(label);
+    field._selected.add(v);
+    renderDeptChips(field);
+    renderDeptSuggestions(field);
   }
 
   document.getElementById('categoryInput').addEventListener('keydown', (e) => {
@@ -152,7 +172,7 @@
     const form = e.target;
     const locations = [...document.querySelectorAll('#locations .card')].map(card => {
       const get = f => card.querySelector(`[data-f="${f}"]`).value.trim();
-      const departments = [...card.querySelectorAll('[data-f="departments"] input:checked')].map(c => c.value);
+      const departments = [...card.querySelector('[data-f="departments"]')._selected];
       return { label: get('label'), addressLine: get('addressLine'), city: get('city'),
         state: get('state'), zipCode: get('zipCode'), country: 'USA', departments };
     });

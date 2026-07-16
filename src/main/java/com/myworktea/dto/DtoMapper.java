@@ -18,7 +18,8 @@ public final class DtoMapper {
                 u.getRole().name(),
                 u.getModeratorPermissions().stream().map(Enum::name).collect(Collectors.toSet()),
                 u.isEmailVerified(), u.isFullyVerified(), u.isEnabled(),
-                u.getFlaggedReason(), avatarUrl(u), u.getCreatedAt(), u.getLastLoginAt());
+                u.getFlaggedReason(), avatarUrl(u), u.getCreatedAt(), u.getLastLoginAt(),
+                u.getDeletionRequestedAt());
     }
 
     /**

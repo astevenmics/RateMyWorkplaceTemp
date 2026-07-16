@@ -7,6 +7,7 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
 
 import java.time.Instant;
+import java.util.List;
 import java.util.Optional;
 
 public interface UserRepository extends JpaRepository<User, Long> {
@@ -26,4 +27,7 @@ public interface UserRepository extends JpaRepository<User, Long> {
     long countByRole(Role role);
 
     long countByCreatedAtAfter(Instant instant);
+
+    /** Self-deleted accounts whose grace period has elapsed and are due for permanent purge. */
+    List<User> findByDeletionRequestedAtNotNullAndDeletionRequestedAtBefore(Instant cutoff);
 }

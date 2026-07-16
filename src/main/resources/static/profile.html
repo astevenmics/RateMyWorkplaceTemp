@@ -67,6 +67,37 @@
           <p>Account: <span id="roleBadge" class="badge approved">—</span></p>
           <a class="btn secondary small" href="/verify.html">Manage verification</a>
         </div>
+
+        <div class="card" style="margin-top:20px;border-color:var(--danger)">
+          <h3 style="margin-top:0;color:var(--danger)">Danger zone</h3>
+          <div id="accountAlert" class="alert"></div>
+
+          <div id="accountActions">
+            <p class="muted" style="font-size:.9rem;margin-top:0">
+              Disabling keeps your feedback and posts visible to others but signs you out immediately.
+              Deleting also signs you out immediately, and permanently erases your account and feedback
+              in 30 days (workplaces you submitted stay listed). Either way, you can reactivate your
+              account yourself any time from the <a href="/reactivate.html">Reactivate Account</a> page —
+              no need to wait on an admin.
+            </p>
+            <div style="display:flex;flex-wrap:wrap;gap:10px">
+              <button class="btn secondary small" type="button" id="showDisableBtn">Disable account</button>
+              <button class="btn danger small" type="button" id="showDeleteBtn">Delete account</button>
+            </div>
+          </div>
+
+          <form id="accountActionForm" class="hidden" style="margin-top:6px">
+            <p id="accountActionPrompt" style="font-weight:600"></p>
+            <div class="field">
+              <label>Confirm your password</label>
+              <input type="password" id="accountActionPassword" required autocomplete="current-password">
+            </div>
+            <div style="display:flex;gap:10px">
+              <button class="btn danger" type="submit" id="accountActionConfirmBtn">Confirm</button>
+              <button class="btn secondary" type="button" id="accountActionCancelBtn">Cancel</button>
+            </div>
+          </form>
+        </div>
       </aside>
     </div>
   </div>
@@ -201,6 +232,53 @@
   });
 
   load();
+
+  // ---- Danger zone: disable / delete account ----
+  const accountAlert = document.getElementById('accountAlert');
+  const accountActionForm = document.getElementById('accountActionForm');
+  let pendingAccountAction = null; // 'disable' | 'delete'
+
+  function showAccountActionForm(action) {
+    pendingAccountAction = action;
+    RMW.clearToast(accountAlert);
+    document.getElementById('accountActionPrompt').textContent = action === 'delete'
+            ? 'Type your password to schedule your account for permanent deletion in 30 days.'
+            : 'Type your password to disable your account. You’ll be signed out immediately.';
+    const confirmBtn = document.getElementById('accountActionConfirmBtn');
+    confirmBtn.textContent = action === 'delete' ? 'Delete my account' : 'Disable my account';
+    confirmBtn.className = action === 'delete' ? 'btn danger' : 'btn secondary';
+    document.getElementById('accountActions').classList.add('hidden');
+    accountActionForm.classList.remove('hidden');
+    document.getElementById('accountActionPassword').value = '';
+    document.getElementById('accountActionPassword').focus();
+  }
+
+  function hideAccountActionForm() {
+    pendingAccountAction = null;
+    accountActionForm.classList.add('hidden');
+    document.getElementById('accountActions').classList.remove('hidden');
+  }
+
+  document.getElementById('showDisableBtn').addEventListener('click', () => showAccountActionForm('disable'));
+  document.getElementById('showDeleteBtn').addEventListener('click', () => showAccountActionForm('delete'));
+  document.getElementById('accountActionCancelBtn').addEventListener('click', hideAccountActionForm);
+
+  accountActionForm.addEventListener('submit', async (e) => {
+    e.preventDefault();
+    RMW.clearToast(accountAlert);
+    const password = document.getElementById('accountActionPassword').value;
+    const path = pendingAccountAction === 'delete' ? '/api/profile/delete' : '/api/profile/disable';
+    const btn = document.getElementById('accountActionConfirmBtn');
+    RMW.setLoading(btn, true, 'Please wait…');
+    try {
+      const res = await RMW.api(path, { method: 'POST', body: { password } });
+      RMW.showToast(res.message, 'success', 6000);
+      setTimeout(() => RMW.logout(), 1500);
+    } catch (err) {
+      RMW.toast(accountAlert, 'error', err.message);
+      RMW.setLoading(btn, false);
+    }
+  });
 </script>
 </body>
 </html>

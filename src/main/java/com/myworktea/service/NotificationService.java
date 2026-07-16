@@ -8,6 +8,10 @@ import org.springframework.mail.javamail.JavaMailSender;
 import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Service;
 
+import java.time.Instant;
+import java.time.ZoneOffset;
+import java.time.format.DateTimeFormatter;
+
 /**
  * Sends transactional emails (verification codes, account &amp; moderation notices).
  * When {@code app.mail.enabled=false} (the local-dev default) messages are logged
@@ -88,6 +92,47 @@ public class NotificationService {
                 
                 If you believe this was done in error, please contact our support team.""";
         send(to, "Your MyWorkTea account has been removed", greeting(displayName) + body + SIGNOFF);
+    }
+
+    @Async
+    public void notifySelfDisabled(String to, String displayName) {
+        String body = """
+                This confirms that you've disabled your MyWorkTea account. You won't be able to sign \
+                in while it's disabled, but your existing feedback and posts remain visible to others.
+                
+                Changed your mind? You can reactivate it any time from the Reactivate Account page,
+                just enter your username or email and your password.
+
+                If this wasn't you, please contact our support team right away.""";
+        send(to, "Your MyWorkTea account has been disabled", greeting(displayName) + body + SIGNOFF);
+    }
+
+    @Async
+    public void notifyDeletionScheduled(String to, String displayName, Instant purgeAt) {
+        String purgeDate = DateTimeFormatter.ofPattern("MMMM d, yyyy").withZone(ZoneOffset.UTC).format(purgeAt);
+        String body = """
+                This confirms that you've requested deletion of your MyWorkTea account. Your account \
+                has been disabled immediately, and on %s it — along with your feedback, reviews and \
+                employment proofs — will be permanently deleted. Workplaces you submitted will stay \
+                listed, no longer credited to your account.
+                
+                Changed your mind? You can cancel this and reactivate your account any time before \\
+                                then from the Reactivate Account page — just enter your username or email and your \\
+                                password.
+                
+
+                If this wasn't you, please contact our support team right away.""".formatted(purgeDate);
+        send(to, "Your MyWorkTea account is scheduled for deletion", greeting(displayName) + body + SIGNOFF);
+    }
+
+    @Async
+    public void notifySelfReactivated(String to, String displayName) {
+        String body = """
+                This confirms that your MyWorkTea account has been reactivated and you can sign in \
+                again. If a deletion was scheduled, it has been cancelled.
+
+                If this wasn't you, please contact our support team right away.""";
+        send(to, "Your MyWorkTea account has been reactivated", greeting(displayName) + body + SIGNOFF);
     }
 
     // ----- feedback -----

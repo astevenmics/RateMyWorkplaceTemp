@@ -15,7 +15,7 @@ public final class Responses {
             String displayName, String username, String email,
             String role, Set<String> moderatorPermissions, boolean emailVerified,
             boolean fullyVerified, boolean enabled, String flaggedReason, String avatarUrl,
-            Instant createdAt, Instant lastLoginAt) {
+            Instant createdAt, Instant lastLoginAt, Instant deletionRequestedAt) {
     }
 
     public record CategoryDto(Long id, String name, String slug) {

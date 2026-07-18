@@ -18,14 +18,10 @@
 <body>
 <header class="site-header" id="site-header"></header>
 
-<section class="hero">
+<section class="search-strip">
   <div class="container">
-    <h1>Vent about work. Rate it if you want.</h1>
-    <p class="lead">MyWorkTea is where people spill the tea on what it's really like to work somewhere —
-      vent anonymously, no account needed, or rate specific workplaces if you want to back your story up with a score.</p>
-
-    <form class="search-bar" id="searchForm">
-      <input type="text" id="searchInput" placeholder="Search by company, city, ZIP code or keyword…" aria-label="Search">
+    <form class="search-bar search-bar-wide" id="searchForm">
+      <input type="text" id="searchInput" placeholder="Search workplaces by company, city, ZIP code or keyword…" aria-label="Search">
       <button class="btn" type="submit">Search</button>
     </form>
     <div class="search-hints">
@@ -34,36 +30,43 @@
       <a href="/workplaces.html?q=Finance">Finance</a>
       <a href="/workplaces.html">Browse all →</a>
     </div>
-    <p class="search-hints" style="margin-top:6px">Don't want to search a specific company? <a href="#vent">Just vent anonymously ↓</a></p>
-
-    <div class="stat-row" id="publicStats"></div>
   </div>
 </section>
 
 <section class="section" id="vent">
   <div class="container">
-    <div style="display:flex;justify-content:space-between;align-items:flex-end;flex-wrap:wrap;gap:10px;margin-bottom:16px">
-      <div>
-        <h2 style="margin-bottom:2px">Spill the tea</h2>
-        <p class="subtitle" style="margin-bottom:0">Anonymous work rants — no account needed to read or post.</p>
+    <div style="display:flex;justify-content:space-between;align-items:flex-end;flex-wrap:wrap;gap:14px;margin-bottom:6px">
+      <div style="max-width:640px">
+        <h1 style="margin:0 0 4px;font-size:clamp(1.6rem,3.4vw,2.3rem);letter-spacing:-0.02em">Vent about work. Rate it if you want.</h1>
+        <p class="lead" style="margin:0;font-size:1.02rem">MyWorkTea is where people spill the tea on what it's really like to work somewhere —
+          vent anonymously, no account needed, or rate specific workplaces if you want to back your story up with a score.</p>
       </div>
-      <a href="/rants.html" class="pill-link">See all rants →</a>
+      <button class="btn" type="button" id="openRantModalBtn" style="flex:none">+ Post a Rant</button>
     </div>
 
-    <div class="card" style="margin-bottom:20px;max-width:640px">
-      <div id="rantAlert" class="alert"></div>
-      <form id="rantForm">
-        <div class="field">
-          <textarea name="body" rows="3" required maxlength="2000" placeholder="What's going on at work? Get it off your chest — totally anonymous."></textarea>
-        </div>
-        <div class="field"><input type="text" name="nickname" maxlength="40" placeholder="Nickname (optional, defaults to Anonymous)"></div>
-        <button class="btn" type="submit">Post anonymously</button>
-      </form>
-    </div>
+    <div class="stat-row" id="publicStats" style="margin:18px 0"></div>
 
     <div class="grid" id="rantFeed"><div class="spinner">Loading…</div></div>
+    <p class="center" style="margin-top:20px"><a class="pill-link" href="/rants.html">See all rants →</a></p>
   </div>
 </section>
+
+<dialog id="rantModal" class="modal">
+  <div class="modal-card">
+    <div class="modal-head">
+      <h3>Post a rant</h3>
+      <button type="button" class="modal-close" id="closeRantModal" aria-label="Close">✕</button>
+    </div>
+    <div id="rantAlert" class="alert"></div>
+    <form id="rantForm">
+      <div class="field">
+        <textarea name="body" rows="4" required maxlength="2000" placeholder="What's going on at work? Get it off your chest — totally anonymous." autofocus></textarea>
+      </div>
+      <div class="field"><input type="text" name="nickname" maxlength="40" placeholder="Nickname (optional, defaults to Anonymous)"></div>
+      <button class="btn" type="submit" style="width:100%">Post anonymously</button>
+    </form>
+  </div>
+</dialog>
 
 <section class="section" style="padding-bottom:0">
   <div class="container">
@@ -85,7 +88,7 @@
   <div class="container">
     <h2>How it works</h2>
     <div class="grid" style="margin-top:18px">
-      <div class="card"><h3>1 · Vent anonymously</h3><p class="muted">No account needed — just write what's on your mind and post it. Not tied to any company.</p></div>
+      <div class="card"><h3>1 · Vent anonymously</h3><p class="muted">Click "+ Post a Rant", write what's on your mind, and post it — no account needed, not tied to any company.</p></div>
       <div class="card"><h3>2 · Or call out a company</h3><p class="muted">Verify your employment to unlock posting company-specific feedback, with a star rating attached.</p></div>
       <div class="card"><h3>3 · Read and rate</h3><p class="muted">Browse anonymous rants and verified company reviews — no account needed to read either.</p></div>
     </div>
@@ -135,7 +138,8 @@
   async function loadRants() {
     const box = document.getElementById('rantFeed');
     try {
-      const rants = await RMW.api('/api/rants/random?limit=6');
+      const data = await RMW.api('/api/rants?page=0&size=12');
+      const rants = data.content || [];
       if (!rants.length) { box.innerHTML = '<p class="muted">No rants yet — be the first to vent!</p>'; return; }
       box.innerHTML = rants.map(rantCard).join('');
     } catch (e) {
@@ -150,7 +154,18 @@
       </div>`;
   }
 
-  document.getElementById('rantForm').addEventListener('submit', async (e) => {
+  // ---- post-a-rant modal ----
+  const rantModal = document.getElementById('rantModal');
+  const rantForm = document.getElementById('rantForm');
+  document.getElementById('openRantModalBtn').addEventListener('click', () => {
+    RMW.clearToast(document.getElementById('rantAlert'));
+    rantForm.reset();
+    rantModal.showModal();
+  });
+  document.getElementById('closeRantModal').addEventListener('click', () => rantModal.close());
+  rantModal.addEventListener('click', (e) => { if (e.target === rantModal) rantModal.close(); });
+
+  rantForm.addEventListener('submit', async (e) => {
     e.preventDefault();
     const alertEl = document.getElementById('rantAlert');
     const form = e.target;
@@ -162,8 +177,8 @@
           nickname: form.nickname.value.trim() || null,
           body: form.body.value.trim()
         }});
-      RMW.toast(alertEl, 'success', 'Posted! Thanks for sharing.');
-      form.reset();
+      rantModal.close();
+      RMW.showToast('Posted! Thanks for sharing.', 'success');
       loadRants();
     } catch (err) {
       let msg = err.message;

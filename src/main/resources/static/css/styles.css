@@ -226,6 +226,40 @@ img { max-width: 100%; }
 }
 .search-hints { margin-top: 12px; color: var(--muted); font-size: .9rem; }
 .search-hints a { margin-right: 12px; }
+.search-bar-wide { max-width: none; }
+
+/* ---------------- Search bar strip (homepage, below the nav) ---------------- */
+.search-strip { padding: 20px 0; border-bottom: 1px solid var(--border); }
+
+/* ---------------- Modal (rant posting, etc.) ---------------- */
+dialog.modal {
+    border: none;
+    border-radius: var(--radius);
+    padding: 0;
+    background: var(--surface);
+    color: var(--text);
+    box-shadow: var(--shadow);
+    width: min(520px, calc(100vw - 32px));
+    max-height: calc(100vh - 64px);
+    overflow: auto;
+}
+dialog.modal::backdrop {
+    background: rgba(8, 12, 22, 0.6);
+    backdrop-filter: blur(2px);
+}
+dialog.modal .modal-card { padding: 22px; }
+.modal-head { display: flex; justify-content: space-between; align-items: center; margin-bottom: 14px; }
+.modal-head h3 { margin: 0; }
+.modal-close {
+    background: var(--surface-2);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    width: 32px; height: 32px;
+    font-size: 1rem; cursor: pointer; color: var(--text);
+    display: inline-flex; align-items: center; justify-content: center;
+    flex: none;
+}
+.modal-close:hover { background: var(--primary-soft); }
 
 /* ---------------- Layout helpers ---------------- */
 .section { padding: 40px 0; }

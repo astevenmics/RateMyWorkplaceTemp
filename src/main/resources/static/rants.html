@@ -20,23 +20,17 @@
 
 <section class="section">
     <div class="container">
-        <h2 style="margin-top:0">Rants</h2>
-        <p class="subtitle">Anonymous, non-company-specific work rants — no account needed to read or post. Want to
-            call out a specific workplace instead? <a href="/workplaces.html">Browse workplaces</a> (requires
-            verifying your employment there).</p>
-
-        <div class="card" style="margin-bottom:20px;max-width:640px">
-            <div id="rantAlert" class="alert"></div>
-            <form id="rantForm">
-                <div class="field">
-                    <textarea name="body" rows="3" required maxlength="2000" placeholder="What's going on at work? Get it off your chest — totally anonymous."></textarea>
-                </div>
-                <div class="field"><input type="text" name="nickname" maxlength="40" placeholder="Nickname (optional, defaults to Anonymous)"></div>
-                <button class="btn" type="submit">Post anonymously</button>
-            </form>
+        <div style="display:flex;justify-content:space-between;align-items:flex-end;flex-wrap:wrap;gap:14px;margin-bottom:6px">
+            <div>
+                <h2 style="margin:0 0 4px">Rants</h2>
+                <p class="subtitle" style="margin:0">Anonymous, non-company-specific work rants — no account needed to read or post. Want to
+                    call out a specific workplace instead? <a href="/workplaces.html">Browse workplaces</a> (requires
+                    verifying your employment there).</p>
+            </div>
+            <button class="btn" type="button" id="openRantModalBtn">+ Post a Rant</button>
         </div>
 
-        <div class="ad-slot ad-banner">
+        <div class="ad-slot ad-banner" style="margin-top:18px">
             <div><strong>Advertisement</strong><br>Google AdSense slot<br><span style="font-size:.78rem">(728×90 / responsive)</span></div>
         </div>
 
@@ -44,6 +38,23 @@
         <div class="pagination" id="pagination"></div>
     </div>
 </section>
+
+<dialog id="rantModal" class="modal">
+    <div class="modal-card">
+        <div class="modal-head">
+            <h3>Post a rant</h3>
+            <button type="button" class="modal-close" id="closeRantModal" aria-label="Close">✕</button>
+        </div>
+        <div id="rantAlert" class="alert"></div>
+        <form id="rantForm">
+            <div class="field">
+                <textarea name="body" rows="4" required maxlength="2000" placeholder="What's going on at work? Get it off your chest — totally anonymous." autofocus></textarea>
+            </div>
+            <div class="field"><input type="text" name="nickname" maxlength="40" placeholder="Nickname (optional, defaults to Anonymous)"></div>
+            <button class="btn" type="submit" style="width:100%">Post anonymously</button>
+        </form>
+    </div>
+</dialog>
 
 <footer class="site-footer" id="site-footer"></footer>
 
@@ -83,7 +94,18 @@
         pag.querySelectorAll('button[data-p]').forEach(b => b.addEventListener('click', () => { page = parseInt(b.dataset.p, 10); window.scrollTo({ top: 0, behavior: 'smooth' }); load(); }));
     }
 
-    document.getElementById('rantForm').addEventListener('submit', async (e) => {
+    // ---- post-a-rant modal ----
+    const rantModal = document.getElementById('rantModal');
+    const rantForm = document.getElementById('rantForm');
+    document.getElementById('openRantModalBtn').addEventListener('click', () => {
+        RMW.clearToast(document.getElementById('rantAlert'));
+        rantForm.reset();
+        rantModal.showModal();
+    });
+    document.getElementById('closeRantModal').addEventListener('click', () => rantModal.close());
+    rantModal.addEventListener('click', (e) => { if (e.target === rantModal) rantModal.close(); });
+
+    rantForm.addEventListener('submit', async (e) => {
         e.preventDefault();
         const alertEl = document.getElementById('rantAlert');
         const form = e.target;
@@ -95,8 +117,8 @@
                     nickname: form.nickname.value.trim() || null,
                     body: form.body.value.trim()
                 }});
-            RMW.toast(alertEl, 'success', 'Posted! Thanks for sharing.');
-            form.reset();
+            rantModal.close();
+            RMW.showToast('Posted! Thanks for sharing.', 'success');
             page = 0;
             load();
         } catch (err) {

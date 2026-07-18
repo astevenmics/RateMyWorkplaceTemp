@@ -28,6 +28,26 @@
 
   function gAlert(type, msg) { RMW.toast(document.getElementById('globalAlert'), type, msg); }
 
+  // ---------------- Shared confirm-delete modal (replaces window.confirm) ----------------
+  const confirmModal = document.getElementById('confirmModal');
+  let confirmModalResolve = null;
+  function askConfirm(title, body, confirmLabel) {
+    document.getElementById('confirmModalTitle').textContent = title;
+    document.getElementById('confirmModalBody').textContent = body;
+    document.getElementById('confirmModalConfirmBtn').textContent = confirmLabel || 'Delete';
+    confirmModal.showModal();
+    return new Promise(resolve => { confirmModalResolve = resolve; });
+  }
+  function settleConfirm(result) {
+    confirmModal.close();
+    if (confirmModalResolve) { confirmModalResolve(result); confirmModalResolve = null; }
+  }
+  document.getElementById('confirmModalConfirmBtn').addEventListener('click', () => settleConfirm(true));
+  document.getElementById('confirmModalCancelBtn').addEventListener('click', () => settleConfirm(false));
+  document.getElementById('closeConfirmModal').addEventListener('click', () => settleConfirm(false));
+  confirmModal.addEventListener('cancel', () => settleConfirm(false)); // Escape key
+  confirmModal.addEventListener('click', (e) => { if (e.target === confirmModal) settleConfirm(false); });
+
   async function init() {
     me = await RMW.currentUser(true);
     if (!me) { window.location.href = '/login.html?next=/admin.html'; return; }
@@ -353,7 +373,7 @@
           <p style="margin:8px 0;overflow-wrap:anywhere;word-break:break-word;white-space:pre-wrap">${E(r.body)}</p>
           <button class="btn small danger" data-del="${r.id}">Delete</button>
         </div>`).join('');
-      box.querySelectorAll('[data-del]').forEach(b => b.addEventListener('click', () => deleteRant(b.dataset.del)));
+      box.querySelectorAll('[data-del]').forEach(b => b.addEventListener('click', () => deleteRant(b.dataset.del, b.closest('.card'))));
       renderRantsPagination(data);
     } catch (e) { box.innerHTML = `<p class="muted">${E(e.message)}</p>`; }
   }
@@ -367,10 +387,15 @@
     pag.innerHTML = html;
     pag.querySelectorAll('button[data-p]').forEach(b => b.addEventListener('click', () => { rantsPage = parseInt(b.dataset.p,10); loadRants(); }));
   }
-  async function deleteRant(id) {
-    if (!confirm('Permanently delete this rant?')) return;
-    try { await RMW.api(`/api/mod/rants/${id}`, { method: 'DELETE' }); loadRants(); }
-    catch (e) { gAlert('error', e.message); }
+  async function deleteRant(id, cardEl) {
+    const ok = await askConfirm('Delete this rant?', 'This permanently removes the rant. This cannot be undone.');
+    if (!ok) return;
+    try {
+      await RMW.api(`/api/mod/rants/${id}`, { method: 'DELETE' });
+      if (cardEl) cardEl.remove();
+      const box = document.getElementById('rantsList');
+      if (!box.querySelector('[data-del]')) box.innerHTML = '<p class="muted">No rants yet.</p>';
+    } catch (e) { gAlert('error', e.message); }
   }
 
   // ---------------- Users ----------------

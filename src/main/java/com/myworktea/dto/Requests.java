@@ -112,13 +112,8 @@ public final class Requests {
             @NotBlank @Size(max = 2000) String body) {
     }
 
-    /**
-     * Casts/changes/retracts a vote on a rant. {@code voterId} is a client-generated anonymous id
-     * (ignored, and the caller's account used instead, if the request is authenticated).
-     */
-    public record VoteRequest(
-            @NotBlank @Pattern(regexp = "UP|DOWN") String type,
-            @Size(max = 100) String voterId) {
+    /** Casts/changes/retracts a vote on a rant. Voter identity is resolved server-side (see RantController). */
+    public record VoteRequest(@NotBlank @Pattern(regexp = "UP|DOWN") String type) {
     }
 
     /** Confirms a self-service account action (disable/delete) by re-checking the caller's password. */

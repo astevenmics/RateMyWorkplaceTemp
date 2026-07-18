@@ -85,7 +85,7 @@
         const box = document.getElementById('rantFeed');
         box.innerHTML = '<div class="spinner">Loading…</div>';
         try {
-            const data = await RMW.api(`/api/rants?page=${page}&size=20&sort=${sort}&voterId=${encodeURIComponent(RMW.anonId())}`);
+            const data = await RMW.api(`/api/rants?page=${page}&size=20&sort=${sort}`);
             const items = data.content || [];
             if (!items.length) { box.innerHTML = '<p class="muted">No rants yet — be the first to vent!</p>'; document.getElementById('pagination').innerHTML = ''; return; }
             box.innerHTML = items.map(rantCard).join('');
@@ -123,14 +123,56 @@
           <button type="button" class="vote-btn down${r.myVote === 'DOWN' ? ' active' : ''}" data-vote="DOWN">▼ ${r.downvotes}</button>`;
     }
 
+    // Reads the currently-rendered vote state back out of a vote-group's own buttons, so the
+    // optimistic update below has no separate state to keep in sync with what's on screen.
+    function readVoteState(groupEl) {
+        const up = groupEl.querySelector('.vote-btn.up');
+        const down = groupEl.querySelector('.vote-btn.down');
+        return {
+            myVote: up.classList.contains('active') ? 'UP' : (down.classList.contains('active') ? 'DOWN' : null),
+            upvotes: parseInt(up.textContent.replace(/\D/g, ''), 10) || 0,
+            downvotes: parseInt(down.textContent.replace(/\D/g, ''), 10) || 0
+        };
+    }
+
+    // Mirrors the toggle/switch/retract semantics of RantService.vote(), so the UI can jump to the
+    // post-vote state immediately instead of waiting on a round trip.
+    function nextVoteState(state, type) {
+        const next = { ...state };
+        if (state.myVote === type) {
+            next.myVote = null;
+            if (type === 'UP') next.upvotes--; else next.downvotes--;
+        } else {
+            if (state.myVote === 'UP') next.upvotes--;
+            if (state.myVote === 'DOWN') next.downvotes--;
+            next.myVote = type;
+            if (type === 'UP') next.upvotes++; else next.downvotes++;
+        }
+        return next;
+    }
+
+    function renderVoteState(groupEl, state) {
+        groupEl.innerHTML = voteButtons({ upvotes: state.upvotes, downvotes: state.downvotes, myVote: state.myVote });
+    }
+
+    // Optimistic: apply the predicted new state instantly, then reconcile with (or roll back to
+    // match) the server's actual response once it arrives.
     async function castVote(id, type) {
+        const groups = [...document.querySelectorAll(`.rant-card[data-id="${id}"] [data-votes]`)];
+        const detailVotes = document.getElementById('rantDetailVotes');
+        if (detailVotes.dataset.id === String(id)) groups.push(detailVotes);
+        if (!groups.length) return;
+
+        const previousState = readVoteState(groups[0]);
+        const predictedState = nextVoteState(previousState, type);
+        groups.forEach(g => renderVoteState(g, predictedState));
+
         try {
-            const dto = await RMW.api(`/api/rants/${id}/vote`, { method: 'POST', body: { type, voterId: RMW.anonId() } });
-            document.querySelectorAll(`.rant-card[data-id="${id}"] [data-votes]`).forEach(el => { el.innerHTML = voteButtons(dto); });
-            const detailVotes = document.getElementById('rantDetailVotes');
-            if (detailVotes.dataset.id === String(id)) detailVotes.innerHTML = voteButtons(dto);
+            const dto = await RMW.api(`/api/rants/${id}/vote`, { method: 'POST', body: { type } });
+            groups.forEach(g => { if (document.body.contains(g)) renderVoteState(g, { upvotes: dto.upvotes, downvotes: dto.downvotes, myVote: dto.myVote }); });
         } catch (e) {
-            RMW.showToast(e.message, 'error');
+            groups.forEach(g => { if (document.body.contains(g)) renderVoteState(g, previousState); });
+            RMW.showToast(e.message || 'Could not register your vote — please try again.', 'error');
         }
     }
 

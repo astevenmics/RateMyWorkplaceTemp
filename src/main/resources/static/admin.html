@@ -213,6 +213,20 @@
   </div>
 </section>
 
+<dialog id="confirmModal" class="modal">
+  <div class="modal-card">
+    <div class="modal-head">
+      <h3 id="confirmModalTitle">Are you sure?</h3>
+      <button type="button" class="modal-close" id="closeConfirmModal" aria-label="Close">✕</button>
+    </div>
+    <p id="confirmModalBody" class="muted" style="margin-top:0"></p>
+    <div style="display:flex;gap:10px;margin-top:16px">
+      <button type="button" class="btn danger" id="confirmModalConfirmBtn" style="flex:1">Delete</button>
+      <button type="button" class="btn secondary" id="confirmModalCancelBtn" style="flex:1">Cancel</button>
+    </div>
+  </div>
+</dialog>
+
 <footer class="site-footer" id="site-footer"></footer>
 
 <script src="/js/app.js"></script>

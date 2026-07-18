@@ -36,6 +36,14 @@ public class Rant {
     @Column(nullable = false)
     private int downvotes = 0;
 
+    /**
+     * Server-derived identity of whoever posted this ("user:&lt;id&gt;" or "ip:&lt;hash&gt;" —
+     * see RantController), used only to enforce the post cooldown. Nullable so pre-existing rows
+     * (from before this field existed) don't break; they simply never match a cooldown lookup.
+     */
+    @Column(length = 140)
+    private String posterId;
+
     public Long getId() { return id; }
     public void setId(Long id) { this.id = id; }
     public String getNickname() { return nickname; }
@@ -48,4 +56,6 @@ public class Rant {
     public void setUpvotes(int upvotes) { this.upvotes = upvotes; }
     public int getDownvotes() { return downvotes; }
     public void setDownvotes(int downvotes) { this.downvotes = downvotes; }
+    public String getPosterId() { return posterId; }
+    public void setPosterId(String posterId) { this.posterId = posterId; }
 }

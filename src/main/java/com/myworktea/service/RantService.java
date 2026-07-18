@@ -14,6 +14,9 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.time.Duration;
+import java.time.Instant;
+import java.time.temporal.ChronoUnit;
 import java.util.List;
 import java.util.Map;
 import java.util.function.Function;
@@ -22,6 +25,9 @@ import java.util.stream.Collectors;
 /** Anonymous, non-company-specific work rants — no login required to read, post or vote. */
 @Service
 public class RantService {
+
+    /** Minutes a poster must wait between rants; admins are exempt (see RantController). */
+    public static final int POST_COOLDOWN_MINUTES = 30;
 
     private final RantRepository rantRepository;
     private final RantVoteRepository rantVoteRepository;
@@ -32,12 +38,28 @@ public class RantService {
     }
 
     @Transactional
-    public Responses.RantDto submit(Requests.RantRequest req) {
+    public Responses.RantDto submit(Requests.RantRequest req, String posterId, boolean exemptFromCooldown) {
+        if (!exemptFromCooldown) {
+            enforceCooldown(posterId);
+        }
         String nickname = req.nickname() == null ? null : req.nickname().trim();
         Rant rant = new Rant();
         rant.setNickname(nickname == null || nickname.isEmpty() ? null : nickname);
         rant.setBody(req.body().trim());
+        rant.setPosterId(posterId);
         return DtoMapper.rant(rantRepository.save(rant));
+    }
+
+    private void enforceCooldown(String posterId) {
+        Instant cutoff = Instant.now().minus(POST_COOLDOWN_MINUTES, ChronoUnit.MINUTES);
+        rantRepository.findFirstByPosterIdAndCreatedAtAfterOrderByCreatedAtDesc(posterId, cutoff)
+                .ifPresent(last -> {
+                    Instant canPostAt = last.getCreatedAt().plus(POST_COOLDOWN_MINUTES, ChronoUnit.MINUTES);
+                    long remainingMinutes = Math.max(1,
+                            (Duration.between(Instant.now(), canPostAt).toSeconds() + 59) / 60);
+                    throw ApiException.tooManyRequests("You can post another rant in about "
+                            + remainingMinutes + " minute" + (remainingMinutes == 1 ? "" : "s") + ".");
+                });
     }
 
     /** A random sample for the homepage teaser. {@code voterId} may be null (no vote highlighting). */

@@ -12,7 +12,6 @@ import org.springframework.core.Ordered;
 import org.springframework.core.annotation.Order;
 import org.springframework.http.MediaType;
 import org.springframework.stereotype.Component;
-import org.springframework.util.StringUtils;
 import org.springframework.web.filter.OncePerRequestFilter;
 
 import java.io.IOException;
@@ -34,11 +33,13 @@ import java.util.concurrent.ConcurrentMap;
 public class RateLimitFilter extends OncePerRequestFilter {
 
     private final RateLimitProperties props;
+    private final ClientIpResolver clientIpResolver;
     private final ConcurrentMap<String, Bucket> globalBuckets = new ConcurrentHashMap<>();
     private final ConcurrentMap<String, Bucket> sensitiveBuckets = new ConcurrentHashMap<>();
 
-    public RateLimitFilter(RateLimitProperties props) {
+    public RateLimitFilter(RateLimitProperties props, ClientIpResolver clientIpResolver) {
         this.props = props;
+        this.clientIpResolver = clientIpResolver;
     }
 
     @Override
@@ -57,7 +58,7 @@ public class RateLimitFilter extends OncePerRequestFilter {
     protected void doFilterInternal(@NonNull HttpServletRequest request,
                                     @NonNull HttpServletResponse response,
                                     @NonNull FilterChain filterChain) throws ServletException, IOException {
-        String ip = clientIp(request);
+        String ip = clientIpResolver.resolve(request);
         boolean sensitive = isSensitive(request);
 
         Bucket bucket = sensitive
@@ -108,14 +109,4 @@ public class RateLimitFilter extends OncePerRequestFilter {
                 .build();
     }
 
-    private String clientIp(HttpServletRequest request) {
-        if (props.isTrustForwardedFor()) {
-            String forwarded = request.getHeader("X-Forwarded-For");
-            if (StringUtils.hasText(forwarded)) {
-                int comma = forwarded.indexOf(',');
-                return (comma > 0 ? forwarded.substring(0, comma) : forwarded).trim();
-            }
-        }
-        return request.getRemoteAddr();
-    }
 }

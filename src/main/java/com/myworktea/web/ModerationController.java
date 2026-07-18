@@ -34,15 +34,17 @@ public class ModerationController {
     private final AdminService adminService;
     private final FileStorageService fileStorageService;
     private final CurrentUserService currentUserService;
+    private final RantService rantService;
 
     public ModerationController(ProofService proofService, FeedbackService feedbackService,
                                 AdminService adminService, FileStorageService fileStorageService,
-                                CurrentUserService currentUserService) {
+                                CurrentUserService currentUserService, RantService rantService) {
         this.proofService = proofService;
         this.feedbackService = feedbackService;
         this.adminService = adminService;
         this.fileStorageService = fileStorageService;
         this.currentUserService = currentUserService;
+        this.rantService = rantService;
     }
 
     // ---- proofs (employment proof approval) ----
@@ -118,6 +120,14 @@ public class ModerationController {
     public Responses.SimpleMessage deleteFeedback(@PathVariable Long id) {
         feedbackService.delete(id);
         return Responses.SimpleMessage.ok("Feedback deleted");
+    }
+
+    // ---- anonymous rant moderation ----
+    @PreAuthorize("hasRole('ADMIN') or hasAuthority('MOD_MODERATE_FEEDBACK')")
+    @DeleteMapping("/rants/{id}")
+    public Responses.SimpleMessage deleteRant(@PathVariable Long id) {
+        rantService.delete(id);
+        return Responses.SimpleMessage.ok("Rant deleted");
     }
 
     // ---- user moderation (flagging) ----

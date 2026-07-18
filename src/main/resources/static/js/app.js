@@ -274,6 +274,7 @@ const RMW = (() => {
             <a class="brand" href="/index.html">MyWork<span class="dot">Tea</span></a>
             <button class="nav-toggle" aria-label="Menu" id="navToggle">☰</button>
             <nav class="nav-links" id="navLinks">
+              <a href="/rants.html">Rants</a>
               <a href="/workplaces.html">Browse</a>
               <a href="/updates.html">Updates</a>
               <a href="/submit-workplace.html">Add Workplace</a>

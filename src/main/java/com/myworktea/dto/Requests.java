@@ -106,6 +106,12 @@ public final class Requests {
     public record FlagUserRequest(@Size(max = 255) String reason) {
     }
 
+    /** An anonymous, non-company-specific work rant — no account required. */
+    public record RantRequest(
+            @Size(max = 40) String nickname,
+            @NotBlank @Size(max = 2000) String body) {
+    }
+
     /** Confirms a self-service account action (disable/delete) by re-checking the caller's password. */
     public record AccountActionRequest(@NotBlank String password) {
     }

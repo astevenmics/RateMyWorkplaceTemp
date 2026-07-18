@@ -22,7 +22,7 @@
   <div class="container">
     <h1>Vent about work. Rate it if you want.</h1>
     <p class="lead">MyWorkTea is where people spill the tea on what it's really like to work somewhere —
-      get it off your chest, and rate specific workplaces if you want to back your story up with a score.</p>
+      vent anonymously, no account needed, or rate specific workplaces if you want to back your story up with a score.</p>
 
     <form class="search-bar" id="searchForm">
       <input type="text" id="searchInput" placeholder="Search by company, city, ZIP code or keyword…" aria-label="Search">
@@ -34,8 +34,34 @@
       <a href="/workplaces.html?q=Finance">Finance</a>
       <a href="/workplaces.html">Browse all →</a>
     </div>
+    <p class="search-hints" style="margin-top:6px">Don't want to search a specific company? <a href="#vent">Just vent anonymously ↓</a></p>
 
     <div class="stat-row" id="publicStats"></div>
+  </div>
+</section>
+
+<section class="section" id="vent">
+  <div class="container">
+    <div style="display:flex;justify-content:space-between;align-items:flex-end;flex-wrap:wrap;gap:10px;margin-bottom:16px">
+      <div>
+        <h2 style="margin-bottom:2px">Spill the tea</h2>
+        <p class="subtitle" style="margin-bottom:0">Anonymous work rants — no account needed to read or post.</p>
+      </div>
+      <a href="/rants.html" class="pill-link">See all rants →</a>
+    </div>
+
+    <div class="card" style="margin-bottom:20px;max-width:640px">
+      <div id="rantAlert" class="alert"></div>
+      <form id="rantForm">
+        <div class="field">
+          <textarea name="body" rows="3" required maxlength="2000" placeholder="What's going on at work? Get it off your chest — totally anonymous."></textarea>
+        </div>
+        <div class="field"><input type="text" name="nickname" maxlength="40" placeholder="Nickname (optional, defaults to Anonymous)"></div>
+        <button class="btn" type="submit">Post anonymously</button>
+      </form>
+    </div>
+
+    <div class="grid" id="rantFeed"><div class="spinner">Loading…</div></div>
   </div>
 </section>
 
@@ -59,9 +85,9 @@
   <div class="container">
     <h2>How it works</h2>
     <div class="grid" style="margin-top:18px">
-      <div class="card"><h3>1 · Get it off your chest</h3><p class="muted">Search any company or location and read what people are saying — no account needed.</p></div>
-      <div class="card"><h3>2 · Verify your employment</h3><p class="muted">Upload an offer letter or employment confirmation to unlock posting for that company.</p></div>
-      <div class="card"><h3>3 · Rate it if you want</h3><p class="muted">Vent freely, and add a 1–5 star rating if you want to back your story up with a score.</p></div>
+      <div class="card"><h3>1 · Vent anonymously</h3><p class="muted">No account needed — just write what's on your mind and post it. Not tied to any company.</p></div>
+      <div class="card"><h3>2 · Or call out a company</h3><p class="muted">Verify your employment to unlock posting company-specific feedback, with a star rating attached.</p></div>
+      <div class="card"><h3>3 · Read and rate</h3><p class="muted">Browse anonymous rants and verified company reviews — no account needed to read either.</p></div>
     </div>
   </div>
 </section>
@@ -104,6 +130,51 @@
       box.innerHTML = '<p class="muted">Could not load workplaces.</p>';
     }
   })();
+
+  // ---- anonymous rants ----
+  async function loadRants() {
+    const box = document.getElementById('rantFeed');
+    try {
+      const rants = await RMW.api('/api/rants/random?limit=6');
+      if (!rants.length) { box.innerHTML = '<p class="muted">No rants yet — be the first to vent!</p>'; return; }
+      box.innerHTML = rants.map(rantCard).join('');
+    } catch (e) {
+      box.innerHTML = '<p class="muted">Could not load rants.</p>';
+    }
+  }
+
+  function rantCard(r) {
+    return `<div class="card">
+        <p style="margin:0 0 10px;white-space:pre-wrap;overflow-wrap:anywhere">${RMW.escapeHtml(r.body)}</p>
+        <div class="muted" style="font-size:.82rem">— ${RMW.escapeHtml(r.nickname || 'Anonymous')} · ${RMW.fmtDate(r.createdAt)}</div>
+      </div>`;
+  }
+
+  document.getElementById('rantForm').addEventListener('submit', async (e) => {
+    e.preventDefault();
+    const alertEl = document.getElementById('rantAlert');
+    const form = e.target;
+    const btn = form.querySelector('button[type="submit"]');
+    RMW.clearToast(alertEl);
+    RMW.setLoading(btn, true, 'Posting…');
+    try {
+      await RMW.api('/api/rants', { method: 'POST', body: {
+          nickname: form.nickname.value.trim() || null,
+          body: form.body.value.trim()
+        }});
+      RMW.toast(alertEl, 'success', 'Posted! Thanks for sharing.');
+      form.reset();
+      loadRants();
+    } catch (err) {
+      let msg = err.message;
+      if (err.data && err.data.fieldErrors) msg = Object.values(err.data.fieldErrors).join(' ');
+      RMW.toast(alertEl, 'error', msg);
+    } finally {
+      RMW.setLoading(btn, false);
+    }
+  });
+
+  loadRants();
 
   function companyCard(c) {
     const cats = (c.categories || []).slice(0, 3).map(x => `<span class="tag">${RMW.escapeHtml(x)}</span>`).join('');

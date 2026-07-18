@@ -1,0 +1,114 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Rants — MyWorkTea</title>
+    <meta name="description" content="Anonymous, non-company-specific work rants — no account needed to read or post.">
+    <script>(function(){var t=localStorage.getItem("rmw-theme")||(window.matchMedia&&window.matchMedia("(prefers-color-scheme: dark)").matches?"dark":"light");document.documentElement.setAttribute("data-theme",t);})();</script>
+    <link rel="stylesheet" href="/css/styles.css">
+    <link rel="apple-touch-icon" sizes="180x180" href="/favicon/apple-touch-icon.png">
+    <link rel="icon" type="image/png" sizes="32x32" href="/favicon/favicon-32x32.png">
+    <link rel="icon" type="image/png" sizes="16x16" href="/favicon/favicon-16x16.png">
+    <link rel="manifest" href="/favicon/site.webmanifest">
+    <!-- Google AdSense: replace data-ad-client / data-ad-slot
+    <script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-XXXXXXXXXXXXXXXX" crossorigin="anonymous"></script>
+    -->
+</head>
+<body>
+<header class="site-header" id="site-header"></header>
+
+<section class="section">
+    <div class="container">
+        <h2 style="margin-top:0">Rants</h2>
+        <p class="subtitle">Anonymous, non-company-specific work rants — no account needed to read or post. Want to
+            call out a specific workplace instead? <a href="/workplaces.html">Browse workplaces</a> (requires
+            verifying your employment there).</p>
+
+        <div class="card" style="margin-bottom:20px;max-width:640px">
+            <div id="rantAlert" class="alert"></div>
+            <form id="rantForm">
+                <div class="field">
+                    <textarea name="body" rows="3" required maxlength="2000" placeholder="What's going on at work? Get it off your chest — totally anonymous."></textarea>
+                </div>
+                <div class="field"><input type="text" name="nickname" maxlength="40" placeholder="Nickname (optional, defaults to Anonymous)"></div>
+                <button class="btn" type="submit">Post anonymously</button>
+            </form>
+        </div>
+
+        <div class="ad-slot ad-banner">
+            <div><strong>Advertisement</strong><br>Google AdSense slot<br><span style="font-size:.78rem">(728×90 / responsive)</span></div>
+        </div>
+
+        <div class="grid" id="rantFeed"><div class="spinner">Loading…</div></div>
+        <div class="pagination" id="pagination"></div>
+    </div>
+</section>
+
+<footer class="site-footer" id="site-footer"></footer>
+
+<script src="/js/app.js"></script>
+<script>
+    let page = 0;
+
+    async function load() {
+        const box = document.getElementById('rantFeed');
+        box.innerHTML = '<div class="spinner">Loading…</div>';
+        try {
+            const data = await RMW.api(`/api/rants?page=${page}&size=20`);
+            const items = data.content || [];
+            if (!items.length) { box.innerHTML = '<p class="muted">No rants yet — be the first to vent!</p>'; document.getElementById('pagination').innerHTML = ''; return; }
+            box.innerHTML = items.map(rantCard).join('');
+            renderPagination(data);
+        } catch (e) {
+            box.innerHTML = `<p class="muted">${RMW.escapeHtml(e.message)}</p>`;
+        }
+    }
+
+    function rantCard(r) {
+        return `<div class="card">
+            <p style="margin:0 0 10px;white-space:pre-wrap;overflow-wrap:anywhere">${RMW.escapeHtml(r.body)}</p>
+            <div class="muted" style="font-size:.82rem">— ${RMW.escapeHtml(r.nickname || 'Anonymous')} · ${RMW.fmtDate(r.createdAt)}</div>
+          </div>`;
+    }
+
+    function renderPagination(data) {
+        const pag = document.getElementById('pagination');
+        const total = data.page.totalPages, cur = data.page.number;
+        if (total <= 1) { pag.innerHTML = ''; return; }
+        let html = `<button ${cur === 0 ? 'disabled' : ''} data-p="${cur - 1}">‹ Prev</button>`;
+        for (let i = 0; i < total; i++) html += `<button class="${i === cur ? 'active' : ''}" data-p="${i}">${i + 1}</button>`;
+        html += `<button ${cur >= total - 1 ? 'disabled' : ''} data-p="${cur + 1}">Next ›</button>`;
+        pag.innerHTML = html;
+        pag.querySelectorAll('button[data-p]').forEach(b => b.addEventListener('click', () => { page = parseInt(b.dataset.p, 10); window.scrollTo({ top: 0, behavior: 'smooth' }); load(); }));
+    }
+
+    document.getElementById('rantForm').addEventListener('submit', async (e) => {
+        e.preventDefault();
+        const alertEl = document.getElementById('rantAlert');
+        const form = e.target;
+        const btn = form.querySelector('button[type="submit"]');
+        RMW.clearToast(alertEl);
+        RMW.setLoading(btn, true, 'Posting…');
+        try {
+            await RMW.api('/api/rants', { method: 'POST', body: {
+                    nickname: form.nickname.value.trim() || null,
+                    body: form.body.value.trim()
+                }});
+            RMW.toast(alertEl, 'success', 'Posted! Thanks for sharing.');
+            form.reset();
+            page = 0;
+            load();
+        } catch (err) {
+            let msg = err.message;
+            if (err.data && err.data.fieldErrors) msg = Object.values(err.data.fieldErrors).join(' ');
+            RMW.toast(alertEl, 'error', msg);
+        } finally {
+            RMW.setLoading(btn, false);
+        }
+    });
+
+    load();
+</script>
+</body>
+</html>

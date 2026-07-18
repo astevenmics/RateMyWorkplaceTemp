@@ -85,6 +85,9 @@ public final class Responses {
     public record PublicStatsDto(long totalCompanies, long totalFeedback, long verifiedUsers) {
     }
 
+    public record RantDto(Long id, String nickname, String body, Instant createdAt) {
+    }
+
     public record SimpleMessage(int status, String message, Map<String, Object> data) {
         public static SimpleMessage ok(String message) {
             return new SimpleMessage(200, message, Map.of());

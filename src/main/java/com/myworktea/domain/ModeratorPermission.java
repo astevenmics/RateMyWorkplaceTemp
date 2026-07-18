@@ -5,7 +5,7 @@ package com.myworktea.domain;
  * Each maps to an authority of the form {@code MOD_<name>} in Spring Security.
  */
 public enum ModeratorPermission {
-    /** Review / hide feedback that violates the Terms &amp; Conditions. */
+    /** Review / hide feedback and anonymous rants that violate the Terms &amp; Conditions. */
     MODERATE_FEEDBACK,
     /** Approve or reject uploaded employment proofs. */
     APPROVE_PROOFS,

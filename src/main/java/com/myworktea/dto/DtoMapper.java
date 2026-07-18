@@ -122,6 +122,10 @@ public final class DtoMapper {
                 s.isPublished(), s.getCreatedAt());
     }
 
+    public static Responses.RantDto rant(Rant r) {
+        return new Responses.RantDto(r.getId(), r.getNickname(), r.getBody(), r.getCreatedAt());
+    }
+
     public static String locationLabel(Location l) {
         StringBuilder sb = new StringBuilder();
         if (l.getLabel() != null && !l.getLabel().isBlank()) {

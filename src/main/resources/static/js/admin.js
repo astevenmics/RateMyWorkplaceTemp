@@ -11,6 +11,7 @@
     { key: 'workplaces',   label: 'Workplaces',    perm: 'APPROVE_WORKPLACES' },
     { key: 'proofs',       label: 'Proofs',        perm: 'APPROVE_PROOFS' },
     { key: 'feedback',     label: 'Feedback',      perm: 'MODERATE_FEEDBACK' },
+    { key: 'rants',        label: 'Rants',         perm: 'MODERATE_FEEDBACK' },
     { key: 'users',        label: 'Users',         perm: 'MANAGE_USERS' },
     { key: 'moderators',   label: 'Moderators',    admin: true },
     { key: 'categories',   label: 'Categories',    admin: true },
@@ -337,6 +338,41 @@
     catch (e) { gAlert('error', e.message); }
   }
 
+  // ---------------- Rants ----------------
+  let rantsPage = 0;
+  async function loadRants() {
+    const box = document.getElementById('rantsList');
+    box.innerHTML = '<p class="muted">Loading…</p>';
+    try {
+      const data = await RMW.api(`/api/rants?page=${rantsPage}&size=30`);
+      const items = data.content || [];
+      if (!items.length) { box.innerHTML = '<p class="muted">No rants yet.</p>'; document.getElementById('rantsPagination').innerHTML = ''; return; }
+      box.innerHTML = items.map(r => `
+        <div class="card" style="margin-bottom:10px">
+          <span class="muted" style="font-size:.8rem">— ${E(r.nickname || 'Anonymous')} · ${RMW.fmtDate(r.createdAt)}</span>
+          <p style="margin:8px 0;overflow-wrap:anywhere;word-break:break-word;white-space:pre-wrap">${E(r.body)}</p>
+          <button class="btn small danger" data-del="${r.id}">Delete</button>
+        </div>`).join('');
+      box.querySelectorAll('[data-del]').forEach(b => b.addEventListener('click', () => deleteRant(b.dataset.del)));
+      renderRantsPagination(data);
+    } catch (e) { box.innerHTML = `<p class="muted">${E(e.message)}</p>`; }
+  }
+  function renderRantsPagination(data) {
+    const pag = document.getElementById('rantsPagination');
+    const total = data.page.totalPages, cur = data.page.number;
+    if (total <= 1) { pag.innerHTML = ''; return; }
+    let html = `<button ${cur===0?'disabled':''} data-p="${cur-1}">‹</button>`;
+    for (let i = 0; i < total; i++) html += `<button class="${i===cur?'active':''}" data-p="${i}">${i+1}</button>`;
+    html += `<button ${cur>=total-1?'disabled':''} data-p="${cur+1}">›</button>`;
+    pag.innerHTML = html;
+    pag.querySelectorAll('button[data-p]').forEach(b => b.addEventListener('click', () => { rantsPage = parseInt(b.dataset.p,10); loadRants(); }));
+  }
+  async function deleteRant(id) {
+    if (!confirm('Permanently delete this rant?')) return;
+    try { await RMW.api(`/api/mod/rants/${id}`, { method: 'DELETE' }); loadRants(); }
+    catch (e) { gAlert('error', e.message); }
+  }
+
   // ---------------- Users ----------------
   async function loadUsers() {
     const box = document.getElementById('usersList');
@@ -627,8 +663,8 @@
 
   const LOADERS = {
     stats: loadStats, workplaces: loadWorkplaces, proofs: loadProofs, feedback: loadFeedback,
-    users: loadUsers, categories: loadCategories, siteFeedback: loadSiteFeedback, updates: loadUpdates,
-    audit: loadAudit, moderators: loadModerators
+    rants: loadRants, users: loadUsers, categories: loadCategories, siteFeedback: loadSiteFeedback,
+    updates: loadUpdates, audit: loadAudit, moderators: loadModerators
   };
 
   init();

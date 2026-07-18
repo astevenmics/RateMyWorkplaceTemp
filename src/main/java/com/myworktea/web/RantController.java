@@ -9,12 +9,15 @@ import com.myworktea.service.CurrentUserService;
 import com.myworktea.service.RantService;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.validation.Valid;
+import org.springframework.dao.DataIntegrityViolationException;
+import org.springframework.dao.PessimisticLockingFailureException;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Sort;
 import org.springframework.data.web.PageableDefault;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.orm.ObjectOptimisticLockingFailureException;
 import org.springframework.web.bind.annotation.*;
 
 import java.nio.charset.StandardCharsets;
@@ -60,11 +63,28 @@ public class RantController {
         return ResponseEntity.status(HttpStatus.CREATED).body(dto);
     }
 
-    /** Casts/changes/retracts the caller's vote. One vote per voter, logged-in or anonymous. */
+    /**
+     * Casts/changes/retracts the caller's vote. One vote per voter, logged-in or anonymous.
+     * {@code RantService.vote()} takes a database lock on the rant row so concurrent votes on it
+     * (spam-clicking, multiple open tabs) queue up rather than racing each other's read-then-write
+     * against the same vote row; this retry is just a safety net for the rare case where acquiring
+     * that lock itself times out under heavy contention.
+     */
     @PostMapping("/{id}/vote")
     public Responses.RantDto vote(@PathVariable Long id, @Valid @RequestBody Requests.VoteRequest request,
                                   HttpServletRequest httpRequest) {
-        return rantService.vote(id, resolveIdentity(httpRequest), VoteType.valueOf(request.type().toUpperCase()));
+        String voterId = resolveIdentity(httpRequest);
+        VoteType type = VoteType.valueOf(request.type().toUpperCase());
+        for (int attempt = 1; ; attempt++) {
+            try {
+                return rantService.vote(id, voterId, type);
+            } catch (ObjectOptimisticLockingFailureException | DataIntegrityViolationException
+                     | PessimisticLockingFailureException e) {
+                if (attempt >= 5) {
+                    throw e;
+                }
+            }
+        }
     }
 
     /**

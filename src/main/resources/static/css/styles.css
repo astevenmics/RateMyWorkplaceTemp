@@ -64,6 +64,16 @@ img { max-width: 100%; }
 }
 
 /* ---------------- Top banner (above the nav, homepage only) ---------------- */
+/* Wrapped together with .site-header in a single sticky .masthead so the "click to search"
+   banner stays reachable at any scroll depth — if only the header below it were sticky, the
+   banner (being in normal flow) would scroll out of view within the first ~35px and the CTA
+   would become unclickable for anyone who has scrolled at all. */
+.masthead {
+    position: sticky;
+    top: 0;
+    z-index: 50;
+}
+.masthead .site-header { position: static; }
 .top-banner {
     background: var(--primary);
     color: #fff;
@@ -239,6 +249,14 @@ img { max-width: 100%; }
 .search-hints { margin-top: 12px; color: var(--muted); font-size: .9rem; }
 .search-hints a { margin-right: 12px; }
 .search-bar-wide { max-width: none; }
+
+/* Brief pulse so clicking the top-banner's "Click to search" CTA gives obvious feedback even
+   when the search bar is already fully in view and a focus ring alone would be easy to miss. */
+.search-bar.search-highlight { animation: searchHighlightPulse 1s ease-out; }
+@keyframes searchHighlightPulse {
+    0% { box-shadow: var(--shadow), 0 0 0 0 var(--primary); }
+    100% { box-shadow: var(--shadow), 0 0 0 8px transparent; }
+}
 
 /* ---------------- Search bar strip (homepage, below the nav) ---------------- */
 .search-strip { padding: 20px 0; border-bottom: 1px solid var(--border); }

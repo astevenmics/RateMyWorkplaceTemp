@@ -88,10 +88,13 @@ public class RantService {
     /**
      * Casts a vote, switches an existing one, or retracts it (clicking the same direction again).
      * One vote per {@code voterId} per rant, enforced by a unique constraint on {@link RantVote}.
+     * Locks the rant row for the transaction so concurrent votes on it (spam-clicking, multiple
+     * open tabs) are serialized by the database rather than racing each other's read-then-write
+     * against the same vote row.
      */
     @Transactional
     public Responses.RantDto vote(Long rantId, String voterId, VoteType type) {
-        Rant rant = rantRepository.findById(rantId)
+        Rant rant = rantRepository.findByIdForUpdate(rantId)
                 .orElseThrow(() -> ApiException.notFound("Rant not found"));
         RantVote existing = rantVoteRepository.findByRantIdAndVoterId(rantId, voterId).orElse(null);
 

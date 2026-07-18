@@ -7,9 +7,9 @@ import java.time.Instant;
 /**
  * Records one voter's up/down vote on one {@link Rant}, enforcing "one vote per voter" via the
  * unique constraint below. {@code voterId} is either {@code "user:<id>"} for a logged-in voter,
- * or {@code "anon:<client-generated id>"} for an anonymous one (a UUID the frontend persists in
- * localStorage) — the latter is a best-effort dedup, since nothing stops someone from clearing
- * storage or using another browser, but it's the only signal available without requiring login.
+ * or {@code "ip:<hash>"} for an anonymous one — a server-derived SHA-256 hash of the caller's
+ * resolved IP address (see {@code RantController.resolveIdentity}), not anything the client
+ * supplies, since a client-supplied id is trivially reset by opening a fresh incognito window.
  */
 @Entity
 @Table(name = "rant_votes",

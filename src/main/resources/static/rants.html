@@ -157,6 +157,12 @@
 
     // Optimistic: apply the predicted new state instantly, then reconcile with (or roll back to
     // match) the server's actual response once it arrives.
+    // Spam-clicking a rant's vote buttons fires one castVote() per click; queued per rant id so
+    // only one vote request for that rant is ever in flight, sent in click order. Without this,
+    // overlapping requests race each other's read-modify-write against the same vote row and the
+    // backend can reject one with a conflict error.
+    const voteRequestQueues = new Map();
+
     async function castVote(id, type) {
         const groups = [...document.querySelectorAll(`.rant-card[data-id="${id}"] [data-votes]`)];
         const detailVotes = document.getElementById('rantDetailVotes');
@@ -167,6 +173,12 @@
         const predictedState = nextVoteState(previousState, type);
         groups.forEach(g => renderVoteState(g, predictedState));
 
+        const queued = (voteRequestQueues.get(id) || Promise.resolve()).then(() => sendVote(id, type, groups, previousState));
+        voteRequestQueues.set(id, queued.catch(() => {}));
+        return queued;
+    }
+
+    async function sendVote(id, type, groups, previousState) {
         try {
             const dto = await RMW.api(`/api/rants/${id}/vote`, { method: 'POST', body: { type } });
             groups.forEach(g => { if (document.body.contains(g)) renderVoteState(g, { upvotes: dto.upvotes, downvotes: dto.downvotes, myVote: dto.myVote }); });

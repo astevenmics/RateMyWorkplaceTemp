@@ -16,12 +16,14 @@
   -->
 </head>
 <body>
-<div class="top-banner">
-  <div class="container">
-    Looking for verified feedback on a company or workplace? <a href="#searchInput" id="topBannerSearchLink">Click to search →</a>
+<div class="masthead" id="masthead">
+  <div class="top-banner">
+    <div class="container">
+      Looking for verified feedback on a company or workplace? <a href="#searchInput" id="topBannerSearchLink">Click to search →</a>
+    </div>
   </div>
+  <header class="site-header" id="site-header"></header>
 </div>
-<header class="site-header" id="site-header"></header>
 
 <section class="search-strip">
   <div class="container">
@@ -131,8 +133,14 @@
 
   document.getElementById('topBannerSearchLink').addEventListener('click', (e) => {
     e.preventDefault();
-    document.getElementById('searchInput').scrollIntoView({ behavior: 'smooth', block: 'center' });
-    document.getElementById('searchInput').focus();
+    const input = document.getElementById('searchInput');
+    const bar = document.getElementById('searchForm');
+    input.scrollIntoView({ behavior: 'smooth', block: 'center' });
+    input.focus();
+    bar.classList.remove('search-highlight');
+    void bar.offsetWidth; // restart the animation if the CTA is clicked again mid-pulse
+    bar.classList.add('search-highlight');
+    bar.addEventListener('animationend', () => bar.classList.remove('search-highlight'), { once: true });
   });
 
   (async function () {
@@ -222,6 +230,12 @@
     groupEl.innerHTML = voteButtons({ upvotes: state.upvotes, downvotes: state.downvotes, myVote: state.myVote });
   }
 
+  // Spam-clicking a rant's vote buttons fires one castVote() per click; queued per rant id so
+  // only one vote request for that rant is ever in flight, sent in click order. Without this,
+  // overlapping requests race each other's read-modify-write against the same vote row and the
+  // backend can reject one with a conflict error.
+  const voteRequestQueues = new Map();
+
   // Optimistic: apply the predicted new state instantly, then reconcile with (or roll back to
   // match) the server's actual response once it arrives.
   async function castVote(id, type) {
@@ -234,6 +248,12 @@
     const predictedState = nextVoteState(previousState, type);
     groups.forEach(g => renderVoteState(g, predictedState));
 
+    const queued = (voteRequestQueues.get(id) || Promise.resolve()).then(() => sendVote(id, type, groups, previousState));
+    voteRequestQueues.set(id, queued.catch(() => {}));
+    return queued;
+  }
+
+  async function sendVote(id, type, groups, previousState) {
     try {
       const dto = await RMW.api(`/api/rants/${id}/vote`, { method: 'POST', body: { type } });
       groups.forEach(g => { if (document.body.contains(g)) renderVoteState(g, { upvotes: dto.upvotes, downvotes: dto.downvotes, myVote: dto.myVote }); });

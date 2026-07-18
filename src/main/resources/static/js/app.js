@@ -421,8 +421,23 @@ const RMW = (() => {
         if (slot) slot.innerHTML = avatarHtml(user);
     }
 
+    // ---- anonymous voter id (rant upvote/downvote dedup for logged-out visitors) ----
+    // Best-effort only: persisted in localStorage, so clearing storage or switching
+    // browsers resets it. A logged-in vote is tracked by account instead (see RantController).
+    function anonId() {
+        let id = null;
+        try { id = localStorage.getItem('rmw-anon-id'); } catch (e) { /* ignore */ }
+        if (!id) {
+            id = (window.crypto && crypto.randomUUID)
+                ? crypto.randomUUID()
+                : 'anon-' + Date.now().toString(36) + '-' + Math.random().toString(36).slice(2);
+            try { localStorage.setItem('rmw-anon-id', id); } catch (e) { /* ignore */ }
+        }
+        return id;
+    }
+
     return { api, currentUser, login, logout, stars, avatarHtml, escapeHtml, fmtDate, qs, toast, clearToast, showToast,
-        setLoading, markdown, applyTheme, toggleTheme, currentTheme,
+        setLoading, markdown, applyTheme, toggleTheme, currentTheme, anonId,
         mountChrome, mountHeader, mountFooter, updateHeaderAvatar, ensureCsrf };
 })();
 

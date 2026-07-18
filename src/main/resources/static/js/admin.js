@@ -349,7 +349,7 @@
       if (!items.length) { box.innerHTML = '<p class="muted">No rants yet.</p>'; document.getElementById('rantsPagination').innerHTML = ''; return; }
       box.innerHTML = items.map(r => `
         <div class="card" style="margin-bottom:10px">
-          <span class="muted" style="font-size:.8rem">— ${E(r.nickname || 'Anonymous')} · ${RMW.fmtDate(r.createdAt)}</span>
+          <span class="muted" style="font-size:.8rem">— ${E(r.nickname || 'Anonymous')} · ${RMW.fmtDate(r.createdAt)} · ▲ ${r.upvotes} ▼ ${r.downvotes}</span>
           <p style="margin:8px 0;overflow-wrap:anywhere;word-break:break-word;white-space:pre-wrap">${E(r.body)}</p>
           <button class="btn small danger" data-del="${r.id}">Delete</button>
         </div>`).join('');

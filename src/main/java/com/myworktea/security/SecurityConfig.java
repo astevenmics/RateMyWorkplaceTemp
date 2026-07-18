@@ -111,8 +111,9 @@ public class SecurityConfig {
                         .requestMatchers("/api/auth/register", "/api/auth/login", "/api/auth/csrf",
                                 "/api/auth/me", "/api/auth/forgot-password", "/api/auth/reset-password",
                                 "/api/auth/reactivate", "/api/site/feedback").permitAll()
-                        // Anonymous rant submission — the whole point is you don't need an account.
-                        .requestMatchers(org.springframework.http.HttpMethod.POST, "/api/rants").permitAll()
+                        // Anonymous rant submission & voting — the whole point is you don't need an account.
+                        .requestMatchers(org.springframework.http.HttpMethod.POST,
+                                "/api/rants", "/api/rants/*/vote").permitAll()
                         .requestMatchers("/actuator/health", "/actuator/info").permitAll()
                         // ---- admin / moderation ----
                         .requestMatchers("/admin.html").hasAnyRole("ADMIN", "MODERATOR")

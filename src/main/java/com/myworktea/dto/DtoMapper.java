@@ -123,7 +123,12 @@ public final class DtoMapper {
     }
 
     public static Responses.RantDto rant(Rant r) {
-        return new Responses.RantDto(r.getId(), r.getNickname(), r.getBody(), r.getCreatedAt());
+        return rant(r, null);
+    }
+
+    public static Responses.RantDto rant(Rant r, VoteType myVote) {
+        return new Responses.RantDto(r.getId(), r.getNickname(), r.getBody(), r.getCreatedAt(),
+                r.getUpvotes(), r.getDownvotes(), myVote == null ? null : myVote.name());
     }
 
     public static String locationLabel(Location l) {

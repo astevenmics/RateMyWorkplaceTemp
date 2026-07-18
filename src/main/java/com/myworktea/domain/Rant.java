@@ -28,6 +28,14 @@ public class Rant {
     @Column(nullable = false, updatable = false)
     private Instant createdAt = Instant.now();
 
+    /** Denormalized vote counts (kept in sync by {@code RantService.vote}) so sorting/browsing by
+     *  them doesn't require an aggregate join over every vote row. */
+    @Column(nullable = false)
+    private int upvotes = 0;
+
+    @Column(nullable = false)
+    private int downvotes = 0;
+
     public Long getId() { return id; }
     public void setId(Long id) { this.id = id; }
     public String getNickname() { return nickname; }
@@ -36,4 +44,8 @@ public class Rant {
     public void setBody(String body) { this.body = body; }
     public Instant getCreatedAt() { return createdAt; }
     public void setCreatedAt(Instant createdAt) { this.createdAt = createdAt; }
+    public int getUpvotes() { return upvotes; }
+    public void setUpvotes(int upvotes) { this.upvotes = upvotes; }
+    public int getDownvotes() { return downvotes; }
+    public void setDownvotes(int downvotes) { this.downvotes = downvotes; }
 }

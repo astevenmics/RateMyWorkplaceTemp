@@ -34,7 +34,13 @@
             <div><strong>Advertisement</strong><br>Google AdSense slot<br><span style="font-size:.78rem">(728×90 / responsive)</span></div>
         </div>
 
-        <div class="grid" id="rantFeed"><div class="spinner">Loading…</div></div>
+        <div class="toolbar" id="sortTabs" style="margin-top:22px">
+            <button class="btn small" type="button" data-sort="createdAt,desc">Most Recent</button>
+            <button class="btn small secondary" type="button" data-sort="upvotes,desc">Most Upvoted</button>
+            <button class="btn small secondary" type="button" data-sort="downvotes,desc">Most Downvoted</button>
+        </div>
+
+        <div class="grid" id="rantFeed" style="margin-top:14px"><div class="spinner">Loading…</div></div>
         <div class="pagination" id="pagination"></div>
     </div>
 </section>
@@ -56,17 +62,30 @@
     </div>
 </dialog>
 
+<dialog id="rantDetailModal" class="modal">
+    <div class="modal-card">
+        <div class="modal-head">
+            <h3 id="rantDetailMeta">Anonymous</h3>
+            <button type="button" class="modal-close" id="closeRantDetailModal" aria-label="Close">✕</button>
+        </div>
+        <p id="rantDetailBody" style="white-space:pre-wrap;overflow-wrap:anywhere;margin:0 0 16px"></p>
+        <div class="vote-group" id="rantDetailVotes"></div>
+    </div>
+</dialog>
+
 <footer class="site-footer" id="site-footer"></footer>
 
 <script src="/js/app.js"></script>
 <script>
     let page = 0;
+    let sort = 'createdAt,desc';
+    const RANT_TRUNCATE_AT = 220;
 
     async function load() {
         const box = document.getElementById('rantFeed');
         box.innerHTML = '<div class="spinner">Loading…</div>';
         try {
-            const data = await RMW.api(`/api/rants?page=${page}&size=20`);
+            const data = await RMW.api(`/api/rants?page=${page}&size=20&sort=${sort}&voterId=${encodeURIComponent(RMW.anonId())}`);
             const items = data.content || [];
             if (!items.length) { box.innerHTML = '<p class="muted">No rants yet — be the first to vent!</p>'; document.getElementById('pagination').innerHTML = ''; return; }
             box.innerHTML = items.map(rantCard).join('');
@@ -76,12 +95,69 @@
         }
     }
 
+    document.getElementById('sortTabs').addEventListener('click', (e) => {
+        const btn = e.target.closest('[data-sort]');
+        if (!btn) return;
+        sort = btn.dataset.sort;
+        page = 0;
+        document.querySelectorAll('#sortTabs [data-sort]').forEach(b => b.classList.toggle('secondary', b !== btn));
+        window.scrollTo({ top: 0, behavior: 'smooth' });
+        load();
+    });
+
     function rantCard(r) {
-        return `<div class="card">
-            <p style="margin:0 0 10px;white-space:pre-wrap;overflow-wrap:anywhere">${RMW.escapeHtml(r.body)}</p>
-            <div class="muted" style="font-size:.82rem">— ${RMW.escapeHtml(r.nickname || 'Anonymous')} · ${RMW.fmtDate(r.createdAt)}</div>
+        const truncated = r.body.length > RANT_TRUNCATE_AT;
+        return `<div class="card rant-card" data-id="${r.id}"
+              data-nickname="${RMW.escapeHtml(r.nickname || 'Anonymous')}" data-created="${RMW.escapeHtml(RMW.fmtDate(r.createdAt))}">
+            <p class="rant-body${truncated ? ' clamped' : ''}">${RMW.escapeHtml(r.body)}</p>
+            ${truncated ? '<div class="rant-more">Read more →</div>' : ''}
+            <div class="rant-footer">
+              <span class="muted" style="font-size:.82rem">— ${RMW.escapeHtml(r.nickname || 'Anonymous')} · ${RMW.fmtDate(r.createdAt)}</span>
+              <div class="vote-group" data-votes>${voteButtons(r)}</div>
+            </div>
           </div>`;
     }
+
+    function voteButtons(r) {
+        return `<button type="button" class="vote-btn up${r.myVote === 'UP' ? ' active' : ''}" data-vote="UP">▲ ${r.upvotes}</button>
+          <button type="button" class="vote-btn down${r.myVote === 'DOWN' ? ' active' : ''}" data-vote="DOWN">▼ ${r.downvotes}</button>`;
+    }
+
+    async function castVote(id, type) {
+        try {
+            const dto = await RMW.api(`/api/rants/${id}/vote`, { method: 'POST', body: { type, voterId: RMW.anonId() } });
+            document.querySelectorAll(`.rant-card[data-id="${id}"] [data-votes]`).forEach(el => { el.innerHTML = voteButtons(dto); });
+            const detailVotes = document.getElementById('rantDetailVotes');
+            if (detailVotes.dataset.id === String(id)) detailVotes.innerHTML = voteButtons(dto);
+        } catch (e) {
+            RMW.showToast(e.message, 'error');
+        }
+    }
+
+    // ---- rant detail modal (full text; truncated cards only show a preview) ----
+    const rantDetailModal = document.getElementById('rantDetailModal');
+    function openRantDetail(card) {
+        document.getElementById('rantDetailMeta').textContent = `${card.dataset.nickname} · ${card.dataset.created}`;
+        document.getElementById('rantDetailBody').textContent = card.querySelector('.rant-body').textContent;
+        const votesBox = document.getElementById('rantDetailVotes');
+        votesBox.dataset.id = card.dataset.id;
+        votesBox.innerHTML = card.querySelector('[data-votes]').innerHTML;
+        rantDetailModal.showModal();
+    }
+    document.getElementById('closeRantDetailModal').addEventListener('click', () => rantDetailModal.close());
+    rantDetailModal.addEventListener('click', (e) => { if (e.target === rantDetailModal) rantDetailModal.close(); });
+    document.getElementById('rantDetailVotes').addEventListener('click', (e) => {
+        const voteBtn = e.target.closest('[data-vote]');
+        if (voteBtn) castVote(document.getElementById('rantDetailVotes').dataset.id, voteBtn.dataset.vote);
+    });
+
+    document.getElementById('rantFeed').addEventListener('click', (e) => {
+        const card = e.target.closest('.rant-card');
+        if (!card) return;
+        const voteBtn = e.target.closest('[data-vote]');
+        if (voteBtn) { e.stopPropagation(); castVote(card.dataset.id, voteBtn.dataset.vote); return; }
+        openRantDetail(card);
+    });
 
     function renderPagination(data) {
         const pag = document.getElementById('pagination');

@@ -7,6 +7,11 @@ target/
 ### Runtime file storage (app.upload.dir default) ###
 /uploads/
 
+### Deployment secrets (see .env.example) ###
+.env
+.env.*
+!.env.example
+
 ### STS ###
 .apt_generated
 .classpath

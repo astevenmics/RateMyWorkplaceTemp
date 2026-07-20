@@ -1,0 +1,77 @@
+name: Build and deploy
+
+# Runs on every push to main: builds & tests the jar, builds a Docker image,
+# pushes it to GitHub Container Registry, then SSHes into the VPS to pull and
+# restart just the app container. Each run's logs (build, test, deploy) are
+# visible under the Actions tab — that's your visibility into what shipped
+# and when.
+on:
+  push:
+    branches: [main]
+  workflow_dispatch: {}
+
+permissions:
+  contents: read
+  packages: write
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    outputs:
+      image: ${{ steps.image-name.outputs.name }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up JDK 21
+        uses: actions/setup-java@v4
+        with:
+          java-version: "21"
+          distribution: temurin
+          cache: maven
+
+      - name: Build & test
+        run: |
+          chmod +x mvnw
+          ./mvnw -B clean verify
+
+      - name: Compute lowercase image name
+        id: image-name
+        # GHCR requires lowercase image names; the repo (astevenmics/RateMyWorkplaceTemp)
+        # isn't lowercase, so this can't just be `${{ github.repository }}`.
+        run: echo "name=ghcr.io/$(echo '${{ github.repository }}' | tr '[:upper:]' '[:lower:]')" >> "$GITHUB_OUTPUT"
+
+      - name: Log in to GHCR
+        uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Build and push image
+        uses: docker/build-push-action@v6
+        with:
+          context: .
+          push: true
+          tags: |
+            ${{ steps.image-name.outputs.name }}:latest
+            ${{ steps.image-name.outputs.name }}:${{ github.sha }}
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+
+  deploy:
+    needs: build
+    runs-on: ubuntu-latest
+    steps:
+      - name: Deploy to VPS
+        uses: appleboy/ssh-action@v1.2.0
+        with:
+          host: ${{ secrets.VPS_HOST }}
+          username: ${{ secrets.VPS_USER }}
+          key: ${{ secrets.VPS_SSH_KEY }}
+          port: ${{ secrets.VPS_PORT || 22 }}
+          script: |
+            set -e
+            cd ~/myworktea
+            docker compose pull app
+            docker compose up -d --no-deps app
+            docker image prune -f

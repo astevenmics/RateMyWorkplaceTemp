@@ -1,0 +1,55 @@
+
+services:
+  app:
+    image: ghcr.io/astevenmics/ratemyworkplacetemp:latest
+    container_name: myworktea-app
+    restart: unless-stopped
+    env_file:
+      - .env
+    environment:
+      DBURL: jdbc:mysql://db:3306/myworktea?useSSL=false&allowPublicKeyRetrieval=true
+      UPLOAD_DIR: /app/uploads
+    volumes:
+      - uploads:/app/uploads
+    depends_on:
+      db:
+        condition: service_healthy
+    expose:
+      - "8080"
+
+  db:
+    image: mariadb:11
+    container_name: myworktea-db
+    restart: unless-stopped
+    environment:
+      MARIADB_DATABASE: myworktea
+      MARIADB_USER: ${DBUSER}
+      MARIADB_PASSWORD: ${DBPASSWORD}
+      MARIADB_ROOT_PASSWORD: ${DB_ROOT_PASSWORD}
+    volumes:
+      - db-data:/var/lib/mysql
+    healthcheck:
+      test: ["CMD", "healthcheck.sh", "--connect", "--innodb_initialized"]
+      interval: 10s
+      timeout: 5s
+      retries: 6
+
+  caddy:
+    image: caddy:2-alpine
+    container_name: myworktea-caddy
+    restart: unless-stopped
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - ./Caddyfile:/etc/caddy/Caddyfile
+      - caddy-data:/data
+      - caddy-config:/config
+    depends_on:
+      - app
+
+volumes:
+  db-data:
+  uploads:
+  caddy-data:
+  caddy-config:

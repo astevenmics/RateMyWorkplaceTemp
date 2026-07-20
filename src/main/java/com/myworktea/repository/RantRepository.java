@@ -11,7 +11,7 @@ import java.util.Optional;
 
 public interface RantRepository extends JpaRepository<Rant, Long> {
 
-    /** A random sample for the homepage teaser. RAND() is supported by both MySQL (prod) and H2 (dev/test). */
+    /** A random sample for the homepage teaser. RAND() is supported by both MariaDB (prod) and H2 (dev/test). */
     @Query(value = "SELECT * FROM rants ORDER BY RAND() LIMIT :limit", nativeQuery = true)
     List<Rant> findRandom(@Param("limit") int limit);
 
@@ -23,12 +23,13 @@ public interface RantRepository extends JpaRepository<Rant, Long> {
      * transaction. Used by {@code RantService.vote()} so that concurrent votes on the same rant
      * (e.g. spam-clicking, or two open tabs) are serialized by the database instead of racing
      * each other's read-then-write against the same {@code rant_votes} row.
-     * <p>Plain native SQL rather than JPA's {@code @Lock(PESSIMISTIC_WRITE)}: Hibernate's MySQL
-     * dialect renders that as {@code FOR UPDATE OF <alias>}, but production runs on MariaDB via
-     * the MySQL JDBC driver, which Hibernate's dialect auto-detection can't tell apart from real
-     * MySQL from the driver metadata alone — and MariaDB's parser rejects the {@code OF} clause.
-     * Bare {@code FOR UPDATE} is supported identically by MySQL, MariaDB and H2, so writing it out
-     * ourselves sidesteps the dialect-detection gap entirely.
+     * <p>Plain native SQL rather than JPA's {@code @Lock(PESSIMISTIC_WRITE)}: with the correct
+     * MariaDB driver in place, Hibernate should render that as bare {@code FOR UPDATE} via
+     * MariaDBDialect — but this used to run against MariaDB through the MySQL JDBC driver,
+     * whose dialect auto-detection resolved to MySQLDialect and emitted {@code FOR UPDATE OF
+     * <alias>} instead, which MariaDB's parser rejects outright. Writing the lock out as native
+     * SQL (supported identically by MariaDB, MySQL and H2) means correctness here never again
+     * depends on Hibernate's dialect detection picking the right dialect.
      */
     @Query(value = "SELECT * FROM rants WHERE id = :id FOR UPDATE", nativeQuery = true)
     Optional<Rant> findByIdForUpdate(@Param("id") Long id);

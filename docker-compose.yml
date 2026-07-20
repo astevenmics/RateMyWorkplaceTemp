@@ -7,7 +7,7 @@ services:
     env_file:
       - .env
     environment:
-      DBURL: jdbc:mysql://db:3306/myworktea?useSSL=false&allowPublicKeyRetrieval=true
+      DBURL: jdbc:mariadb://db:3306/myworktea
       UPLOAD_DIR: /app/uploads
     volumes:
       - uploads:/app/uploads

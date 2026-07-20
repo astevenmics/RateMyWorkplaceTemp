@@ -7,7 +7,7 @@ services:
     env_file:
       - .env
     environment:
-      DBURL: jdbc:mariadb://db:3306/myworktea
+      DBURL: jdbc:postgresql://db:5432/myworktea
       UPLOAD_DIR: /app/uploads
     volumes:
       - uploads:/app/uploads
@@ -18,18 +18,17 @@ services:
       - "8080"
 
   db:
-    image: mariadb:11
+    image: postgres:16-alpine
     container_name: myworktea-db
     restart: unless-stopped
     environment:
-      MARIADB_DATABASE: myworktea
-      MARIADB_USER: ${DBUSER}
-      MARIADB_PASSWORD: ${DBPASSWORD}
-      MARIADB_ROOT_PASSWORD: ${DB_ROOT_PASSWORD}
+      POSTGRES_DB: myworktea
+      POSTGRES_USER: ${DBUSER}
+      POSTGRES_PASSWORD: ${DBPASSWORD}
     volumes:
-      - db-data:/var/lib/mysql
+      - db-data:/var/lib/postgresql/data
     healthcheck:
-      test: ["CMD", "healthcheck.sh", "--connect", "--innodb_initialized"]
+      test: ["CMD-SHELL", "pg_isready -U ${DBUSER} -d myworktea"]
       interval: 10s
       timeout: 5s
       retries: 6

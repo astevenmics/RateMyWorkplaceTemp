@@ -8,7 +8,7 @@ and whether it succeeded.
 
 Three containers run on the VPS:
 - **app** — the Spring Boot jar, built from `Dockerfile`
-- **db** — MariaDB, with a persistent volume for data
+- **db** — PostgreSQL, with a persistent volume for data
 - **caddy** — reverse proxy that terminates HTTPS (automatic Let's Encrypt
   certs) and forwards to `app`
 
@@ -85,7 +85,7 @@ Copy `.env.example` to `.env` and fill in real values:
 
 ```bash
 cp .env.example .env
-nano .env   # fill in DBPASSWORD, DB_ROOT_PASSWORD, MAILHOST, ADMINPASSWORD, etc.
+nano .env   # fill in DBPASSWORD, MAILHOST, ADMINPASSWORD, etc.
 ```
 
 Log in to GHCR so `docker compose pull` can fetch the image (skip this if you
@@ -178,8 +178,10 @@ The database lives in the `db-data` Docker volume. Take a logical dump
 regularly (cron this):
 
 ```bash
-docker compose exec db mariadb-dump -u root -p"$DB_ROOT_PASSWORD" myworktea > backup-$(date +%F).sql
+docker compose exec db sh -c 'pg_dump -U "$POSTGRES_USER" myworktea' > backup-$(date +%F).sql
 ```
+
+(`$POSTGRES_USER` is read from inside the `db` container's own environment, set from `DBUSER` in `.env` — no need to have `.env` sourced into your shell.)
 
 Copy dumps off the VPS (e.g. `scp` to your machine or push to object storage)
 — a backup that only lives on the box it's backing up isn't a backup.

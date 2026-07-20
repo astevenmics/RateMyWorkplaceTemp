@@ -50,10 +50,10 @@
             <artifactId>spring-boot-starter-mail</artifactId>
         </dependency>
 
-        <!-- MariaDB driver -->
+        <!-- PostgreSQL driver -->
         <dependency>
-            <groupId>org.mariadb.jdbc</groupId>
-            <artifactId>mariadb-java-client</artifactId>
+            <groupId>org.postgresql</groupId>
+            <artifactId>postgresql</artifactId>
             <scope>runtime</scope>
         </dependency>
 
@@ -94,7 +94,7 @@
             <artifactId>spring-boot-starter-webmvc-test</artifactId>
             <scope>test</scope>
         </dependency>
-        <!-- H2 powers the 'dev' and 'test' profiles so the app runs without a MariaDB server. -->
+        <!-- H2 powers the 'dev' and 'test' profiles so the app runs without a PostgreSQL server. -->
         <dependency>
             <groupId>com.h2database</groupId>
             <artifactId>h2</artifactId>

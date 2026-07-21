@@ -7,7 +7,7 @@ services:
     env_file:
       - .env
     environment:
-      DBURL: jdbc:postgresql://db:5432/myworktea
+      DBURL: jdbc:mysql://db:3306/myworktea?useSSL=false&allowPublicKeyRetrieval=true
       UPLOAD_DIR: /app/uploads
     volumes:
       - uploads:/app/uploads
@@ -18,17 +18,18 @@ services:
       - "8080"
 
   db:
-    image: postgres:16-alpine
+    image: mysql:8.4
     container_name: myworktea-db
     restart: unless-stopped
     environment:
-      POSTGRES_DB: myworktea
-      POSTGRES_USER: ${DBUSER}
-      POSTGRES_PASSWORD: ${DBPASSWORD}
+      MYSQL_DATABASE: myworktea
+      MYSQL_USER: ${DBUSER}
+      MYSQL_PASSWORD: ${DBPASSWORD}
+      MYSQL_ROOT_PASSWORD: ${DB_ROOT_PASSWORD}
     volumes:
-      - db-data:/var/lib/postgresql/data
+      - db-data:/var/lib/mysql
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U ${DBUSER} -d myworktea"]
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost", "-u", "root", "-p${DB_ROOT_PASSWORD}"]
       interval: 10s
       timeout: 5s
       retries: 6

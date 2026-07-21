@@ -50,10 +50,10 @@
             <artifactId>spring-boot-starter-mail</artifactId>
         </dependency>
 
-        <!-- PostgreSQL driver -->
+        <!-- MySQL driver -->
         <dependency>
-            <groupId>org.postgresql</groupId>
-            <artifactId>postgresql</artifactId>
+            <groupId>com.mysql</groupId>
+            <artifactId>mysql-connector-j</artifactId>
             <scope>runtime</scope>
         </dependency>
 
@@ -94,7 +94,7 @@
             <artifactId>spring-boot-starter-webmvc-test</artifactId>
             <scope>test</scope>
         </dependency>
-        <!-- H2 powers the 'dev' and 'test' profiles so the app runs without a PostgreSQL server. -->
+        <!-- H2 powers the 'dev' and 'test' profiles so the app runs without a MySQL server. -->
         <dependency>
             <groupId>com.h2database</groupId>
             <artifactId>h2</artifactId>
